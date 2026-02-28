@@ -86,6 +86,42 @@ This repo is a mono repo that consists of 3 projects:
 
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/classroomio/classroomio)
 
+### Dev Container Setup
+
+Works with VS Code, IntelliJ, GitHub Codespaces, or any [devcontainer](https://containers.dev/)-compatible tool.
+
+1. Install the [devcontainer CLI](https://github.com/devcontainers/cli):
+
+   ```bash
+   npm install -g @devcontainers/cli
+   ```
+
+2. Build and start the container:
+
+   ```bash
+   devcontainer up --workspace-folder .
+   ```
+   If you change devcontainer itself
+   ```bash
+   devcontainer up --workspace-folder . --remove-existing-container
+   ```
+
+3. Open a shell inside the container:
+
+   ```bash
+   devcontainer exec --workspace-folder . bash
+   ```
+
+4. Start developing:
+
+   ```bash
+   pnpm dev:container                    # all apps (binds to 0.0.0.0 for host access)
+   pnpm dev --filter=@cio/dashboard      # just the dashboard on :5173
+   pnpm dev --filter=@cio/api            # just the API on :3002
+   ```
+
+   The setup script runs automatically on first launch — it installs dependencies, starts Supabase, and configures `.env` files with the correct keys.
+
 ### Local Setup
 
 1. Fork the repo, then clone it using the following command (remember to replace the url with the url from your forked repo)

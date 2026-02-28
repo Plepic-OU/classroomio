@@ -1,0 +1,28 @@
+{
+  "name": "ClassroomIO",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "mounts": [
+    "source=classroomio-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume"
+  ],
+  "appPort": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324],
+  "forwardPorts": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324],
+  "portsAttributes": {
+    "5173": { "label": "Dashboard" },
+    "5174": { "label": "Website" },
+    "3000": { "label": "Docs" },
+    "3002": { "label": "API" },
+    "54321": { "label": "Supabase API" },
+    "54322": { "label": "Supabase DB" },
+    "54323": { "label": "Supabase Studio" },
+    "54324": { "label": "Supabase Inbucket" }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "echo '✅ ClassroomIO devcontainer is ready. Run: pnpm dev:container'",
+  "remoteUser": "node",
+  "customizations": {}
+}

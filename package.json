@@ -11,6 +11,7 @@
     "format": "prettier . --write",
     "release": "standard-version",
     "ci": "cypress run",
+    "dev:container": "turbo prepare --concurrency 13 && concurrently -n dashboard,api,website,docs -c blue,green,magenta,cyan \"cd apps/dashboard && npx vite dev --port 5173 --host\" \"cd apps/api && pnpm dev\" \"cd apps/classroomio-com && npx vite dev --port 5174 --host\" \"cd apps/docs && npx vite dev --host\"",
     "dashboard:start": "pnpm start --filter @cio/dashboard",
     "api:start": "pnpm start --filter @cio/api",
     "supabase:push": "pnpx supabase link --project-ref $PROJECT_ID && pnpx supabase db push --include-all"
