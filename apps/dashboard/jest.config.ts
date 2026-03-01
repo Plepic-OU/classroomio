@@ -15,7 +15,10 @@ module.exports = {
   testEnvironment: 'node',
   transform: {
     '^.+\\.svelte$': 'svelte-jester',
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.test.json' }],
     '\\.[jt]sx?$': 'babel-jest'
+  },
+  moduleNameMapper: {
+    '^\\$app/(.*)$': '<rootDir>/src/__mocks__/$app/$1'
   }
 };
