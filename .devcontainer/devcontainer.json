@@ -7,8 +7,7 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "mounts": [
-    "source=classroomio-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume",
-    "source=classroomio-claude-config,target=/home/node/.claude,type=volume"
+    "source=classroomio-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume"
   ],
   "appPort": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324],
   "forwardPorts": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324],
@@ -23,7 +22,7 @@
     "54324": { "label": "Supabase Inbucket" }
   },
   "postCreateCommand": "bash .devcontainer/setup.sh",
-  "postStartCommand": "ln -sf /home/node/.claude/.claude.json /home/node/.claude.json; echo '✅ ClassroomIO devcontainer is ready. Run: pnpm dev:container'",
+  "postStartCommand": "echo '✅ ClassroomIO devcontainer is ready. Run: pnpm dev:container'",
   "remoteUser": "node",
   "customizations": {}
 }
