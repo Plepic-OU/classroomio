@@ -14,11 +14,9 @@ RUN ARCH=$(dpkg --print-architecture) \
  && dpkg -i /tmp/supabase.deb \
  && rm /tmp/supabase.deb
 
-# Install Claude Code via native installer (as node user, auto-updates)
-USER node
-RUN curl -fsSL https://claude.ai/install.sh | bash
-USER root
+# Install Claude Code globally via npm (avoids native installer's paths outside CLAUDE_CONFIG_DIR)
+# This plays nicer with devcontainer's
+RUN npm install -g @anthropic-ai/claude-code
 
-# Add PATH and alias for all bash sessions
-RUN echo 'export PATH="/home/node/.local/bin:$PATH"' >> /etc/bash.bashrc \
- && echo "alias cskip='claude --dangerously-skip-permissions'" >> /etc/bash.bashrc
+# Add alias for all bash sessions
+RUN echo "alias cskip='claude --dangerously-skip-permissions'" >> /etc/bash.bashrc
