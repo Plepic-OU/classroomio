@@ -6,8 +6,12 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
+  "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude"
+  },
   "mounts": [
-    "source=classroomio-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume"
+    "source=classroomio-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume",
+    "source=classroomio-claude-config,target=/home/node/.claude,type=volume"
   ],
   "appPort": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324],
   "forwardPorts": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324],
