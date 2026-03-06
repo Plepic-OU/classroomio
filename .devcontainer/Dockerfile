@@ -9,7 +9,8 @@ RUN npm install -g turbo@1
 
 # Install Supabase CLI from GitHub releases
 RUN ARCH=$(dpkg --print-architecture) \
- && VER=$(curl -fsSL https://api.github.com/repos/supabase/cli/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | sed 's/^v//') \
+ && VER=$(curl -fsSL https://api.github.com/repos/supabase/cli/releases/latest \
+      | grep -o '"tag_name":"[^"]*"' | cut -d'"' -f4 | sed 's/^v//') \
  && curl -fsSL "https://github.com/supabase/cli/releases/download/v${VER}/supabase_${VER}_linux_${ARCH}.deb" -o /tmp/supabase.deb \
  && dpkg -i /tmp/supabase.deb \
  && rm /tmp/supabase.deb
