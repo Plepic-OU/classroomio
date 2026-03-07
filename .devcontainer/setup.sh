@@ -4,6 +4,9 @@ set -euo pipefail
 echo "==> Fixing volume permissions..."
 sudo chown -R node:node /home/node/.claude
 
+echo "==> Cleaning pnpm store (avoids stale file handle errors on Docker volumes)..."
+pnpm store prune 2>/dev/null || true
+
 echo "==> Installing dependencies..."
 pnpm install
 
