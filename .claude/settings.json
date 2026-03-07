@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/workspaces/classroomio/.claude/hooks/log-tool-input.sh"
+          },
+          {
+            "type": "command",
+            "command": "/workspaces/classroomio/.claude/hooks/block-github-token.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
