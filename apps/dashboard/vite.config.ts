@@ -35,14 +35,26 @@ export default ({ mode }) => {
 
 function getServer(params: any) {
   const { VITE_USE_HTTPS_ON_LOCALHOST } = params || {};
+
+  const server: Record<string, any> = {
+    hmr: {
+      host: 'localhost',
+      protocol: 'ws'
+    },
+    watch: {
+      usePolling: true,
+      interval: 1000
+    }
+  };
+
   if (VITE_USE_HTTPS_ON_LOCALHOST === 'true') {
-    return {
-      https: {
-        key: fs.readFileSync(`${__dirname}/cert/key.pem`),
-        cert: fs.readFileSync(`${__dirname}/cert/cert.pem`)
-      }
+    server.https = {
+      key: fs.readFileSync(`${__dirname}/cert/key.pem`),
+      cert: fs.readFileSync(`${__dirname}/cert/cert.pem`)
     };
   }
+
+  return server;
 }
 
 // function getSentryConfig(params: any) {

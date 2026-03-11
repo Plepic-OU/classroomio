@@ -8,7 +8,15 @@ import tsConfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
   server: {
-    port: 3000
+    port: 3000,
+    hmr: {
+      host: 'localhost',
+      protocol: 'ws'
+    },
+    watch: {
+      usePolling: true,
+      interval: 1000
+    }
   },
   base: '/docs',
   plugins: [
