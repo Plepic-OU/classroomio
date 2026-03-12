@@ -39,3 +39,6 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+
+# Claude Code hook traces
+.claude/tool-traces/

@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/workspaces/classroomio/.claude/hooks/capture-tool.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
