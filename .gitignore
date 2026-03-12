@@ -45,6 +45,7 @@ vite.config.ts*.mjs
 
 # Claude Code hook outputs
 .claude/hook-logs
+.claude/logs
 
 # GitHub auth token for devcontainer
 .devcontainer/github-token
