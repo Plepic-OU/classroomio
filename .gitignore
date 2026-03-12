@@ -42,3 +42,6 @@ vite.config.ts*.mjs
 
 # Claude Code hook traces
 .claude/tool-traces/
+
+# GH token
+.devcontainer/github-token

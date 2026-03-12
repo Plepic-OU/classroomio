@@ -4,7 +4,8 @@
     "dockerfile": "Dockerfile"
   },
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   "containerEnv": {
     "CLAUDE_CONFIG_DIR": "/home/node/.claude"
@@ -26,7 +27,7 @@
     "54324": { "label": "Supabase Inbucket" }
   },
   "postCreateCommand": "bash .devcontainer/setup.sh",
-  "postStartCommand": "echo '✅ ClassroomIO devcontainer is ready. Run: pnpm dev:container'",
+  "postStartCommand": "bash .devcontainer/gh-auth.sh && echo 'ClassroomIO devcontainer is ready. Run: pnpm dev:container'",
   "remoteUser": "node",
   "customizations": {}
 }
