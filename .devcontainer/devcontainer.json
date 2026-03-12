@@ -4,7 +4,8 @@
     "dockerfile": "Dockerfile"
   },
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   "containerEnv": {
     "CLAUDE_CONFIG_DIR": "/home/node/.claude"
@@ -13,7 +14,12 @@
     "source=classroomio-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume",
     "source=classroomio-claude-config,target=/home/node/.claude,type=volume"
   ],
-  "appPort": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324],
+  "runArgs": [
+    "-p", "0.0.0.0:5173:5173",
+    "-p", "0.0.0.0:5174:5174",
+    "-p", "0.0.0.0:3000:3000",
+    "-p", "0.0.0.0:3002:3002"
+  ],
   "forwardPorts": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324],
   "portsAttributes": {
     "5173": { "label": "Dashboard" },
@@ -26,7 +32,7 @@
     "54324": { "label": "Supabase Inbucket" }
   },
   "postCreateCommand": "bash .devcontainer/setup.sh",
-  "postStartCommand": "echo '✅ ClassroomIO devcontainer is ready. Run: pnpm dev:container'",
+  "postStartCommand": "bash .devcontainer/gh-auth.sh && echo '✅ ClassroomIO devcontainer is ready. Run: pnpm dev:container'",
   "remoteUser": "node",
   "customizations": {}
 }
