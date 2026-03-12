@@ -39,3 +39,9 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+
+# devcontainer secrets
+.devcontainer/github-token
+
+# claude hook logs
+.claude/hook-logs/
