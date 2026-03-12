@@ -1,0 +1,121 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+ClassroomIO is an open-source LMS (Learning Management System) for companies and bootcamps. It is a **pnpm monorepo** managed with **Turborepo**.
+
+## Commands
+
+### Root-level (run from `/workspaces/classroomio`)
+
+```bash
+pnpm dev                          # Start all apps concurrently
+pnpm build                        # Build all apps
+pnpm lint                         # Lint all apps
+pnpm format                       # Format all files with Prettier
+```
+
+### Run a specific app
+
+```bash
+pnpm dev --filter=@cio/dashboard       # Dashboard on :5173
+pnpm dev --filter=@cio/api             # API on :3002
+pnpm dev --filter=@cio/classroomio-com # Marketing site on :5174
+pnpm dev --filter=@cio/docs            # Docs on :3000
+```
+
+### In-container development (binds to 0.0.0.0 for host access)
+
+```bash
+pnpm dev:container
+```
+
+### Testing
+
+```bash
+# Dashboard (Jest)
+cd apps/dashboard && pnpm test
+cd apps/dashboard && pnpm test:watch
+
+# API (Vitest)
+cd apps/api && pnpm test
+cd apps/api && pnpm test:coverage
+```
+
+### Supabase (local database)
+
+```bash
+supabase start      # Start local Supabase (requires Docker)
+supabase stop
+supabase db push    # Apply migrations
+```
+
+### Local login credentials (after `supabase start`)
+
+- Email: `admin@test.com`
+- Password: `123456`
+
+## Architecture
+
+### Monorepo structure
+
+```
+apps/
+  dashboard/        # Main SvelteKit LMS app (@cio/dashboard)
+  api/              # Hono.js API server (@cio/api)
+  classroomio-com/  # Marketing landing page
+  docs/             # Documentation site
+packages/
+  shared/           # Shared constants (plans, roles)
+  tsconfig/         # Shared TypeScript configs
+  course-app/       # CLI + template for standalone course sites
+supabase/
+  migrations/       # SQL migrations
+  functions/        # Supabase Edge Functions
+  seed.sql          # Seed data for local dev
+```
+
+### Dashboard (`apps/dashboard`) — SvelteKit + TailwindCSS
+
+The dashboard is the core application. Key conventions:
+
+- **Route layout**: SvelteKit file-based routing under `src/routes/`
+  - `/org/[slug]/*` — teacher/admin views (course management, people, settings)
+  - `/lms/*` — student views (my learning, exercises, community)
+  - `/courses/[id]/*` — course detail pages (lessons, marks, attendance, etc.)
+  - `/api/*` — SvelteKit server endpoints (not the external Hono API)
+- **State**: Svelte writable/derived stores in `src/lib/utils/store/`
+  - `user` / `profile` — authenticated user session
+  - `currentOrg` / `orgs` — active organization context
+  - `isOrgAdmin`, `isFreePlan`, `currentOrgPlan` — derived permission/plan stores
+- **Services**: `src/lib/utils/services/` — domain-specific data-fetching modules (courses, marks, newsfeed, org, etc.)
+- **API client**: `src/lib/utils/services/api/` — wrapper around `fetch` with auth (Bearer token from Supabase), retry logic, and Hono RPC integration via `classroomio` (typed client using `@cio/api/rpc-types`)
+- **Auth guard**: `src/hooks.server.ts` validates JWT on all `/api/*` routes except a defined public routes list
+- **i18n**: `@sveltekit-i18n` with ICU message format; translation files live under `src/lib/utils/constants/translation.ts`
+- **UI**: Carbon Components Svelte + TailwindCSS
+
+### API (`apps/api`) — Hono.js + Node.js
+
+The API handles long-running or server-only operations (PDF generation, email, S3 presigning, course cloning).
+
+- Entry: `src/index.ts` → `src/app.ts`
+- Routes: `src/routes/` (course, mail) registered on the Hono app
+- Auth middleware: `src/middlewares/auth.ts` validates Supabase JWTs
+- Rate limiting: Redis-backed via `ioredis` + `hono-rate-limiter`
+- RPC types exported at `@cio/api/rpc-types` — consumed by the dashboard's typed API client
+- OpenAPI docs served at `/docs` via `@scalar/hono-api-reference`
+
+### Supabase
+
+All database access goes through the Supabase JS client (`@supabase/supabase-js`). The schema is defined by migrations in `supabase/migrations/`. Row-level security (RLS) policies are used extensively. Edge Functions live in `supabase/functions/`.
+
+### Environment variables
+
+- Dashboard: `apps/dashboard/.env` (copy from `.env.example`) — requires `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `PRIVATE_SUPABASE_SERVICE_ROLE`, `PUBLIC_SERVER_URL` (points to the Hono API)
+- API: `apps/api/.env` (copy from `.env.example`)
+
+### `packages/shared`
+
+Contains shared constants imported by both the dashboard and API (e.g., `PLAN` enum, `ROLE` enum). Import as `shared/src/...`.
