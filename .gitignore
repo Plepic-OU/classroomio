@@ -1,5 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# hooks
+hooks/tool_inputs/*
+
 # dependencies
 node_modules
 .pnp
@@ -39,3 +42,9 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+
+# Claude Code hook outputs
+.claude/hook-logs
+
+# GitHub auth token for devcontainer
+.devcontainer/github-token
