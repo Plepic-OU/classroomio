@@ -38,6 +38,9 @@ yarn-error.log*
 
 vite.config.ts*.mjs
 
+# C4 extraction artifacts
+docs/c4/extracted-components.json
+
 .pnpm-store/*
 
 # Claude Code hook traces

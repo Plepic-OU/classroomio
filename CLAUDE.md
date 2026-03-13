@@ -51,23 +51,9 @@ pnpm dev:container
 
 ## Architecture Details
 
+See C4 Architecture Diagrams section below for component structure and relationships.
+
 ### Dashboard (`apps/dashboard`)
-
-**Routes** (SvelteKit file-based routing in `src/routes/`):
-- `/login`, `/signup`, `/reset`, `/forgot` — Auth flows
-- `/org/[slug]/...` — Organization management (courses, quizzes, settings, teams, audience)
-- `/lms/...` — Student-facing LMS (explore, mylearning, exercises, community)
-- `/courses/[id]` — Course detail pages
-- `/api/...` — Server-side API routes (completions, courses, org, admin)
-
-**Key directories in `src/lib/`:**
-- `components/` — Svelte components organized by feature
-- `utils/store/` — Svelte writable/derived stores (user, org, app state)
-- `utils/services/` — API client with retry logic, data fetching services
-- `utils/functions/` — Utilities including Supabase clients (`supabase.ts` for client-side, `supabase.server.ts` for server-side with service role)
-- `utils/types/` — TypeScript type definitions for all domain models
-- `utils/constants/` — Route definitions, roles (ADMIN/TEACHER/STUDENT), blocked subdomains
-- `utils/translations/` — i18n JSON files (uses `sveltekit-i18n` with ICU parser)
 
 **Multi-tenancy**: Subdomain and custom domain detection in `src/routes/+layout.server.ts`. Organization context flows through layouts to all routes. `PRIVATE_APP_HOST` env var defines the app's base domain; subdomains not in `blockedSubdomain` list are treated as org sites.
 
@@ -79,8 +65,6 @@ pnpm dev:container
 
 ### API (`apps/api`)
 
-- Hono framework with middleware: CORS, rate limiting (Redis-based), auth (JWT validation)
-- Routes: `/course` (certificates, PDF export, cloning, presigned URLs, KaTeX), `/mail` (email)
 - Deployable to Cloudflare Workers via Wrangler
 - Testing: Vitest with V8 coverage
 
@@ -108,6 +92,15 @@ Dashboard `.env` (copy from `.env.example`):
 - `PUBLIC_IS_SELFHOSTED` — Toggles Node adapter and SSR behavior
 - `PRIVATE_APP_HOST` — Base domain for subdomain detection
 - `PRIVATE_APP_SUBDOMAINS` — Comma-separated list of app subdomains (not org subdomains)
+
+## C4 Architecture Diagrams
+
+- L1 System Context: @../docs/c4/L1-system-context.md
+- L2 Container: @../docs/c4/L2-container.md
+- L3 Dashboard UI + Routes: @../docs/c4/L3-dashboard-ui.md
+- L3 Dashboard Services + Data: @../docs/c4/L3-dashboard-services.md
+- L3 API Components: @../docs/c4/L3-api-components.md
+- Database schema: `docs/c4/database.md`
 
 ## Demo Login
 
