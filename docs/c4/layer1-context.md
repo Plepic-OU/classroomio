@@ -2,20 +2,20 @@
 
 ```mermaid
 C4Context
-  title System Context — ClassroomIO LMS
+  title System Context - ClassroomIO LMS
 
   Person(teacher, "Teacher / Admin", "Creates and manages courses, tracks student progress")
   Person(student, "Student", "Takes courses, submits exercises, joins community")
 
   System_Boundary(classroomio, "ClassroomIO") {
-    System(dashboard, "Dashboard", "SvelteKit web app — LMS for teachers and students")
-    System(api, "API", "Hono backend — handles file processing and email")
+    System(dashboard, "Dashboard", "SvelteKit web app - LMS for teachers and students")
+    System(api, "API", "Hono backend - handles file processing and email")
   }
 
   System_Ext(supabase, "Supabase", "PostgreSQL database, Auth, Edge Functions, Realtime")
   System_Ext(openai, "OpenAI", "AI-powered content generation and completion")
   System_Ext(cloudflare, "Cloudflare R2", "Video and file object storage")
-  System_Ext(smtp, "Email (SMTP)", "Transactional email delivery")
+  System_Ext(smtp, "Email SMTP", "Transactional email delivery")
   System_Ext(billing, "Polar / LemonSqueezy", "Subscription billing and webhooks")
 
   Rel(teacher, dashboard, "Manages courses, audience, settings", "HTTPS")
@@ -27,6 +27,4 @@ C4Context
   Rel(api, supabase, "Reads/writes data", "REST")
   Rel(api, cloudflare, "Stores video/files", "S3 API")
   Rel(api, smtp, "Sends email", "SMTP")
-
-  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
 ```
