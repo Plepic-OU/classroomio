@@ -48,4 +48,10 @@ sudo chmod -R g+w /usr/local/share/npm-global/bin/
 echo "==> Running turbo prepare..."
 pnpm turbo prepare
 
+echo "==> Installing Playwright browsers..."
+cd apps/dashboard
+npx playwright install --with-deps chromium
+mkdir -p e2e/.auth
+cd - > /dev/null
+
 echo "==> Setup complete!"

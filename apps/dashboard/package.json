@@ -14,6 +14,8 @@
     "prepare": "svelte-kit sync",
     "test": "jest",
     "test:watch": "pnpm run test --watch",
+    "test:e2e": "bddgen && playwright test",
+    "test:e2e:ui": "bddgen && playwright test --ui --ui-host=0.0.0.0 --ui-port=9323",
     "ci": "cp .env.example .env && vite build && vite preview",
     "script:translate": "node ./scripts/translate.cjs"
   },
@@ -106,7 +108,9 @@
     "tsconfig": "workspace:*",
     "tslib": "^2.6.1",
     "typescript": "^5.1.6",
-    "vite": "^4.4.8"
+    "vite": "^4.4.8",
+    "@playwright/test": "^1.44.0",
+    "playwright-bdd": "^7.0.0"
   },
   "type": "module",
   "engines": {
