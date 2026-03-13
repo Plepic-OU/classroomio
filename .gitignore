@@ -46,3 +46,6 @@ vite.config.ts*.mjs
 .vscode
 .claude/hook-logs
 settings.local.json
+
+# C4 extraction artifacts
+docs/c4/components-*.json

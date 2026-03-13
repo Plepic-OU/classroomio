@@ -49,6 +49,13 @@ supabase db push  # push migrations
 
 ## Architecture
 
+C4 architecture diagrams are available in `docs/c4/`:
+- [`c4-L1-context.md`](docs/c4/c4-L1-context.md) — System Context (users + external systems)
+- [`c4-L2-container.md`](docs/c4/c4-L2-container.md) — Containers (Dashboard, API, Landing Page, Docs)
+- [`c4-L3-api.md`](docs/c4/c4-L3-api.md) — API component breakdown
+- [`c4-L3-dashboard.md`](docs/c4/c4-L3-dashboard.md) — Dashboard component breakdown
+- [`database.md`](docs/c4/database.md) — Database schema reference
+
 This is a **pnpm + Turborepo monorepo** with:
 - `apps/` — deployable applications
 - `packages/` — shared internal packages
