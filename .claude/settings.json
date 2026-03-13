@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "preToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"\nimport sys, json\ndata = json.load(sys.stdin)\ntool = data.get('tool_name', '')\nparams = json.dumps(data.get('tool_input', {}))\nif 'github-token' in params or 'github_token' in params:\n    print('Blocked: attempt to access .devcontainer/github-token', file=sys.stderr)\n    sys.exit(2)\n\""
+          }
+        ]
+      }
+    ]
+  }
+}
