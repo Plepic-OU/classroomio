@@ -43,5 +43,9 @@ vite.config.ts*.mjs
 # Claude Code hook outputs
 .claude/tool-inputs/
 
+# C4 model — generated JSON (intermediate artefact, diagrams are committed)
+docs/c4/components.json
+.claude/skills/c4-model/node_modules/
+
 # GitHub auth token for devcontainer
 .devcontainer/github-token

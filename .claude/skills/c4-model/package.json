@@ -1,0 +1,17 @@
+{
+  "name": "c4-model-skill",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "extract": "tsx extract.ts",
+    "db-schema": "tsx db-schema.ts"
+  },
+  "dependencies": {
+    "ts-morph": "^23.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.1.6"
+  }
+}

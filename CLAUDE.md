@@ -86,6 +86,14 @@ Local Supabase defaults:
 - Studio: `http://127.0.0.1:54323`
 - Default test login: `admin@test.com` / `123456`
 
+## Architecture Diagrams
+
+- L1 System Context: @docs/c4/L1-context.md
+- L2 Containers: @docs/c4/L2-containers.md
+- L3 Dashboard Components: @docs/c4/L3-dashboard.md
+- L3 API Components: @docs/c4/L3-api.md
+- Database Schema: docs/c4/database.md
+
 ## Architecture: Dashboard App
 
 The dashboard is a SvelteKit app with these key directories:
