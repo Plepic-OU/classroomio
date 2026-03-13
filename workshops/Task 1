@@ -1,0 +1,25 @@
+# Day 1, workshop 1 - setting up project
+# Setup up the course example project
+
+- [x] 1. Git repo: https://github.com/Plepic-OU/classroomio/
+  - [x] 1a. Use HTTPS, we need this later.
+  - [x] 1b. Git clone https://github.com/Plepic-OU/classroomio.git
+- [x] 2. Create a personal branch
+- [x] 3. Install docker if not installed
+- [x] 4. Install npm if not installed
+- [x] 5. Install devcontainer (https://github.com/devcontainers/cli)
+- [x] 6. Run the devcontainers, see project README.md
+- [x] 7. Log into devcontainers and start “cskip” - claude without permissions check.
+  - [x] 7a. Authenticate claude and answer questions
+- [x] 8. Run the “/init” to get personal CLAUDE.md file
+
+Optional
+- [ ] o1. Set up CC in Web
+  https://code.claude.com/docs/en/claude-code-on-the-web#from-web-to-terminal
+    From web to terminal:
+      claude --teleport
+    From terminal to web:
+      claude --remote “the initial prompt”
+- [ ] o2. Set up remote control (https://code.claude.com/docs/en/remote-control)
+  From claude /remote-control
+- [ ] o3. Install phone claude app and try the remote sessions

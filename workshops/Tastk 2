@@ -1,0 +1,42 @@
+# Day 1, workshop 2 - claude code hooks
+
+- [x] 1. Create catch-all hook, so each tool last invocation input is stored in separate file. Leave hook output out from git
+
+- [x] 2. Set up fine grained github access token usage.
+  - [x] 2a. Accept the Collaborator Invitation
+
+    - Check your email for an invitation to collaborate on 'Plepic-OU/classroomio'
+    - Click the link to accept
+
+  - [x] 2b. Create a Fine-Grained Personal Access Token
+
+    1. Go to https://github.com/settings/personal-access-tokens/new
+    2. Set 'Token name' to something descriptive (e.g. `classroomio-workshop`)
+    3. Set 'Expiration' to a suitable duration
+    4. Under 'Repository access', select 'Only select repositories' and choose `Plepic-OU/classroomio`
+    5. Under 'Permissions → Repository permissions', enable 'Read and write' for the following:
+      * Contents
+      * Issues
+      * Pull requests
+      * Deployments
+      * Discussions
+      * Pages
+      * Workflows
+    6. Click 'Generate token' and copy the token
+
+  - [x] 2c. Store the token in `.devcontainer/github-token` file
+
+- [x] 3. Set up github authentication using the token:
+  --- prompt ---
+  Add GitHub CLI (gh) authentication to our devcontainer setup:
+
+    1. Add the github-cli devcontainer feature to devcontainer.json
+    2. Create .devcontainer/gh-auth.sh that:
+     - Reads a token from .devcontainer/github-token
+     - Authenticates gh CLI and configures git credentials via gh auth setup-git
+     - Prints a helpful message if the token file is missing
+     - Runs on every container start (postStartCommand), not just on create
+    3. Add .devcontainer/github-token to .gitignore so tokens are never committed
+  --- prompt ---
+
+- [x] 4. Prohibit claude code from reading token accidentally. Create preToolUse hook that exit with 2 if the token is mentioned.

@@ -1,0 +1,46 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker --version)",
+      "Bash(npm --version)",
+      "Bash(devcontainer --version)",
+      "Bash(npm install -g @devcontainers/cli)",
+      "Bash(devcontainer up --workspace-folder .)",
+      "Bash(docker info)",
+      "Bash(wsl --status)",
+      "Bash(wsl -l -v)",
+      "Bash(devcontainer up --workspace-folder . --remove-existing-container)",
+      "Bash(devcontainer exec --workspace-folder c:/course/classroomio bash -c \"claude --version\")",
+      "Bash(docker ps --filter \"label=devcontainer.local_folder=C:\\\\course\\\\classroomio\" --format \"{{.ID}} {{.Names}} {{.Status}}\")",
+      "Bash(docker exec 01d93cbd3d73 claude --version)",
+      "Bash(docker exec -u node 01d93cbd3d73 find /workspaces/classroomio -name \"CLAUDE.md\")",
+      "Bash(docker ps --filter \"label=devcontainer.local_folder=C:\\\\course\\\\classroomio\" --format \"{{.ID}}\")",
+      "Bash(docker exec -u node 01d93cbd3d73 claude --version)",
+      "Bash(docker exec:*)"
+    ]
+  },
+  "hooks": {
+    "preToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/pre-tool-use.sh"
+          }
+        ]
+      }
+    ],
+    "postToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/post-tool-use.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
