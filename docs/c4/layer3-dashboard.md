@@ -4,54 +4,47 @@
 C4Component
   title Component diagram — Dashboard (SvelteKit)
 
-  Container_Boundary(dashboard, "Dashboard") {
-
-    Boundary(routes_boundary, "Routes") {
-      Component(routes_org, "Org Dashboard", "SvelteKit Route",
-        "Teacher/admin area: course management, audience, community, settings (/org/[slug])")
-      Component(routes_courses, "Course Editor", "SvelteKit Route",
-        "Full course editor: lessons, submissions, marks, attendance, analytics (/courses/[id])")
-      Component(routes_lms, "Student LMS", "SvelteKit Route",
-        "Student-facing: my learning, exercises, community, explore (/lms/*)")
-      Component(routes_auth, "Auth Routes", "SvelteKit Route",
-        "Login, signup, forgot password, reset, onboarding, invite")
-      Component(routes_api, "API Routes", "SvelteKit Server Route",
-        "Server-side endpoints: AI completion, email, courses, org, billing webhooks")
-    }
-
-    Boundary(components_boundary, "UI Components") {
-      Component(comp_course, "Course Components", "Svelte Component",
-        "Rich course UI: lesson viewer, submissions, marks, attendance, certificates (68 svelte + 23 ts)")
-      Component(comp_org, "Org Components", "Svelte Component",
-        "Org management UI: settings, billing, community, audience (44 svelte)")
-      Component(comp_landing, "Course Landing Page", "Svelte Component",
-        "Public course landing page components (15 svelte + 4 ts)")
-      Component(comp_ui, "UI Primitives", "Svelte Component",
-        "Shared UI: buttons, modal, form, navigation, snackbar, tabs, icons, etc.")
-    }
-
-    Boundary(utils_boundary, "Utilities") {
-      Component(utils_store, "Svelte Stores", "Svelte Store",
-        "Global state: currentOrg, orgs, orgTeam, orgAudience, user, app")
-      Component(utils_services, "Supabase Services", "Supabase Service",
-        "Data fetching and business logic calling Supabase directly (21 files)")
-      Component(utils_functions, "Helper Functions", "Helper Functions",
-        "Pure utility functions shared across routes and components (52 files)")
-      Component(utils_types, "TypeScript Types", "TypeScript Types",
-        "Shared domain type definitions")
-      Component(utils_constants, "Constants", "TypeScript Types",
-        "App-wide constants and configuration values")
-    }
-
-    Component(mail_templates, "Mail Templates", "TypeScript",
-      "Email template definitions consumed by API routes")
+  Container_Boundary(dashboard, "Dashboard (SvelteKit)") {
+    %% Routes
+    Component(routes_org, "Org Dashboard", "SvelteKit Route",
+      "Teacher/admin area: course management, audience, community, settings (/org/[slug])")
+    Component(routes_courses, "Course Editor", "SvelteKit Route",
+      "Full course editor: lessons, submissions, marks, attendance, analytics (/courses/[id])")
+    Component(routes_lms, "Student LMS", "SvelteKit Route",
+      "Student-facing: my learning, exercises, community, explore (/lms/*)")
+    Component(routes_auth, "Auth Routes", "SvelteKit Route",
+      "Login, signup, forgot password, reset, onboarding, invite")
+    Component(routes_api, "API Routes", "SvelteKit Server Route",
+      "Server-side endpoints: AI completion, email, courses, org, billing webhooks")
     Component(hooks, "Server Hooks", "SvelteKit Hook",
       "JWT validation on /api/* routes; Supabase client singleton")
+    Component(mail_templates, "Mail Templates", "TypeScript",
+      "Email template definitions consumed by API routes")
+    %% UI Components
+    Component(comp_course, "Course Components", "Svelte Component",
+      "Rich course UI: lesson viewer, submissions, marks, attendance, certificates (68 svelte + 23 ts)")
+    Component(comp_org, "Org Components", "Svelte Component",
+      "Org management UI: settings, billing, community, audience (44 svelte)")
+    Component(comp_landing, "Course Landing Page", "Svelte Component",
+      "Public course landing page components (15 svelte + 4 ts)")
+    Component(comp_ui, "UI Primitives", "Svelte Component",
+      "Shared UI: buttons, modal, form, navigation, snackbar, tabs, icons, etc.")
+    %% Utilities
+    Component(utils_store, "Svelte Stores", "Svelte Store",
+      "Global state: currentOrg, orgs, orgTeam, orgAudience, user, app")
+    Component(utils_services, "Supabase Services", "Supabase Service",
+      "Data fetching and business logic calling Supabase directly (21 files)")
+    Component(utils_functions, "Helper Functions", "Helper Functions",
+      "Pure utility functions shared across routes and components (52 files)")
+    Component(utils_types, "TypeScript Types", "TypeScript Types",
+      "Shared domain type definitions")
+    Component(utils_constants, "Constants", "TypeScript Types",
+      "App-wide constants and configuration values")
   }
 
   System_Ext(supabase, "Supabase", "PostgreSQL + Auth + Realtime")
   System_Ext(openai, "OpenAI", "LLM API")
-  Container_Ext(api_container, "API", "Hono / Node.js", "File processing and email")
+  System_Ext(api_container, "API", "Hono / Node.js — file processing and email")
 
   %% Utility layer relationships
   Rel(utils_services, supabase, "CRUD data", "REST (PostgREST)")

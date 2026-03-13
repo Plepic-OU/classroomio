@@ -16,17 +16,8 @@ C4Container
       "Public-facing landing page and blog")
   }
 
-  System_Boundary(infra, "Infrastructure") {
-    ContainerDb(supabase_db, "PostgreSQL", "Supabase / PostgreSQL 15",
-      "All application data: courses, users, orgs, exercises")
-    Container(supabase_auth, "Supabase Auth", "GoTrue",
-      "JWT-based authentication and user management")
-    Container(supabase_edge, "Edge Functions", "Deno",
-      "Server-side logic deployed at the edge")
-    ContainerDb(r2, "Cloudflare R2", "S3-compatible object store",
-      "Video files and course attachments")
-  }
-
+  System_Ext(supabase_db, "Supabase", "PostgreSQL 15 + Auth (GoTrue) + Edge Functions (Deno) — all application data and authentication")
+  System_Ext(r2, "Cloudflare R2", "S3-compatible object store — video files and course attachments")
   System_Ext(openai, "OpenAI", "LLM API")
   System_Ext(smtp, "SMTP", "Email delivery")
   System_Ext(billing, "Polar / LemonSqueezy", "Billing")
@@ -35,16 +26,14 @@ C4Container
   Rel(student, dashboard, "Uses", "HTTPS")
   Rel(teacher, marketing, "Reads", "HTTPS")
 
-  Rel(dashboard, supabase_db, "CRUD data", "REST (PostgREST)")
-  Rel(dashboard, supabase_auth, "Auth / session", "JWT")
+  Rel(dashboard, supabase_db, "CRUD data, Auth, Realtime", "REST / WebSocket")
   Rel(dashboard, api, "RPC calls", "Hono RPC / HTTP")
   Rel(dashboard, openai, "Completion requests", "REST")
   Rel(dashboard, billing, "Webhook events", "HTTPS")
 
-  Rel(api, supabase_db, "Reads data", "REST")
+  Rel(api, supabase_db, "Reads/writes data", "REST")
   Rel(api, r2, "Upload/presign", "S3 API")
   Rel(api, smtp, "Send email", "SMTP")
-  Rel(supabase_edge, supabase_db, "Reads/writes", "SQL")
 
   UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="2")
 ```
