@@ -39,3 +39,6 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+
+# C4 model extraction artifacts
+docs/c4/extracted-components.json

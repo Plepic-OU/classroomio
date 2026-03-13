@@ -51,6 +51,16 @@ After `supabase start`, visit `http://localhost:5173/login` with `admin@test.com
 
 ## Architecture
 
+### C4 Architecture Diagrams
+
+Mermaid C4 diagrams are maintained in `docs/c4/` for AI context and visual reference:
+
+- **Layer 1 — System Context**: @docs/c4/L1-system-context.md — ClassroomIO, users, and external systems
+- **Layer 2 — Container**: @docs/c4/L2-container.md — Dashboard, API, PostgreSQL, Redis, Edge Functions, etc.
+- **Layer 3 — Dashboard Components**: @docs/c4/L3-dashboard.md — UI, services, state, utilities, routes
+- **Layer 3 — API Components**: @docs/c4/L3-api.md — Routes, services, middleware, config/utils
+- **Database Schema**: @docs/c4/database.md — All tables, FKs, and RLS policies
+
 ### Monorepo Structure
 
 | Path | Package Name | Framework | Purpose |
