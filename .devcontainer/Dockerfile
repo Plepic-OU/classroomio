@@ -7,10 +7,9 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Supabase CLI is installed via npx in setup.sh (avoids version pinning issues)
 RUN npm install -g turbo@1
 
-# Install Supabase CLI from GitHub releases
+# Install Supabase CLI from GitHub releases (pinned version to avoid GitHub API rate limits)
 RUN ARCH=$(dpkg --print-architecture) \
- && VER=$(curl -fsSL https://api.github.com/repos/supabase/cli/releases/latest \
-      | grep -o '"tag_name":"[^"]*"' | cut -d'"' -f4 | sed 's/^v//') \
+ && VER=2.75.0 \
  && curl -fsSL "https://github.com/supabase/cli/releases/download/v${VER}/supabase_${VER}_linux_${ARCH}.deb" -o /tmp/supabase.deb \
  && dpkg -i /tmp/supabase.deb \
  && rm /tmp/supabase.deb
