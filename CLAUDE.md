@@ -102,5 +102,11 @@ Supabase (Postgres) is the sole database and auth provider. Migrations live in `
 
 Run `/c4-model` to generate or update the C4 model diagrams in `docs/c4/`. The skill uses ts-morph AST extraction (`extract.ts`) to derive Layer 3 components from source, and `db-schema.mjs` to extract the database schema from the running local Supabase instance.
 
+- Layer 1 — System Context: @docs/c4/context.md
+- Layer 2 — Containers: @docs/c4/containers.md
+- Layer 3 — Dashboard Components: @docs/c4/dashboard-components.md
+- Layer 3 — API Service Components: @docs/c4/api-components.md
+- Database schema: @docs/c4/database.md
+
 ### Self-hosting flag
 `PUBLIC_IS_SELFHOSTED=true` disables plan/billing checks in the dashboard. The `isFreePlan` store short-circuits to `false` when self-hosted.
