@@ -1,0 +1,18 @@
+{
+  "name": "c4-model-extractor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AST extractor for ClassroomIO C4 architecture diagrams",
+  "scripts": {
+    "extract": "tsx extract.ts",
+    "install-note": "Use 'npm install' (not pnpm) — this dir is outside the pnpm workspace"
+  },
+  "dependencies": {
+    "ts-morph": "^23.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  }
+}

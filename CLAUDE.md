@@ -129,6 +129,18 @@ Logger → Pretty JSON → Secure Headers → CORS (all origins) → Rate limite
 - `packages/tsconfig` — Shared TypeScript configurations
 - `packages/course-app` — Course app template package (nested workspace under `packages/course-app/src/*`)
 
+## Architecture Diagrams
+
+C4 model diagrams are in `docs/c4/`:
+
+- Layer 1 — System Context: @docs/c4/context.md
+- Layer 2 — Containers: @docs/c4/containers.md
+- Layer 3 — Dashboard Components: @docs/c4/components-dashboard.md
+- Layer 3 — API Components: @docs/c4/components-api.md
+- Database schema (39 tables): [docs/c4/database.md](docs/c4/database.md)
+
+Refresh: run `/c4-model` in Claude Code.
+
 ## Code Style
 
 Prettier config (`.prettierrc`): no tabs, single quotes, no trailing commas, printWidth 100. Plugins: `prettier-plugin-svelte` (with `parser: "svelte"` override for `.svelte` files), `prettier-plugin-tailwindcss`. TailwindCSS uses `class` strategy for dark mode.

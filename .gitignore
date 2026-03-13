@@ -33,6 +33,9 @@ yarn-error.log*
 # turbo
 .turbo
 
+# c4 skill — AST extraction output (regenerated on each run)
+docs/c4/ast-output.json
+
 # vercel
 .vercel
 
