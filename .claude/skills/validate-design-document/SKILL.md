@@ -15,7 +15,7 @@ The design document path. If not provided, find the most recent file in `docs/pl
 
 ## Step 1: Select Relevant Validators
 
-Read the design document. Then decide which of the 8 validators below are relevant based on what the design touches. **If in doubt, include the validator.** Most designs will need 4-6 validators. Only skip a validator when the design clearly has zero overlap with its domain.
+Read the design document. Then decide which of the 9 validators below are relevant based on what the design touches. **If in doubt, include the validator.** Most designs will need 4-6 validators. Only skip a validator when the design clearly has zero overlap with its domain.
 
 ### The 8 Validators
 

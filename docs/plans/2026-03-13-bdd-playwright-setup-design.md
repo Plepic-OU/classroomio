@@ -2,6 +2,16 @@
 
 **Date**: 2026-03-13
 **Scope**: Initial BDD test setup with Gherkin + Playwright covering login and course creation flows.
+**Maturity**: MVP — minimal viable setup, not production-hardened CI.
+
+## 0. Business Goal & Success Criteria
+
+**Goal**: Establish an automated E2E test foundation covering the two most critical user flows (login and course creation) to catch regressions before they reach production.
+
+**Success criteria**:
+- Tests pass deterministically (zero flaky failures in 10 consecutive local runs)
+- A new developer can run the E2E suite within 5 minutes of completing devcontainer setup
+- Login and course creation happy paths are covered end-to-end
 
 ---
 
@@ -20,7 +30,6 @@ e2e/
 │   ├── dashboard.page.ts
 │   └── course.page.ts
 ├── playwright.config.ts
-├── .bddrc.yaml
 ├── tsconfig.json
 ├── .gitignore
 └── package.json
@@ -36,15 +45,15 @@ e2e/
 ### Workspace Integration
 
 - Package name: `@cio/e2e`
-- Add `"e2e"` to root `pnpm-workspace.yaml` packages list
+- Add `"e2e"` as a top-level entry to root `pnpm-workspace.yaml` packages list (not under `apps/*` or `packages/*`)
 - No Playwright deps leak into other apps
 
 ### Scripts (`e2e/package.json`)
 
 | Script | Command | Purpose |
 |--------|---------|---------|
-| `test` | `npx bddgen && npx playwright test` | Generate + run tests headless |
-| `test:ui` | `npx bddgen && npx playwright test --ui-host=0.0.0.0 --ui-port=9323` | Playwright UI dashboard |
+| `test` | `npx playwright test` | Run tests headless (bddgen runs automatically via `defineBddConfig`) |
+| `test:ui` | `npx playwright test --ui-host=0.0.0.0 --ui-port=9323` | Playwright UI dashboard |
 | `test:report` | `npx playwright show-report` | Open HTML report |
 
 ### Root Convenience Scripts (`package.json`)
@@ -54,9 +63,10 @@ e2e/
 | `test:e2e` | `pnpm --filter=@cio/e2e test` |
 | `test:e2e:ui` | `pnpm --filter=@cio/e2e test:ui` |
 
-### Devcontainer Change
+### Devcontainer Changes
 
-Add port `9323` (labeled "Playwright UI") to `forwardPorts` in `.devcontainer/devcontainer.json`.
+- Add port `9323` (labeled "Playwright UI") to `forwardPorts` in `.devcontainer/devcontainer.json`
+- Add Playwright browser installation to setup: `cd e2e && npx playwright install --with-deps chromium` (in `.devcontainer/setup.sh` after `pnpm install`, or as a `postinstall` script in `e2e/package.json`)
 
 ---
 
@@ -67,20 +77,16 @@ Add port `9323` (labeled "Playwright UI") to `forwardPorts` in `.devcontainer/de
 | Setting | Value | Rationale |
 |---------|-------|-----------|
 | `baseURL` | `http://localhost:5173` | Dashboard dev server |
-| `testDir` | `.features-gen` | playwright-bdd generated output |
+| `testDir` | `defineBddConfig({ featuresRoot: './features' })` | Returns generated test dir; replaces `.bddrc.yaml` |
 | `use.trace` | `on-first-retry` | Debugging failed tests |
 | `use.screenshot` | `only-on-failure` | Minimize noise |
+| `use.locale` | `'en'` | Fix locale for text-based locators (i18n) |
 | `projects` | `chromium` only | Start simple, add browsers later |
+| `workers` | `1` | Sequential execution — tests share state via seeded DB |
 | `retries` | `1` in CI, `0` locally | `!!process.env.CI` toggle |
 | `webServer` | Not configured | Tests assume `pnpm dev` is already running |
 
-### `e2e/.bddrc.yaml`
-
-```yaml
-featuresRoot: ./features
-stepsRoot: ./steps
-outputDir: .features-gen
-```
+**Note**: Configuration uses `defineBddConfig()` from `playwright-bdd` (v8+) directly in `playwright.config.ts`. No separate `.bddrc.yaml` file needed.
 
 ### `e2e/tsconfig.json`
 
@@ -93,7 +99,9 @@ outputDir: .features-gen
 
 Each page object is a plain class taking a Playwright `Page` instance in the constructor. No inheritance hierarchy.
 
-**Locator priority**: `page.getByRole()` > `page.getByLabel()` > `page.getByTestId()` — semantic locators first, `data-testid` as fallback. Some `data-testid` attributes may need to be added to the dashboard app.
+**Locator priority**: `page.getByRole()` > `page.getByPlaceholder()` > `page.getByTestId()` — semantic locators first, `data-testid` as fallback. Some `data-testid` attributes will need to be added to the dashboard app.
+
+**Important**: The dashboard's `TextField` component renders labels as `<p>` tags, not semantic `<label>` elements, so `getByLabel()` will NOT work. Use `getByRole()` with name matching or `getByPlaceholder()` instead. All text-based locators depend on English translations (locale is locked to `'en'` in config).
 
 ### `login.page.ts`
 
@@ -104,7 +112,7 @@ Each page object is a plain class taking a Playwright `Page` instance in the con
 | `fillPassword(password)` | Fill password input |
 | `submit()` | Click submit button |
 | `login(email, password)` | Convenience: fill + submit |
-| `expectDashboardRedirect()` | Assert URL changes to `/org/*/courses` |
+| `expectDashboardRedirect()` | Assert URL changes to `/org/*` (post-login redirects to `/org/{siteName}`, not `/org/{siteName}/courses`) |
 | `expectError()` | Assert error message is visible |
 
 ### `dashboard.page.ts`
@@ -118,10 +126,14 @@ Each page object is a plain class taking a Playwright `Page` instance in the con
 
 | Method | Description |
 |--------|-------------|
-| `fillTitle(title)` | Fill course title input |
-| `fillDescription(desc)` | Fill course description |
-| `save()` | Click save/create button |
+| `selectCourseType(type)` | Select course type in step 0 ("Live Class" or "Self Paced") |
+| `clickNext()` | Click "Next" to advance from step 0 to step 1 |
+| `fillTitle(title)` | Fill course title input (step 1) |
+| `fillDescription(desc)` | Fill course description (step 1) |
+| `save()` | Click "Finish" button (step 1) |
 | `expectCourseCreated(title)` | Verify course appears |
+
+**Note**: The `NewCourseModal` is a two-step wizard. Step 0: select course type + "Next". Step 1: fill title/description + "Finish".
 
 ---
 
@@ -154,7 +166,10 @@ Feature: Course Creation
   Scenario: Create a new course with title and description
     Given I am on the dashboard
     When I click the new course button
+    And I select "Self Paced" as the course type
+    And I click next
     And I fill in the course title with "BDD Test Course"
+    And I fill in the course description with "Test course created by BDD"
     And I save the course
     Then I should see "BDD Test Course" in the course page
 ```
@@ -171,10 +186,10 @@ One step definition file per feature:
 
 ### Pattern
 
-- Import `Given`, `When`, `Then` from `playwright-bdd`
+- Use `createBdd()` from `playwright-bdd` to generate `Given`, `When`, `Then` functions that receive Playwright fixtures (`{ page }`) directly
 - Instantiate page objects within steps
 - Use parameterized strings (`{string}`) for data-driven values
-- `BddWorld` fixture context from playwright-bdd — page objects created per-scenario, no shared state between scenarios
+- Page objects created per-scenario via fixtures, no shared state between scenarios
 
 ---
 
@@ -189,10 +204,12 @@ Use the existing seed data from `supabase/seed.sql`:
 
 ## 7. Developer Workflow
 
-1. Start the app: `pnpm dev` (or `pnpm dev:container`)
-2. Run tests headless: `pnpm test:e2e`
-3. Debug with UI dashboard: `pnpm test:e2e:ui` → open `http://localhost:9323`
-4. View failure report: `cd e2e && pnpm test:report`
+1. Start Supabase: `supabase start` (requires Docker)
+2. Start the app: `pnpm dev` (or `pnpm dev:container`) — both dashboard AND API must be running
+3. Install browsers (first time only): `cd e2e && npx playwright install --with-deps chromium`
+4. Run tests headless: `pnpm test:e2e`
+5. Debug with UI dashboard: `pnpm test:e2e:ui` → open `http://localhost:9323`
+6. View failure report: `cd e2e && pnpm test:report`
 
 ### Gitignore (`e2e/.gitignore`)
 
@@ -200,6 +217,7 @@ Use the existing seed data from `supabase/seed.sql`:
 .features-gen/
 test-results/
 playwright-report/
+blob-report/
 ```
 
 ---
