@@ -2,7 +2,7 @@
 name: validate-design-document
 description: "Validate a design document by spawning project-specific expert subagents in parallel. Use after writing a design document."
 metadata:
-  version: 2.0.0
+  version: 2.1.0
   category: quality
 ---
 
@@ -24,12 +24,16 @@ The design document path. Supports three resolution modes:
 
 1. Resolve the input to a single file using the rules above.
 2. Detect the current version from the filename:
-   - Pattern: `*-v<N>.md` (e.g., `-v1.md`, `-v2.md`)
+   - Pattern: `*-v<N>.md` or `*-v<N>(<tag>).md` (e.g., `-v1.md`, `-v2.md`, `-v2(haiku).md`)
    - If no version suffix, treat as v0
 3. The **output file** will be the same base name with the next version number:
    - `2026-03-13-bdd-playwright-v1.md` → `2026-03-13-bdd-playwright-v2.md`
    - `2026-03-13-bdd-playwright-v2.md` → `2026-03-13-bdd-playwright-v3.md`
    - `my-design.md` (no version) → `my-design-v1.md`
+4. If `--tag=<label>` is provided, append `(<label>)` after the version number:
+   - `--tag=haiku`: `-v2.md` → `-v3(haiku).md`
+   - `--tag=sonnet`: `-v1.md` → `-v2(sonnet).md`
+   - `--tag=haiku` with no prior version: `my-design.md` → `my-design-v1(haiku).md`
 
 ## Step 2: Select Relevant Validators
 

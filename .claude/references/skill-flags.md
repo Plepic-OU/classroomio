@@ -7,3 +7,4 @@ These flags can be applied to any skill and modify its behavior accordingly.
 | `--help` | `-h` | Show usage information and instructions for the skill |
 | `--plan` | `-p` | Show what the skill would do without executing (dry run / plan mode) |
 | `--list` | `-l` | List relevant items related to the skill's functionality |
+| `--tag=<label>` | `-t` | Append a parenthetical tag to the output filename (e.g., `--tag=haiku` → `-v3(haiku).md`) |
