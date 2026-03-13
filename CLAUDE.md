@@ -116,6 +116,14 @@ Hono v4 server running on port 3002 with OpenAPI documentation (`@hono/node-serv
 
 Row Level Security (RLS) policies are used throughout. Database changes should be done via migrations.
 
+### C4 Architecture Diagrams
+
+- @../docs/c4/L1-context.md — Layer 1: System Context
+- @../docs/c4/L2-container.md — Layer 2: Container
+- @../docs/c4/L3-api.md — Layer 3: API Components
+- @../docs/c4/L3-dashboard.md — Layer 3: Dashboard Components
+- `docs/c4/database.md` — Database schema
+
 ### Data Flow
 
 1. Dashboard communicates directly with Supabase for auth and CRUD operations
