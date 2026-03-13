@@ -49,3 +49,5 @@ settings.local.json
 
 # C4 extraction artifacts
 docs/c4/components-*.json
+
+andrus-temp/
