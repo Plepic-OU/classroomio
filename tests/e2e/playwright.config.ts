@@ -7,6 +7,7 @@ config(); // loads .env automatically
 export default defineConfig({
   use: {
     baseURL: 'http://localhost:5173',
+    screenshot: 'on',
     trace: 'on-first-retry',
   },
   projects: [
