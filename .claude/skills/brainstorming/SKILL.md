@@ -40,8 +40,7 @@ Start by understanding the current project context, then ask questions one at a 
 - Otherwise, use the default: `docs/plans/YYYY-MM-DD-<topic>-v1.md`
 
 **Validation:**
-- After the design document is written, ask the user: "Want to run `/validate-design-document` on it?"
-- If yes, invoke the `/validate-design-document` skill with the path to the newly created design document
+- After the design document is written, automatically run `/validate-design-document` on it — do not ask first
 
 ## Key Principles
 
