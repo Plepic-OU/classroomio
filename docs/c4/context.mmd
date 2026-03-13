@@ -1,0 +1,29 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#334155', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#475569', 'lineColor': '#2460ec', 'secondaryColor': '#64748b', 'tertiaryColor': '#0f172a', 'edgeLabelBackground': '#0f172a', 'clusterBkg': '#0f172a', 'clusterBorder': '#94a3b8', 'titleColor': '#ffffff', 'nodeTextColor': '#ffffff'}}}%%
+
+flowchart TB
+    student["Student\nEnrolls in courses, completes exercises, views grades"]
+    instructor["Instructor\nCreates courses, manages content, grades students"]
+    admin["Org Admin\nManages organization settings, members, billing"]
+
+    classroomio["ClassroomIO\nOpen-source LMS platform"]:::accent
+
+    subgraph ext ["External Systems"]
+        supabase_auth["Supabase Auth\nAuthentication"]:::external
+        r2["Cloudflare R2\nObject storage"]:::external
+        smtp["SMTP Provider\nEmail delivery"]:::external
+        polar["Polar\nBilling"]:::external
+        unsplash["Unsplash\nStock photos"]:::external
+    end
+
+    student -->|"Takes courses\nHTTPS"| classroomio
+    instructor -->|"Creates and manages courses\nHTTPS"| classroomio
+    admin -->|"Configures organization\nHTTPS"| classroomio
+    classroomio -->|"Authenticates users"| supabase_auth
+    classroomio -->|"Stores/retrieves files\nS3 API"| r2
+    classroomio -->|"Sends emails"| smtp
+    classroomio -->|"Manages subscriptions"| polar
+    classroomio -->|"Fetches images\nREST API"| unsplash
+
+    classDef default fill:#334155,stroke:#475569,color:#ffffff
+    classDef accent fill:#2460ec,stroke:#475569,color:#ffffff,stroke-width:2.5px
+    classDef external fill:#64748b,stroke:#475569,color:#ffffff

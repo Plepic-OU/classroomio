@@ -1,0 +1,61 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#334155', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#475569', 'lineColor': '#2460ec', 'secondaryColor': '#64748b', 'tertiaryColor': '#0f172a', 'edgeLabelBackground': '#0f172a', 'clusterBkg': '#0f172a', 'clusterBorder': '#94a3b8', 'titleColor': '#ffffff', 'nodeTextColor': '#ffffff'}}}%%
+
+flowchart TB
+    subgraph api_container ["API — Hono/TypeScript"]
+        api_root["App Entry\nHono app setup, RPC types\n3 files"]
+        api_config["Config\nEnvironment variables\n1 file"]
+        api_constants["Constants\nApp constants\n3 files"]
+
+        subgraph routing ["Routing"]
+            api_routes["Routes Index\nRoute registration\n1 file"]
+            api_routes_course["Course Routes\nCourse, lesson, clone, KaTeX, presign\n5 files"]
+            api_middlewares["Middlewares\nAuth and rate-limiting\n2 files"]
+        end
+
+        subgraph services ["Services"]
+            api_services["Services\nMail service\n1 file"]
+            api_services_course["Course Services\nCourse cloning logic\n1 file"]
+        end
+
+        subgraph types ["Types"]
+            api_types["Types\nDatabase, mail types\n3 files"]
+            api_types_course["Course Types\nCourse-specific types\n2 files"]
+        end
+
+        subgraph utilities ["Utilities"]
+            api_utils["Utils\nSupabase, S3, email, cert helpers\n10 files"]
+            api_utils_auth["Auth Utils\nAuthentication helpers\n1 file"]
+            api_utils_openapi["OpenAPI\nSpec generation\n1 file"]
+            api_utils_redis["Redis Utils\nRedis client and caching\n3 files"]
+        end
+    end
+
+    db[("Database\nPostgreSQL")]:::external
+    redis_ext["Redis"]:::external
+    r2["Cloudflare R2"]:::external
+    smtp["SMTP"]:::external
+
+    api_root -->|"Registers"| api_routes_course
+    api_root -->|"Registers"| api_routes
+    api_root -->|"Applies"| api_middlewares
+    api_routes_course -->|"Uses helpers"| api_utils
+    api_routes_course -->|"Uses types"| api_types
+    api_routes_course -->|"Applies"| api_middlewares
+    api_routes_course -->|"Delegates"| api_services_course
+    api_middlewares -->|"Uses"| api_utils_redis
+    api_middlewares -->|"Verifies"| api_utils_auth
+    api_middlewares -->|"Reads"| api_constants
+    api_services -->|"Uses helpers"| api_utils
+    api_services_course -->|"Uses helpers"| api_utils
+    api_utils -->|"Uses types"| api_types_course
+    api_utils -->|"Reads config"| api_config
+    api_constants -->|"Reads config"| api_config
+    api_routes -->|"Delegates"| api_services
+
+    api_utils -->|"Reads/Writes"| db
+    api_utils -->|"Uploads files"| r2
+    api_utils -->|"Sends emails"| smtp
+    api_utils_redis -->|"Caches data"| redis_ext
+
+    classDef default fill:#334155,stroke:#475569,color:#ffffff
+    classDef external fill:#64748b,stroke:#475569,color:#ffffff

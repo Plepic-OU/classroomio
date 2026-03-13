@@ -1,0 +1,74 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#334155', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#475569', 'lineColor': '#2460ec', 'secondaryColor': '#64748b', 'tertiaryColor': '#0f172a', 'edgeLabelBackground': '#0f172a', 'clusterBkg': '#0f172a', 'clusterBorder': '#94a3b8', 'titleColor': '#ffffff', 'nodeTextColor': '#ffffff'}}}%%
+
+flowchart TB
+    subgraph dash ["Dashboard — SvelteKit"]
+        subgraph routes ["Routes"]
+            dash_routes["Route Pages\nTop-level layouts\n5 files, 3 Svelte"]
+            dash_routes_org["Org Routes\nOrganization management\n14 files, 7 Svelte"]
+            dash_routes_courses["Course Routes\nCourse detail and management\n27 files, 14 Svelte"]
+            dash_routes_lms["LMS Routes\nStudent learning experience\n2 files, 1 Svelte"]
+            dash_routes_invite["Invite Routes\nStudent and teacher invitations\n4 files, 2 Svelte"]
+            dash_routes_profile["Profile Routes\nUser profile pages\n2 files, 1 Svelte"]
+        end
+
+        subgraph server_api ["Server API Endpoints"]
+            dash_api_courses["API: Courses\nCourse CRUD\n7 files"]
+            dash_api_email["API: Email\nEmail sending\n11 files"]
+            dash_api_completion["API: Completion\nCourse completion\n4 files"]
+            dash_api_analytics["API: Analytics\n2 files"]
+            dash_api_admin["API: Admin\n2 files"]
+            dash_api_polar["API: Polar\nBilling\n3 files"]
+            dash_api_org["API: Org\nOrganization\n2 files"]
+        end
+
+        subgraph components ["UI Components"]
+            dash_comp_course["Course Components\nEditor, lessons, exercises\n65 files, 42 Svelte"]
+            dash_comp_org["Org Components\nSettings, audience, community\n16 files, 14 Svelte"]
+            dash_comp_nav["Navigation\nSidebar, topbar, breadcrumbs\n8 files, 7 Svelte"]
+            dash_comp_page["Page Components\nLayout and page shells\n6 files, 5 Svelte"]
+            dash_comp_apps["App Components\nApp integrations UI\n8 files, 2 Svelte"]
+            dash_comp_landing["Landing Page\nCourse landing page builder\n8 files, 4 Svelte"]
+            dash_comp_question["Question Components\nQuiz question types\n4 files, 3 Svelte"]
+            dash_comp_analytics["Analytics Components\nCharts and dashboards\n4 files, 3 Svelte"]
+        end
+
+        subgraph utils ["Utils and Services"]
+            dash_utils_fn["Utility Functions\nAPI, auth, date, slug, validation\n52 files"]
+            dash_utils_services["Services\nSupabase query services\n21 files"]
+            dash_utils_store["Stores\nSvelte stores: app, user, org state\n5 files"]
+            dash_utils_types["Types\nShared type definitions\n9 files"]
+            dash_utils_constants["Constants\nApp configuration\n9 files"]
+            dash_mail["Mail Templates\nEmail template rendering\n1 file"]
+        end
+    end
+
+    db[("Database\nPostgreSQL")]:::external
+    supabase_auth["Supabase Auth"]:::external
+    ext_api["API Container\nHono"]:::external
+
+    dash_routes_courses -->|"Uses helpers"| dash_utils_fn
+    dash_routes_org -->|"Uses helpers"| dash_utils_fn
+    dash_routes_courses -->|"Queries data"| dash_utils_services
+    dash_routes_org -->|"Queries data"| dash_utils_services
+
+    dash_api_courses -->|"Uses helpers"| dash_utils_fn
+    dash_api_courses -->|"Queries data"| dash_utils_services
+    dash_api_email -->|"Renders templates"| dash_mail
+
+    dash_comp_course -->|"Uses helpers"| dash_utils_fn
+    dash_comp_course -->|"Queries data"| dash_utils_services
+    dash_comp_course -->|"Reads/writes state"| dash_utils_store
+    dash_comp_org -->|"Uses helpers"| dash_utils_fn
+    dash_comp_org -->|"Queries data"| dash_utils_services
+    dash_comp_apps -->|"Uses helpers"| dash_utils_fn
+    dash_comp_landing -->|"Uses helpers"| dash_utils_fn
+
+    dash_utils_services -->|"Uses helpers"| dash_utils_fn
+    dash_utils_services -->|"Updates state"| dash_utils_store
+
+    dash_utils_services -->|"Reads/Writes"| db
+    dash_routes -->|"Auth flows"| supabase_auth
+    dash_routes_courses -->|"API calls"| ext_api
+
+    classDef default fill:#334155,stroke:#475569,color:#ffffff
+    classDef external fill:#64748b,stroke:#475569,color:#ffffff

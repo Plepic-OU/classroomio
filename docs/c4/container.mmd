@@ -1,0 +1,35 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'primaryColor': '#334155', 'primaryTextColor': '#ffffff', 'primaryBorderColor': '#475569', 'lineColor': '#2460ec', 'secondaryColor': '#64748b', 'tertiaryColor': '#0f172a', 'edgeLabelBackground': '#0f172a', 'clusterBkg': '#0f172a', 'clusterBorder': '#94a3b8', 'titleColor': '#ffffff', 'nodeTextColor': '#ffffff'}}}%%
+
+flowchart TB
+    user["User\nStudent, Instructor, or Org Admin"]
+
+    subgraph sys ["ClassroomIO"]
+        dashboard["Dashboard\nSvelteKit\nCourses, LMS, org management"]
+        api["API\nHono/TypeScript\nCourse ops, mail, file uploads"]
+        db[("Database\nPostgreSQL via Supabase\nUsers, orgs, courses, lessons, grades")]
+        edge_fn["Edge Functions\nDeno/Supabase\nNotifications, grade processing"]
+        redis["Cache\nRedis\nRate limiting and data caching"]
+    end
+
+    subgraph ext ["External Systems"]
+        supabase_auth["Supabase Auth\nAuthentication"]:::external
+        r2["Cloudflare R2\nObject storage"]:::external
+        smtp["SMTP\nEmail delivery"]:::external
+        polar["Polar\nBilling"]:::external
+        unsplash["Unsplash\nStock photos"]:::external
+    end
+
+    user -->|"Uses\nHTTPS"| dashboard
+    dashboard -->|"Reads/Writes\nSupabase JS Client"| db
+    dashboard -->|"API calls\nHTTPS/RPC"| api
+    dashboard -->|"Auth flows"| supabase_auth
+    dashboard -->|"Billing flows\nREST API"| polar
+    dashboard -->|"Fetches images"| unsplash
+    api -->|"Reads/Writes\nSupabase Client"| db
+    api -->|"Uploads files\nS3 presigned URLs"| r2
+    api -->|"Sends emails\nSMTP"| smtp
+    api -->|"Caches data\nRedis protocol"| redis
+    edge_fn -->|"Reads/Writes\nSupabase Client"| db
+
+    classDef default fill:#334155,stroke:#475569,color:#ffffff
+    classDef external fill:#64748b,stroke:#475569,color:#ffffff

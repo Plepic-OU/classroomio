@@ -43,3 +43,7 @@ vite.config.ts*.mjs
 # devcontainer secrets
 .devcontainer/github-token
 settings.local.json
+
+# c4 extraction artifacts
+docs/c4/components.json
+docs/c4/*.svg

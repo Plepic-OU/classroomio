@@ -2,7 +2,7 @@
 name: push
 description: Stage, commit, and push local changes to remote. Use when user says "push", "push changes", "push my work", "git push", or "save and push".
 metadata:
-  version: 1.0.0
+  version: 1.1.0
   category: git
 ---
 
@@ -29,11 +29,27 @@ Run these commands in parallel to understand the current state:
 
 If there are no changes to commit, inform the user and stop.
 
-### Step 3: Stage Files
+### Step 3: Update C4 Docs If Needed
+
+Check if any staged or unstaged changes affect the component structure of the Dashboard or API:
+
+```bash
+git diff --name-only HEAD | grep -E '^apps/(dashboard|api)/src/'
+```
+
+If there are matching files (new files added, files moved/deleted, or directory structure changes), regenerate the C4 Layer 3 diagrams:
+
+1. Run the extraction: `pnpm tsx .claude/skills/c4/extract-components.ts --depth-dashboard 3 --depth-api 2 2>/dev/null > docs/c4/components.json`
+2. Read the JSON output and regenerate `docs/c4/component-dashboard.md` and/or `docs/c4/component-api.md` following the instructions in `.claude/skills/c4/SKILL.md` Step 4, Level 3
+3. Only regenerate the diagram for the app that had changes (dashboard, api, or both)
+
+Skip this step if changes are only to file contents (not structure) — e.g., edits within existing files don't change the component map.
+
+### Step 4: Stage Files
 
 Stage ALL modified and untracked files using `git add -A` to commit everything in the local working tree. This ensures no changes are left behind.
 
-### Step 4: Write Commit Message
+### Step 5: Write Commit Message
 
 - Summarize the nature of the changes (new feature, bug fix, refactor, etc.)
 - Keep it concise (1-2 sentences)
@@ -42,7 +58,7 @@ Stage ALL modified and untracked files using `git add -A` to commit everything i
 - ALWAYS append ", great succes no.N!" to the end of the commit message (before any trailers like Co-Authored-By), where N is the next number in sequence
 - To determine N: run `git log --all --oneline --grep="great succes no." | grep -oP 'great succes no\.\K[0-9]+' | sort -rn | head -1` to find the highest existing number, then use that + 1. If no previous number is found, start at 1.
 
-### Step 5: Commit
+### Step 6: Commit
 
 Create the commit using a HEREDOC for proper formatting:
 
@@ -55,7 +71,7 @@ EOF
 )"
 ```
 
-### Step 6: Push to Remote
+### Step 7: Push to Remote
 
 Push the current branch to the remote:
 
@@ -63,7 +79,7 @@ Push the current branch to the remote:
 git push -u origin HEAD
 ```
 
-### Step 7: Verify
+### Step 8: Verify
 
 Run `git status` after pushing to confirm success. Report the push result to the user.
 

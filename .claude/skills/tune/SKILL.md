@@ -1,6 +1,7 @@
 ---
 name: tune
 description: Create or modify Claude Code skills and CLAUDE.md guides. Use when user says "tune", "create skill", "modify skill", "update claude.md", or wants to adjust project instructions.
+argument-hints: "<skill-name | claude.md> > <description>"
 metadata:
   version: 1.0.0
   category: meta
