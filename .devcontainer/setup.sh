@@ -45,6 +45,9 @@ fi
 sudo chmod -R g+w /usr/local/share/npm-global/lib/node_modules/@anthropic-ai/
 sudo chmod -R g+w /usr/local/share/npm-global/bin/
 
+echo "==> Installing e2e test dependencies..."
+(cd tests/e2e && pnpm install && pnpm exec playwright install --with-deps chromium)
+
 echo "==> Running turbo prepare..."
 pnpm turbo prepare
 
