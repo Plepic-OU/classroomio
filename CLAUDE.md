@@ -74,11 +74,11 @@ supabase db reset # reapply all migrations and seed data
 
 ## C4 Architecture Diagrams
 
-- @docs/c4/L1-system-context.md — Layer 1: system context
-- @docs/c4/L2-containers.md — Layer 2: containers
-- @docs/c4/L3-dashboard-ui.md — Layer 3: Dashboard UI components & routes
-- @docs/c4/L3-dashboard-services.md — Layer 3: Dashboard service & utility layer
-- @docs/c4/L3-api.md — Layer 3: API server components
+- [@docs/c4/L1-system-context.md](docs/c4/L1-system-context.md) — Layer 1: system context
+- [@docs/c4/L2-containers.md](docs/c4/L2-containers.md) — Layer 2: containers
+- [@docs/c4/L3-dashboard-ui.md](docs/c4/L3-dashboard-ui.md) — Layer 3: Dashboard UI components & routes
+- [@docs/c4/L3-dashboard-services.md](docs/c4/L3-dashboard-services.md) — Layer 3: Dashboard service & utility layer
+- [@docs/c4/L3-api.md](docs/c4/L3-api.md) — Layer 3: API server components
 - [Database schema](docs/c4/database.md) — requires `supabase start` to populate
 
 ## Architecture
