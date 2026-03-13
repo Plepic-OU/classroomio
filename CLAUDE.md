@@ -72,6 +72,15 @@ supabase db reset # reapply all migrations and seed data
 3. Local Supabase Studio is at `http://localhost:54323`.
 4. Demo login: `admin@test.com` / `123456` at `http://localhost:5173/login`.
 
+## C4 Architecture Diagrams
+
+- @docs/c4/L1-system-context.md — Layer 1: system context
+- @docs/c4/L2-containers.md — Layer 2: containers
+- @docs/c4/L3-dashboard-ui.md — Layer 3: Dashboard UI components & routes
+- @docs/c4/L3-dashboard-services.md — Layer 3: Dashboard service & utility layer
+- @docs/c4/L3-api.md — Layer 3: API server components
+- [Database schema](docs/c4/database.md) — requires `supabase start` to populate
+
 ## Architecture
 
 ### Two User Contexts in One SvelteKit App

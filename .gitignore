@@ -42,3 +42,6 @@ vite.config.ts*.mjs
 
 # Local GitHub token for devcontainer auth (never commit)
 .devcontainer/github-token
+
+# C4 architecture skill — intermediate JSON (regenerated on each run)
+docs/c4/_*.json
