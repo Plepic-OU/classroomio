@@ -1,23 +1,41 @@
 ---
 name: validate-design-document
 description: "Validate a design document by spawning project-specific expert subagents in parallel. Use after writing a design document."
+metadata:
+  version: 2.0.0
+  category: quality
 ---
 
 # Validate Design Document
 
 ## Overview
 
-Validate a ClassroomIO design document by spawning specialized expert subagents in parallel. Each expert reviews the document from their domain perspective and reports Critical / Warning / Note findings.
+Validate a ClassroomIO design document by spawning specialized expert subagents in parallel. Each expert reviews the document from their domain perspective and reports Critical / Warning / Note findings. Results are applied interactively, producing a new versioned copy of the document.
 
 ## Input
 
-The design document path. If not provided, find the most recent file in `docs/plans/`.
+The design document path. Supports three resolution modes:
 
-## Step 1: Select Relevant Validators
+1. **Exact path** — e.g., `docs/plans/2026-03-13-bdd-playwright-v1.md`
+2. **Fuzzy search** — e.g., `bdd`, `playwright`, `auth`. Search `docs/plans/` for files whose name contains the query (case-insensitive). If multiple matches, list them and ask the user to pick one.
+3. **No argument** — find the most recent file in `docs/plans/` by modification time.
 
-Read the design document. Then decide which of the 8 validators below are relevant based on what the design touches. **If in doubt, include the validator.** Most designs will need 4-6 validators. Only skip a validator when the design clearly has zero overlap with its domain.
+## Step 1: Resolve Document & Determine Version
 
-### The 8 Validators
+1. Resolve the input to a single file using the rules above.
+2. Detect the current version from the filename:
+   - Pattern: `*-v<N>.md` (e.g., `-v1.md`, `-v2.md`)
+   - If no version suffix, treat as v0
+3. The **output file** will be the same base name with the next version number:
+   - `2026-03-13-bdd-playwright-v1.md` → `2026-03-13-bdd-playwright-v2.md`
+   - `2026-03-13-bdd-playwright-v2.md` → `2026-03-13-bdd-playwright-v3.md`
+   - `my-design.md` (no version) → `my-design-v1.md`
+
+## Step 2: Select Relevant Validators
+
+Read the design document. Then decide which of the 9 validators below are relevant based on what the design touches. **If in doubt, include the validator.** Most designs will need 4-6 validators. Only skip a validator when the design clearly has zero overlap with its domain.
+
+### The 9 Validators
 
 | # | Validator | Prompt file | When to include |
 |---|-----------|-------------|-----------------|
@@ -31,7 +49,7 @@ Read the design document. Then decide which of the 8 validators below are releva
 | 8 | Simplifier | `validators/simplifier.md` | **Always include** (cuts unnecessary complexity) |
 | 9 | General Design Quality | `validators/general-design-quality.md` | **Always include** (catches what specialists miss) |
 
-## Step 2: Spawn Validators in Parallel
+## Step 3: Spawn Validators in Parallel
 
 For each selected validator:
 
@@ -45,7 +63,7 @@ Spawn **all selected validators in a single message** so they run in parallel.
 
 Every validator prompt includes a "Context7" section instructing the agent to use the Context7 MCP (`mcp__context7__resolve-library-id` and `mcp__context7__get-library-docs`) to look up current documentation before reviewing. This ensures validators work with up-to-date API knowledge, not stale training data.
 
-## Step 3: Triage and Apply Results
+## Step 4: Triage Results
 
 After all validators complete, classify every finding into one of three buckets:
 
@@ -56,13 +74,9 @@ A finding is auto-apply when ALL of these are true:
 - No other validator contradicts it
 - It does not change the design's scope, architecture, or business requirements
 
-**Action:** Apply these changes to the design document immediately. Then list what was changed so the user is informed.
-
 ### Bucket B: Conflicts (validators disagree)
 
 Two or more validators give contradictory recommendations (e.g., one says add an API endpoint, another says use a direct Supabase call; one says add a component, simplifier says reuse an existing one).
-
-**Action:** Present each conflict with the competing recommendations side by side. Ask the user to decide.
 
 ### Bucket C: Needs user input (uncertain or significant)
 
@@ -71,36 +85,60 @@ A finding that:
 - Could go either way — reasonable arguments on both sides
 - Is a WARNING/NOTE where the right call depends on context you don't have
 
-**Action:** List these and ask the user which to accept, reject, or modify.
+## Step 5: Interactive Update Mode
 
-### Output Format
+Present results and walk through fixes one by one. This replaces the old bulk-apply approach.
 
-Present results in this order:
+### 5a: Show Summary
 
 ```
 ## Design Validation Results
 
+**Document:** <input file> → <output file (next version)>
 **Validators run:** [list]
 **Validators skipped:** [list with reasons]
-
-### Auto-applied changes
-- [change 1] — [which validator(s)]
-- [change 2] — [which validator(s)]
-- ...
-
-### Conflicts (need your decision)
-
-**Conflict 1: [topic]**
-- [Validator A] recommends: ...
-- [Validator B] recommends: ...
-
-**Conflict 2: [topic]**
-- ...
-
-### Recommendations needing your input
-- [finding 1] — [severity] — [which validator]
-- [finding 2] — [severity] — [which validator]
-- ...
+**Findings:** X auto-apply, Y conflicts, Z need input
 ```
 
-After the user responds to Buckets B and C, apply the accepted changes to the design document.
+### 5b: Copy Source to Next Version
+
+Before applying any changes, copy the input document to the output version path. All edits are applied to the new version file — the original is never modified.
+
+**One version bump per session:** If the output version file already exists (i.e., this skill was already run in this conversation), reuse it — do NOT increment again. Only create a new version file on the first run.
+
+### 5c: Walk Through Fixes
+
+Present findings **one at a time** in priority order: Critical → Warning → Note. For each finding:
+
+```
+### [N/total] [severity] — [topic]
+**Validator:** [which validator(s)]
+**Bucket:** [A: auto-apply | B: conflict | C: needs input]
+
+[description of the finding and recommended change]
+
+> Apply? (y/n/edit)
+```
+
+- **Bucket A findings:** Default is apply. Show what will change and say "Applying (auto). Reply 'n' to skip." — then apply immediately unless the user objects.
+- **Bucket B findings (conflicts):** Show both sides, ask user to pick one or skip.
+- **Bucket C findings:** Present the recommendation, ask user to accept, reject, or modify.
+
+User responses:
+- **y** or no response for auto-apply — apply the fix to the new version file
+- **n** — skip, move to next finding
+- **edit** — user provides modified version of the fix, apply that instead
+
+### 5d: Completion
+
+After all findings are processed:
+
+```
+## Done
+
+**Output:** <path to new version file>
+**Applied:** X of Y findings
+**Skipped:** Z findings
+```
+
+List which findings were applied and which were skipped.
