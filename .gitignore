@@ -39,3 +39,12 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+
+# Claude hook tool inputs
+.claude/tool-inputs/
+
+# GitHub token (never commit)
+.devcontainer/github-token
+
+# C4 AST extraction output (generated, not committed)
+docs/c4/components-*.json

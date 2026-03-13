@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Architecture (C4 Model)
+
+- @docs/c4/l1-context.md
+- @docs/c4/l2-containers.md
+- @docs/c4/l3-dashboard.md
+- @docs/c4/l3-api.md
+
+Database schema: docs/c4/database.md
+
 ## Project Overview
 
 ClassroomIO is an open-source LMS (Learning Management System) for companies, bootcamps, and educators. It's a **pnpm monorepo** using **Turbo** for task orchestration.

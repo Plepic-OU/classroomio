@@ -138,8 +138,7 @@ function extractApp(app: AppConfig): void {
   // Use ts-morph Project — add only .ts/.js files (not .svelte)
   const project = new Project({
     tsConfigFilePath: tsconfigPath,
-    addFilesFromTsConfig: false,
-    skipFileDependencyResolution: true,
+    skipAddingFilesFromTsConfig: true,
   });
 
   // Glob TS/JS files manually

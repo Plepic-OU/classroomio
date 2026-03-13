@@ -1,0 +1,39 @@
+Day 2 - task 2 - design doc for end-to-end tests
+
+Goals:
+
+  - [ ] 0. Commit the progress of previous steps
+
+  - [ ] 1. Copy the brainstorming skill to the project, unpack and place into project skills directory (https://drive.google.com/file/d/1rO3eqvZiJO3bqIze9m8lqAQK4-VpbKZx)
+
+  - [ ] 2. Use /brainstorming skill: Goal is to create design document for initial setup for BDD tests using gherkin and playwright. Initial scope is to implement only 2 flows: login and course creation flow. Playwright has a web based dashboard, we want to see that from the host machine.
+
+    * Remember to restart claude when adding new skill.
+
+  - [ ] 3. Copy the validate-design-document skill to the project, unpack and place into project skills directory (https://drive.google.com/file/d/14xGf770kwVsbWerLVLpaOSbUjCxLWr5z)
+
+  - [ ] 4. Make a copy of the design document for comparison later. Then use the "/validate-design-document" skill to validate the design doc. Answer the questions etc. When done, compare the design docs, what has changed?
+
+  - [ ] 5. Update brainstorming skill to invoke the design document validation every time the document is written.
+
+
+Optional advanced goals:
+
+  - [ ] o1. Set up the validation using agent teams
+
+    Run the agent team inside "tmux"
+
+    Details: https://code.claude.com/docs/en/agent-teams
+
+  - [ ] o2. Create claude marketplace with the skills as a separate github repository. So you have share with other students.
+
+  - [ ] o3. Visualize the skills and agents flow
+
+  - [ ] o4. Create a skill for scoring the plans
+    ​​General score (e.g 1-5 or 0%-100% is not advised)
+
+    ​​Rather list true/false attributes and let AI assess if each attribute exists or not.
+
+    ​​Try both approaches and see how they work.
+
+    ​​Test with comparing plans created with opus, sonnet and haiku

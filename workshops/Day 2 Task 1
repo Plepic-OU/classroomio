@@ -6,17 +6,17 @@ Goals
   - [x] 1. create a skill that creates or updates C4 model of current project. First 3 levels only. Use the prompt provided to generate it.
     *Optional advanced challenge: Don't copy the prompt, rather build it yourself.
 
-  - [ ] 2. Restart claude and create the C4 model. Check that the C4 makes sense
+  - [x] 2. Restart claude and create the C4 model. Check that the C4 makes sense
 
-  - [ ] 3.Add the links to CLAUDE.md
+  - [x] 3.Add the links to CLAUDE.md
      The C4 layers should be added with @../filename.md
      Link database without using @
 
 Optional Advanced Goals
   - [ ] o1. instead of mermaid use DOT language for graphs, experiment with layouts
   - [ ] o2. find what's missing from current C4 model and add that to the skill
-  - [ ] o3.make database schema smaller, but keep the information
-  - [ ] o4.create skill to create test coverage report for the project from functionality perspective (not lines of code).
+  - [ ] o3. make database schema smaller, but keep the information
+  - [ ] o4. create skill to create test coverage report for the project from functionality perspective (not lines of code).
 
 ---------------------------------------------------------------------------
 Prompt here:
