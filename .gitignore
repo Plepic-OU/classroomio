@@ -39,3 +39,6 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+
+# GitHub token for devcontainer — never commit
+.devcontainer/github-token
