@@ -8,6 +8,14 @@ ClassroomIO is an open-source Learning Management System (LMS). It's a pnpm mono
 
 ## Architecture
 
+### C4 Diagrams
+
+- L1 System Context: @../docs/c4/L1-context.md
+- L2 Containers: @../docs/c4/L2-container.md
+- L3 Dashboard Components: @../docs/c4/L3-dashboard.md
+- L3 API Components: @../docs/c4/L3-api.md
+- Database Schema: docs/c4/database.md
+
 ### Apps (`apps/`)
 
 - **dashboard** (`@cio/dashboard`): Main LMS web app (SvelteKit + Svelte 4 + TailwindCSS + Carbon Design). Runs on port 5173. Uses `@sveltejs/adapter-node` for production builds.

@@ -45,3 +45,6 @@ vite.config.ts*.mjs
 
 # devcontainer secrets
 .devcontainer/github-token
+
+# C4 model AST extraction output
+docs/c4/components.json
