@@ -1,0 +1,16 @@
+Day 2 - Task 3 - compare models for validation
+
+Goals:
+
+  - [ ] 0. Commit the progress of previous steps
+
+  - [ ] 1. Create general purpose agents into the project, one with haiku, one with sonnet and one with opus
+
+  - [ ] 2. Validate the original plan with all three agents and compare the findings.
+
+
+Optional advanced goals
+
+  - [ ] o1. The agents frontmatter cannot set the thinking effort for opus. Figure out a way how to do validation with specific thinking effort. Then compare the results with different thinking effort.
+
+  - [ ] o2. Use some other AI for validation (e.g. codex). Compare results with Claude Code
