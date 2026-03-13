@@ -1,0 +1,11 @@
+{
+  "name": "c4-extractor",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "C4 component extractor for ClassroomIO (skill dependency bundle)",
+  "dependencies": {
+    "ts-morph": "^24.0.0",
+    "tsx": "^4.19.1"
+  }
+}

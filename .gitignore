@@ -42,3 +42,6 @@ vite.config.ts*.mjs
 
 # GitHub token for devcontainer — never commit
 .devcontainer/github-token
+# C4 skill — intermediate JSON artifacts and isolated node_modules
+docs/c4/*-components.json
+.claude/skills/c4-model/node_modules/
