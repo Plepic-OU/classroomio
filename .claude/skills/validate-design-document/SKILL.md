@@ -31,15 +31,59 @@ Read the design document. Then decide which of the 8 validators below are releva
 | 8 | Simplifier | `validators/simplifier.md` | **Always include** (cuts unnecessary complexity) |
 | 9 | General Design Quality | `validators/general-design-quality.md` | **Always include** (catches what specialists miss) |
 
-## Step 2: Spawn Validators in Parallel
+## Step 2: Spawn Validators as a tmux Agent Team
 
-For each selected validator:
+Run all selected validators in parallel as separate `claude` processes, one per tmux window.
 
-1. **Read** its prompt file from the `validators/` directory (paths are relative to this skill: `.claude/skills/validate-design-document/`)
-2. **Replace** `{PATH}` in the prompt with the actual design document path
-3. **Spawn** as a parallel foreground agent using `subagent_type: "general-purpose"`
+### 2a — Write prompt files
 
-Spawn **all selected validators in a single message** so they run in parallel.
+For each selected validator, read its prompt file from `.claude/skills/validate-design-document/validators/`, replace `{PATH}` with the actual design document path, and write the result to a temp file:
+
+```bash
+# Example for one validator — repeat for each selected validator
+cat .claude/skills/validate-design-document/validators/e2e-tests.md \
+  | sed 's|{PATH}|/path/to/design.md|g' \
+  > /tmp/cio-validate-e2e-tests.txt
+```
+
+### 2b — Create the tmux session
+
+```bash
+tmux new-session -d -s cio-validate -x 220 -y 50
+```
+
+### 2c — Spawn one window per validator
+
+For each validator `NAME` (e.g. `e2e-tests`, `devcontainer`, `simplifier`):
+
+```bash
+tmux new-window -t cio-validate: -n NAME
+tmux send-keys -t cio-validate:NAME \
+  "claude -p < /tmp/cio-validate-NAME.txt > /tmp/cio-result-NAME.txt 2>&1; touch /tmp/cio-done-NAME" \
+  Enter
+```
+
+### 2d — Wait for all agents to finish
+
+Poll until every validator has written its done marker:
+
+```bash
+TOTAL=N  # number of selected validators
+while [ "$(ls /tmp/cio-done-* 2>/dev/null | wc -l)" -lt "$TOTAL" ]; do
+  sleep 3
+done
+```
+
+### 2e — Collect results and clean up
+
+```bash
+# Read all results
+for f in /tmp/cio-result-*.txt; do echo "=== $f ==="; cat "$f"; done
+
+# Kill session and remove temp files
+tmux kill-session -t cio-validate
+rm -f /tmp/cio-validate-*.txt /tmp/cio-result-*.txt /tmp/cio-done-*
+```
 
 ### Context7 Requirement
 
