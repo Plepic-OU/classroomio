@@ -1,0 +1,16 @@
+{
+  "name": "c4-model",
+  "version": "1.0.0",
+  "private": true,
+  "description": "C4 architecture extraction and diagram generation for ClassroomIO",
+  "scripts": {
+    "extract": "tsx extract.ts",
+    "generate": "tsx generate-diagrams.ts",
+    "db-schema": "bash db-schema.sh",
+    "c4": "tsx extract.ts && tsx generate-diagrams.ts"
+  },
+  "dependencies": {
+    "ts-morph": "^24.0.0",
+    "tsx": "^4.19.0"
+  }
+}

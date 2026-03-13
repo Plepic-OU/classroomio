@@ -40,5 +40,10 @@ vite.config.ts*.mjs
 
 .pnpm-store/*
 
+# C4 skill — intermediate output and local install artifacts
+.claude/skills/c4-model/output/
+.claude/skills/c4-model/node_modules/
+.claude/skills/c4-model/pnpm-lock.yaml
+
 # GitHub auth token (never commit)
 .devcontainer/github-token
