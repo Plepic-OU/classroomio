@@ -42,6 +42,7 @@ vite.config.ts*.mjs
 docs/c4/extracted-components.json
 
 .pnpm-store/*
+tmp-rain/*
 
 # Claude Code hook traces
 .claude/tool-traces/
