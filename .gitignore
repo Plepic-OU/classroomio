@@ -51,3 +51,6 @@ vite.config.ts*.mjs
 .devcontainer/github-token
 # C4 architecture extractor output
 docs/c4/extracted.json
+
+# Windows Alternate Data Streams (created in WSL)
+*:Zone.Identifier

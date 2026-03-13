@@ -98,6 +98,7 @@ export default defineConfig({
   webServer: {
     command: 'pnpm dev --filter=@cio/dashboard',
     url: process.env.BASE_URL ?? 'http://localhost:5173',
+    cwd: '../../', // must run from monorepo root so Turborepo can find turbo.json
     reuseExistingServer: true, // use already-running dev server if available
   },
   projects: [
@@ -188,22 +189,23 @@ export class CoursePage {
     await this.page.getByRole('button', { name: /live class|self paced/i }).first().click();
     await this.page.getByRole('button', { name: /next/i }).click();
 
-    // Step 1: fill in course name and submit
-    // Label from i18n: "Course name"
+    // Step 1: fill in course name + required short description, then submit
+    // Labels from i18n: "Course name" / "Short Description"
     await this.page.getByLabel('Course name').fill(title);
+    await this.page.getByLabel('Short Description').fill('Test course description');
     await this.page.getByRole('button', { name: /finish/i }).click();
   }
 
   async getCourseNames(): Promise<string[]> {
     // data-testid="course-title" must be added to the course card component in the dashboard
-    // Target: apps/dashboard/src/lib/components/Course/Card/index.svelte
+    // Target: apps/dashboard/src/lib/components/Courses/components/Card/index.svelte
     return this.page.getByTestId('course-title').allTextContents();
   }
 }
 ```
 
 > **Dashboard change required:** Add `data-testid="course-title"` to the course title element in
-> `apps/dashboard/src/lib/components/Course/Card/index.svelte` (currently renders as `<h3 class="title">{title}</h3>`
+> `apps/dashboard/src/lib/components/Courses/components/Card/index.svelte` (currently renders as `<h3 class="title">{title}</h3>`
 > with no test ID).
 
 ---
@@ -222,7 +224,7 @@ export const test = base.extend<{
   orgSlug: string;
 }>({
   // orgSlug must be known — seed data should document the local org siteName
-  orgSlug: [process.env.ORG_SLUG ?? 'test-org', { option: true }],
+  orgSlug: [process.env.ORG_SLUG ?? 'udemy-test', { option: true }],
   loginPage: async ({ page }, use) => use(new LoginPage(page)),
   coursePage: async ({ page, orgSlug }, use) => use(new CoursePage(page, orgSlug)),
 });
@@ -258,6 +260,14 @@ This exposes the Playwright UI dashboard at `http://localhost:9323` on the host 
 
 ---
 
+## Monorepo Registration
+
+Add `apps/e2e` to `pnpm-workspace.yaml` so pnpm resolves `@cio/e2e` as a workspace package.
+The file already has `apps/*` as a glob, so **no change is needed** — `apps/e2e` is automatically included.
+Verify with: `pnpm --filter=@cio/e2e exec pwd` (should print the `apps/e2e` path).
+
+---
+
 ## Turborepo Integration
 
 Add inside the existing `"pipeline"` block in `turbo.json` (do **not** add as a sibling to `"pipeline"`):
@@ -279,7 +289,7 @@ Add inside the existing `"pipeline"` block in `turbo.json` (do **not** add as a 
 ```bash
 # apps/e2e/.env.example
 BASE_URL=http://localhost:5173
-ORG_SLUG=test-org   # local Supabase seed org siteName
+ORG_SLUG=udemy-test  # local Supabase seed org siteName (from supabase/seed.sql)
 ```
 
 Testers copy to `.env` and override `BASE_URL` to point at staging when needed.
