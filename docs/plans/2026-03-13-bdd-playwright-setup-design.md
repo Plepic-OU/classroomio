@@ -48,8 +48,7 @@ tests/e2e/
   "private": true,
   "devDependencies": {
     "@playwright/test": "^1.53.0",
-    "playwright-bdd": "^8.x",
-    "dotenv": "^16.x"
+    "playwright-bdd": "^8.x"
   },
   "scripts": {
     "test": "bddgen && playwright test",
@@ -84,9 +83,8 @@ packages:
 ```typescript
 import { defineConfig, devices } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
-import * as dotenv from 'dotenv';
 
-dotenv.config();
+// No dotenv import needed — Playwright 1.35+ reads .env natively.
 
 const testDir = defineBddConfig({
   features: 'features/**/*.feature',
@@ -108,7 +106,7 @@ export default defineConfig({
 });
 ```
 
-> `fullyParallel: false` — course creation flow depends on login completing first; sequential execution avoids flaky shared state.
+> `fullyParallel: false` — tests write real records to Supabase; sequential execution reduces cross-scenario database conflicts at this early scope. Note: each feature already runs in its own browser context, so this is a database-isolation concern, not a login-sequencing one. Re-enable when a cleanup/reset strategy is in place.
 
 **`tests/e2e/.env.example`:**
 ```
@@ -145,8 +143,8 @@ export class LoginPage {
   }
 
   async login(email: string, password: string) {
-    await this.page.getByLabel('Email').fill(email);
-    await this.page.getByLabel('Password').fill(password);
+    await this.page.getByLabel('Your email').fill(email);
+    await this.page.getByLabel('Your password').fill(password);
     await this.page.getByRole('button', { name: 'Log In' }).click();
   }
 
@@ -168,12 +166,12 @@ export class CoursePage {
   }
 
   async fillDetails(title: string, description: string) {
-    await this.page.getByLabel('Title').fill(title);
-    await this.page.getByLabel('Description').fill(description);
+    await this.page.getByLabel('Course name').fill(title);
+    await this.page.getByLabel('Short Description').fill(description);
   }
 
   async submit() {
-    await this.page.getByRole('button', { name: 'Create' }).click();
+    await this.page.getByRole('button', { name: 'Finish' }).click();
   }
 
   async expectCourseVisible(title: string) {
