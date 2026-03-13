@@ -98,5 +98,9 @@ Supabase (Postgres) is the sole database and auth provider. Migrations live in `
 - **Dashboard** (`apps/dashboard/.env.example`): `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `PRIVATE_SUPABASE_SERVICE_ROLE`, `PUBLIC_SERVER_URL` (points to API), `OPENAI_API_KEY`, `PUBLIC_IS_SELFHOSTED`.
 - **API** (`apps/api/.env.example`): `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `PRIVATE_SUPABASE_SERVICE_ROLE`, Cloudflare S3 credentials (for video uploads), SMTP credentials (for email).
 
+### C4 architecture diagrams
+
+Run `/c4-model` to generate or update the C4 model diagrams in `docs/c4/`. The skill uses ts-morph AST extraction (`extract.ts`) to derive Layer 3 components from source, and `db-schema.mjs` to extract the database schema from the running local Supabase instance.
+
 ### Self-hosting flag
 `PUBLIC_IS_SELFHOSTED=true` disables plan/billing checks in the dashboard. The `isFreePlan` store short-circuits to `false` when self-hosted.

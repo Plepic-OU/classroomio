@@ -1,0 +1,17 @@
+{
+  "name": "c4-model-extractor",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "extract": "tsx extract.ts",
+    "db-schema": "node db-schema.mjs"
+  },
+  "dependencies": {
+    "ts-morph": "^20.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.1",
+    "@types/node": "^20.0.0"
+  }
+}
