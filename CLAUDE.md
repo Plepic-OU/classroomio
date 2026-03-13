@@ -45,6 +45,14 @@ pnpm dev:container  # Runs all apps concurrently using `concurrently`
 
 ## Architecture
 
+### C4 Diagrams
+
+- @../docs/c4/l1-system-context.md
+- @../docs/c4/l2-containers.md
+- @../docs/c4/l3-dashboard.md
+- @../docs/c4/l3-api.md
+- [Database schema](../docs/c4/database.md)
+
 ### Apps
 
 | App | Package | Tech | Port | Purpose |

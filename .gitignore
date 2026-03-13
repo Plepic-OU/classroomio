@@ -49,3 +49,5 @@ vite.config.ts*.mjs
 
 # GitHub auth token for devcontainer
 .devcontainer/github-token
+# C4 architecture extractor output
+docs/c4/extracted.json
