@@ -37,11 +37,11 @@ Start by understanding the current project context, then ask questions one at a 
 **Documentation:**
 - Check if the project's CLAUDE.md defines a temporary files directory (look for patterns like `task_plans/`, `temp/`, or similar directories mentioned for development plans, scratchbooks, or task-related files)
 - If a project-specific directory is defined, use that location for the design document
-- Otherwise, use the default: `docs/plans/YYYY-MM-DD-<topic>-design.md`
+- Otherwise, use the default: `docs/plans/YYYY-MM-DD-<topic>-v1.md`
 
-~~**Implementation:**
-- Ask user: "Ready to set up for implementation?"
-- Act depending on the answer~~
+**Validation:**
+- After the design document is written, ask the user: "Want to run `/validate-design-document` on it?"
+- If yes, invoke the `/validate-design-document` skill with the path to the newly created design document
 
 ## Key Principles
 
