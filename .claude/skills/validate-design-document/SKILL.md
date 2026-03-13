@@ -131,7 +131,7 @@ User responses:
 
 ### 5d: Completion
 
-After all findings are processed:
+After all findings are processed, show a summary of everything that changed between the input and output versions:
 
 ```
 ## Done
@@ -139,6 +139,15 @@ After all findings are processed:
 **Output:** <path to new version file>
 **Applied:** X of Y findings
 **Skipped:** Z findings
+
+### Changes summary
+1. [Section: ...] — [what changed and why] — [validator]
+2. [Section: ...] — [what changed and why] — [validator]
+...
+
+### Skipped findings
+1. [topic] — [reason skipped] — [validator]
+...
 ```
 
-List which findings were applied and which were skipped.
+This gives the user a complete picture of how the new version differs from the original without needing to diff the files manually.
