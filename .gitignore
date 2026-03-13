@@ -40,5 +40,8 @@ vite.config.ts*.mjs
 
 .pnpm-store/*
 
+# devcontainer secrets
+.devcontainer/github-token
+
 # C4 model extraction artifacts
 docs/c4/extracted-components.json
