@@ -43,3 +43,4 @@ vite.config.ts*.mjs
 # devcontainer secrets
 .devcontainer/github-token
 .claude/hook-logs
+docs/c4/extracted-structure.json

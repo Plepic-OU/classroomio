@@ -49,6 +49,13 @@ supabase db reset                     # Reset DB and re-run all migrations
 
 ## Architecture
 
+@docs/c4/c4-context.md
+@docs/c4/c4-container.md
+@docs/c4/c4-component-dashboard.md
+@docs/c4/c4-component-api.md
+
+Database schema reference: `docs/c4/database.md`
+
 ### Monorepo Structure
 
 | Package | Tech | Purpose |
