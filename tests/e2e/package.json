@@ -1,0 +1,15 @@
+{
+  "name": "@cio/e2e",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "test": "bddgen && playwright test",
+    "test:report": "playwright show-report --host 0.0.0.0 --port 9323",
+    "clean": "rm -rf playwright-report .features-gen dist"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.53.0",
+    "playwright-bdd": "^8.0.0",
+    "tsconfig": "workspace:*"
+  }
+}

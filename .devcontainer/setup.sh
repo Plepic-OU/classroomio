@@ -8,7 +8,7 @@ echo "==> Installing dependencies..."
 pnpm install
 
 # Copy .env.example -> .env for each app (skip if .env already exists)
-for app in apps/dashboard apps/api apps/classroomio-com; do
+for app in apps/dashboard apps/api apps/classroomio-com tests/e2e; do
   if [ -f "$app/.env.example" ] && [ ! -f "$app/.env" ]; then
     echo "==> Creating $app/.env from .env.example"
     cp "$app/.env.example" "$app/.env"
@@ -44,6 +44,9 @@ fi
 # Fix claude code permissions for auto updater
 sudo chmod -R g+w /usr/local/share/npm-global/lib/node_modules/@anthropic-ai/
 sudo chmod -R g+w /usr/local/share/npm-global/bin/
+
+echo "==> Installing Playwright browsers..."
+pnpm --filter=@cio/e2e exec playwright install --with-deps chromium
 
 echo "==> Running turbo prepare..."
 pnpm turbo prepare
