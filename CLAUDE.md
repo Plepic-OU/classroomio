@@ -66,6 +66,14 @@ supabase stop
 pnpm supabase:push        # Link and push migrations to remote project
 ```
 
+## C4 Architecture Diagrams
+
+- @docs/c4/layer1-context.md — System Context
+- @docs/c4/layer2-containers.md — Containers
+- @docs/c4/layer3-api.md — API Components
+- @docs/c4/layer3-dashboard.md — Dashboard Components
+- `docs/c4/database.md` — Database Schema
+
 ## Architecture
 
 ### Dashboard (`apps/dashboard`)
