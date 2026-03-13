@@ -25,7 +25,9 @@ When('I fill in the course name {string}', async ({ page }, name: string) => {
 });
 
 When('I fill in the course description {string}', async ({ page }, description: string) => {
-  await page.locator('textarea[placeholder]').first().fill(description);
+  const textarea = page.locator('textarea[placeholder="A little description about this course"]');
+  await textarea.scrollIntoViewIfNeeded();
+  await textarea.fill(description);
 });
 
 When('I submit the form', async ({ page }) => {
