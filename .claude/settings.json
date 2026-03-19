@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/store-tool-input.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/protect-token.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
