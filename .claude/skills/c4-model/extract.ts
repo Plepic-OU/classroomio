@@ -65,7 +65,13 @@ const APPS: AppConfig[] = [
     root: 'apps/dashboard',
     defaultDepth: 2,
     // lib/components has 30+ top-level components — use depth 3 so each gets its own key
-    pathDepthOverrides: { 'lib/components': 3 },
+    pathDepthOverrides: {
+      'lib/components': 3,
+      'lib/components/Course': 4,
+      'lib/components/Course/components': 5,
+      'lib/utils': 3,
+      'lib/mocks': 3,
+    },
   },
   {
     name: 'api',
