@@ -1,0 +1,20 @@
+{
+  "name": "@cio/e2e",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "generate": "bddgen",
+    "test": "bddgen && playwright test",
+    "test:ui": "bddgen && playwright test --ui --ui-host localhost --ui-port 9323",
+    "report": "playwright show-report --host localhost"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.53.0",
+    "@supabase/supabase-js": "^2.49.8",
+    "dotenv": "^17.3.1",
+    "playwright-bdd": "^8.5.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.1.6"
+  }
+}
