@@ -3,7 +3,8 @@ import { defineBddConfig } from 'playwright-bdd';
 
 const testDir = defineBddConfig({
   features: './features/',
-  steps: ['./steps/', './fixtures/auth.fixture.ts'],
+  steps: './steps/',
+  importTestFrom: './fixtures/auth.fixture.ts',
 });
 
 export default defineConfig({
