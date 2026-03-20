@@ -5,6 +5,9 @@ import { config } from 'dotenv';
 config(); // loads .env automatically
 
 export default defineConfig({
+  // Run tests serially — the local Vite dev server and Supabase can't reliably handle
+  // multiple concurrent browser contexts without action timeouts.
+  workers: 1,
   // actionTimeout: each individual action (click, fill, waitForURL) fails within 10 s
   // if the element is not found or the action does not complete. This gives fast
   // troubleshooting feedback without capping the total multi-step test at 10 s.
