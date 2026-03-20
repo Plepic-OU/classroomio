@@ -34,7 +34,7 @@ Every interactive element and key assertion target needs a `data-testid`. Read t
 - If not, add them now — before writing the test — so selectors are reliable
 
 **Carbon Design System quirks:**
-- `Toggle` renders as `<button role="switch">` — add a wrapper `<div data-testid="...">` and locate with `page.getByTestId('...').locator('button[role="switch"]')`
+- `Toggle` (carbon-components-svelte v0.79) renders as `<input role="switch" type="checkbox">` — add a wrapper `<div data-testid="...">` around it. Check enabled state with `page.getByTestId('...').locator('input[role="switch"]')` and **click the label** to toggle (the input is visually hidden): `page.getByTestId('...').locator('label').click()`
 - `NumberInput` renders an `<input>` inside — use the `id` prop (e.g. `id="my-input"`) and select with `page.locator('#my-input')`
 - `PrimaryButton` has a `testId` prop that sets `data-testid` on the rendered button
 
@@ -145,10 +145,52 @@ If it fails:
 4. Re-run
 
 Common failure causes and fixes:
+- **`Received: <element(s) not found>` for a toggle** — Carbon Toggle v0.79 renders `<input role="switch">`, NOT `<button role="switch">`. Update selector to `input[role="switch"]` and click the `<label>` instead of the input.
 - **Element not found** — selector is wrong, or element hasn't appeared yet; add explicit `waitForSelector` or `expect(...).toBeVisible()`
-- **Toggle button is disabled** — the toggle depends on another field being filled first; ensure prior steps complete before clicking
+- **Toggle is disabled** — the toggle depends on another field being filled first; ensure prior steps complete before clicking. Check by asserting `expect(input).toBeEnabled()` with a generous timeout.
 - **Type error in step definition** — a Supabase query returned the wrong shape; add null checks and throw descriptive errors
 - **Step definition conflict** — same step text defined in two files without tag scoping; add `{ tags: '@<unique-tag>' }` to the `Given`/`When`/`Then` call
+
+**Seed data reference (from `supabase/seed.sql`):**
+- Admin: profile ID `7ac00503-8519-43c8-a5ea-b79aeca900b1`, email `admin@test.com`
+- "Udemy Test" org: ID `1a1dcddd-1abc-4f72-b644-0bd18191a289`, siteName `udemy-test`
+- Group role IDs: `2` = teacher, `3` = student
+
+**Creating test data via `adminClient` in `Before` hook** (preferred over UI setup for non-UI-creation tests):
+```typescript
+// Create group + course + teacher membership
+const { data: group } = await adminClient.from('group').insert({
+  name: 'BDD Test Group', organization_id: ORG_ID, description: '...'
+}).select('id').single();
+
+const { data: course } = await adminClient.from('course').insert({
+  title: `BDD Test ${Date.now()}`, description: '...', group_id: group.id, metadata: {},
+  is_published: true,  // ← REQUIRED for invite page: RLS blocks anon reads of unpublished courses
+}).select('id').single();
+
+await adminClient.from('groupmember').insert({
+  group_id: group.id, profile_id: ADMIN_PROFILE_ID, email: ADMIN_EMAIL, role_id: 2
+});
+```
+Navigate directly to `/courses/{id}/settings` (or any sub-page) once the course exists.
+
+**Course RLS policy — invite page testing:** The `course` table has an RLS policy: `SELECT` is only allowed if `is_published = true` OR the user is a group member. The `+page.server.ts` for the invite page uses the anon supabase client (no session), so test courses MUST have `is_published: true` or the server will return `{ isFull: false, waitlistEnabled: false }` for every course.
+
+**Making a course "full" without enrolled students:** Set `max_capacity = 0`. The server checks `enrolledCount >= max_capacity`, so `0 >= 0 = true` → always full. No need to insert a filler enrollment.
+
+**Always run the full suite before declaring victory.** After a new test passes in isolation, run `npx playwright test --workers=1` (all tests). A test can pass alone but fail in the suite due to server-side state leaking between SSR requests.
+
+**Vite dev mode: SSR store state leaks between requests.** Module-level Svelte stores (e.g. `currentOrg`, `course`) are module singletons in the Vite process. When test A navigates to a page that sets `currentOrg.id`, test B's SSR finds `currentOrg.id` already set. If any Svelte component has a reactive statement like `$: fetchSomething($currentOrg.id)` that calls `fetch('/relative-url')` server-side, it will crash the Vite dev server with:
+```
+Error: Cannot use relative URL (...) with global fetch — use `event.fetch` instead
+```
+**Fix:** wrap reactive statements that call `fetch` with a browser guard:
+```svelte
+import { browser } from '$app/environment';
+// ...
+$: if (browser) fetchSomething($someStore.id);
+```
+Apply this pattern to any component reactive statement that calls a service function using browser-only `fetch`.
 
 Repeat until the test passes. Do not give up after the first failure.
 
