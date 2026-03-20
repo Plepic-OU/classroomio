@@ -61,7 +61,9 @@ const config = {
           'https://umami.hz.oncws.com',
           'https://*.r2.cloudflarestorage.com',
           'http://localhost:54321',
+          'http://127.0.0.1:54321',
           'ws://localhost:54321',
+          'ws://127.0.0.1:54321',
           'wss://*.classroomio.com',
           'wss://*.supabase.co',
           'https://*.senja.io'
@@ -113,7 +115,9 @@ const config = {
           'https://umami.hz.oncws.com',
           'https://*.r2.cloudflarestorage.com',
           'http://localhost:54321',
+          'http://127.0.0.1:54321',
           'ws://localhost:54321',
+          'ws://127.0.0.1:54321',
           'wss://*.classroomio.com',
           'wss://*.supabase.co',
           'https://*.senja.io'
