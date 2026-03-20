@@ -2,4 +2,5 @@ test-results/
 playwright-report/
 blob-report/
 .features-gen/
+.auth/
 videos/

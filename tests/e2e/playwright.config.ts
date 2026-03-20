@@ -1,5 +1,6 @@
 import { defineConfig } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
+import { STORAGE_STATE } from './global-setup';
 
 const testDir = defineBddConfig({
   features: './features/**/*.feature',
@@ -11,6 +12,7 @@ export default defineConfig({
   timeout: 10_000,
   expect: { timeout: 5_000 },
   retries: 0,
+  workers: 3,
   use: {
     baseURL: 'http://localhost:5173',
     screenshot: 'on',
@@ -19,8 +21,17 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      name: 'login',
       use: { browserName: 'chromium' },
+      testMatch: /login\.feature/,
+    },
+    {
+      name: 'chromium',
+      use: {
+        browserName: 'chromium',
+        storageState: STORAGE_STATE,
+      },
+      testIgnore: /login\.feature/,
     },
   ],
   reporter: [['html', { open: 'never' }]],

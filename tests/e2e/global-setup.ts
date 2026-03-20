@@ -1,6 +1,9 @@
 import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
 import * as path from 'path';
+import { chromium } from '@playwright/test';
+
+export const STORAGE_STATE = path.resolve(__dirname, '.auth/state.json');
 
 const DB_CONTAINER = 'supabase_db_classroomio';
 
@@ -46,6 +49,24 @@ function resetDatabase(): void {
   console.log(`[e2e] Database reset complete (${Date.now() - start}ms)`);
 }
 
+async function authenticate(): Promise<void> {
+  console.log('[e2e] Authenticating test user...');
+  const start = Date.now();
+  const browser = await chromium.launch();
+  const page = await browser.newPage({ baseURL: 'http://localhost:5173' });
+
+  await page.goto('/login');
+  await page.locator('body[data-hydrated]').waitFor();
+  await page.locator('input[type="email"]').fill('admin@test.com');
+  await page.locator('input[type="password"]').fill('123456');
+  await page.getByRole('button', { name: /log in/i }).click();
+  await page.waitForURL('**/org/**');
+
+  await page.context().storageState({ path: STORAGE_STATE });
+  await browser.close();
+  console.log(`[e2e] Authentication complete (${Date.now() - start}ms)`);
+}
+
 async function globalSetup() {
   console.log('[e2e] Running pre-flight checks...');
 
@@ -73,6 +94,7 @@ async function globalSetup() {
   }
 
   resetDatabase();
+  await authenticate();
 }
 
 export default globalSetup;

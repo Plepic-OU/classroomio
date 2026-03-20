@@ -1,28 +1,15 @@
 import { expect } from '@playwright/test';
 import { Given, When, Then, waitForHydration } from './fixtures';
 
-Given(
-  'I am logged in as {string} with password {string}',
-  async ({ page }, email: string, password: string) => {
-    await page.goto('/login');
-    await waitForHydration(page);
-    await page.locator('input[type="email"]').fill(email);
-    await page.locator('input[type="password"]').fill(password);
-    await page.getByRole('button', { name: /log in/i }).click();
-    await page.waitForURL('**/org/**');
-  }
-);
-
 Given('I am on the courses page', async ({ page }) => {
-  await page.waitForURL('**/org/**');
-  const url = page.url();
-  const orgSlug = url.match(/\/org\/([^/]+)/)?.[1];
-  await page.goto(`/org/${orgSlug}/courses`);
+  await page.goto('/org/udemy-test/courses');
   await waitForHydration(page);
 });
 
 When('I click the create course button', async ({ page }) => {
-  await page.getByRole('button', { name: /create course/i }).click();
+  const btn = page.getByRole('button', { name: /create course/i });
+  await expect(btn).toBeEnabled();
+  await btn.click();
 });
 
 When('I select the {string} course type', async ({ page }, type: string) => {
