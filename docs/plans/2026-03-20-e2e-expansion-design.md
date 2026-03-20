@@ -245,6 +245,51 @@ This keeps tests isolated and fast — no UI course creation as a pre-condition.
 
 ---
 
+## Testing
+
+### Current Coverage (Phase 1 + Phase 2)
+
+| Feature file | Scenario | Actor |
+|---|---|---|
+| `login.feature` | Teacher logs in successfully | Teacher |
+| `course-creation.feature` | Create a new course | Teacher |
+| `org-settings.feature` | Update org settings | Teacher |
+| `my-learning.feature` | Student views enrolled courses | Student |
+| `lesson-creation.feature` | Add a lesson to a course | Teacher |
+| `course-publishing.feature` | Publish a draft course | Teacher |
+| `student-enrollment.feature` | Student self-enrolls in a published course | Student |
+
+All 7 scenarios pass at a 10 s per-test timeout.
+
+### Running the Suite
+
+```bash
+# Prerequisites: dashboard running + Supabase started
+supabase start
+pnpm dev --filter=@cio/dashboard
+
+# Run all e2e tests
+pnpm test:e2e
+
+# View HTML report (screenshots + video for every test)
+pnpm test:e2e:report   # http://localhost:9323
+```
+
+### Infrastructure
+
+| File | Purpose |
+|---|---|
+| `global-setup.ts` | Health-checks dashboard; authenticates teacher + student via Supabase REST; writes `.auth/state.json` and `.auth/student-state.json` |
+| `fixtures.ts` | Worker-scoped `resetData` fixture — truncates `[TEST]*` rows before each worker run (FK order: `lesson` → `course_newsfeed` → `organizationmember` → `course`) |
+| `helpers/supabase.ts` | Shared REST helpers: `getOrgSlug()`, `getCourseId()`, `createTestCourse()` |
+| `playwright.config.ts` | Two projects: `chromium` (teacher, `.auth/state.json`) and `chromium-student` (student, `.auth/student-state.json`) |
+
+### Data Convention
+
+All test-created records are prefixed `[TEST]` (e.g. `[TEST] My Course`, `[TEST] My First Lesson`). The reset fixture safely truncates these without touching real data.
+
+---
+
 ## Local Dev Workflow (unchanged)
 
 ```bash
