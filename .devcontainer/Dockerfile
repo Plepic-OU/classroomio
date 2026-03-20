@@ -4,7 +4,6 @@ FROM mcr.microsoft.com/devcontainers/javascript-node:20-bookworm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Install turbo v1 globally (matches project's ^1.10.16)
-# Supabase CLI is installed via npx in setup.sh (avoids version pinning issues)
 RUN npm install -g turbo@1
 
 # Install Supabase CLI from GitHub releases (pinned version to avoid GitHub API rate limits)
@@ -17,6 +16,9 @@ RUN ARCH=$(dpkg --print-architecture) \
 # Install Claude Code globally via npm (avoids native installer's paths outside CLAUDE_CONFIG_DIR)
 # This plays nicer with devcontainer's
 RUN npm install -g @anthropic-ai/claude-code
+
+# Install Playwright browsers + OS deps during build (runs as root)
+RUN npx playwright@1.50.0 install --with-deps chromium
 
 # Add alias for all bash sessions
 RUN echo "alias cskip='claude --dangerously-skip-permissions'" >> /etc/bash.bashrc

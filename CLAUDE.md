@@ -45,6 +45,11 @@ cd apps/api && pnpm test:coverage
 
 # E2E tests (Cypress) — runs `cypress run` from root
 pnpm ci
+
+# E2E tests (Playwright)
+cd e2e && pnpm install               # First time only (browsers pre-installed in devcontainer)
+pnpm e2e                             # Run all E2E tests (checks services first)
+pnpm e2e:report                      # View HTML report at localhost:9323
 ```
 
 ### Database

@@ -1,6 +1,7 @@
 # E2E Tests with Playwright — Design Document
 
 **Date:** 2026-03-13
+**Updated:** 2026-03-20
 **Scope:** Initial setup for E2E tests using Playwright, covering login and course creation flows.
 
 ## Business Goal
@@ -11,6 +12,32 @@ Introduce a reliable E2E test framework for ClassroomIO. The existing Cypress se
 - Both test scenarios (login, course creation) pass reliably on a freshly seeded database
 - Tests run from inside the devcontainer against `pnpm dev:container`
 
+## Acceptance Criteria
+
+### Test setup
+- All test videos and screenshots are captured, including successful runs
+- Test result folder (`e2e/test-results/`, `e2e/playwright-report/`) is in `.gitignore`
+- Initial test cases pass continuously
+- Data reset before tests is fast (truncate tables + re-seed, not `supabase db reset`)
+- Quick turnaround for test failures — global timeout must not exceed 10 seconds
+- The Playwright HTML report URL shows test runs at `localhost:9323`
+
+### Running the tests
+- E2E tests run from one pnpm command: `pnpm e2e`
+- Tests MUST NOT start services automatically (no `webServer` config)
+- Pretest performs a quick health check on all dependent services (dashboard, API, Supabase). If any are missing, fail fast with a clear message
+
+### Devcontainer setup
+- Playwright and browser dependencies MUST be installed during Docker build (in the Dockerfile)
+- Playwright report port (9323) is forwarded properly — added to both `appPort` and `forwardPorts`
+- User must rebuild the devcontainer after these changes take effect
+
+### Test writing
+- When writing and debugging E2E tests, distill learned knowledge into the project skill `e2e-test-writing`
+
+### Documentation
+- `CLAUDE.md` includes information about the E2E test flow (commands, workflow, structure)
+
 ## Decisions
 
 | Decision | Choice | Rationale |
@@ -20,13 +47,18 @@ Introduce a reliable E2E test framework for ClassroomIO. The existing Cypress se
 | Dashboard access | Bind `0.0.0.0` + forward port 9323 | Ensures Playwright HTML report is accessible from host machine outside devcontainer |
 | Course creation scope | Minimal (title + description + type) | Proves framework works end-to-end; extend incrementally later |
 | Cypress | Kept alongside, not actively extended | Existing Cypress tests remain; new E2E work uses Playwright |
+| Browser install | Baked into Dockerfile | Runs as root during build, avoids `sudo` issues at runtime for `node` user |
+| Data reset strategy | Truncate + re-seed via SQL | Fast (~1s) compared to `supabase db reset` (~30s). Uses direct Supabase client with service role key |
+| Timeout | 10s global | Fail fast on broken flows — no long waits for missing elements |
 
 ## Project Structure
 
 ```
 e2e/
-├── package.json              # Playwright dependency
+├── package.json              # Playwright + supabase-js dependencies
 ├── playwright.config.ts      # Playwright config
+├── tsconfig.json             # TypeScript config for e2e
+├── global-setup.ts           # Truncate test data + re-seed before suite
 └── tests/
     ├── login.spec.ts         # Login flow test
     └── course-creation.spec.ts  # Course creation flow test
@@ -42,10 +74,12 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
+  timeout: 10_000,
   use: {
     baseURL: 'http://localhost:5173',
-    screenshot: 'only-on-failure',
-    trace: 'on-first-retry',
+    screenshot: 'on',
+    video: 'on',
+    trace: 'retain-on-failure',
   },
   reporter: [
     ['list'],
@@ -55,15 +89,55 @@ export default defineConfig({
     { name: 'chromium', use: { browserName: 'chromium' } },
   ],
   retries: 0,
+  globalSetup: './global-setup.ts',
 });
 ```
 
 - **`baseURL: localhost:5173`** — targets the dashboard dev server
-- **No `webServer` config** — full stack must be running before tests; pre-flight check catches errors (see Scripts)
+- **No `webServer` config** — services MUST be running before tests; pretest health check catches errors
+- **`timeout: 10_000`** — 10-second max per test, fail fast on issues
+- **`screenshot: 'on'`** + **`video: 'on'`** — always capture, even on success
+- **`trace: 'retain-on-failure'`** — captures traces for debugging failed tests (unlike `on-first-retry` which requires retries > 0)
 - **HTML reporter on `0.0.0.0:9323`** — accessible from host machine
 - **Chromium only** — no multi-browser at this stage
-- **Traces on first retry** — useful for debugging without storage bloat
 - **`retries: 0`** — no retries during initial setup to surface flakiness immediately
+- **`globalSetup`** — runs fast data reset before the test suite
+
+## Global Setup — Fast Data Reset
+
+Instead of `supabase db reset` (slow, restarts containers), use direct SQL truncation + re-seed via the Supabase client:
+
+```ts
+// e2e/global-setup.ts
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  'http://localhost:54321',
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+async function globalSetup() {
+  // Truncate test-affected tables (CASCADE handles FK dependencies)
+  const { error } = await supabase.rpc('truncate_test_tables');
+  if (error) {
+    // Fallback: direct truncation of known tables in dependency order
+    for (const table of ['newsfeed', 'groupmember', 'group', 'submission', 'lesson_completion', 'course']) {
+      await supabase.from(table).delete().neq('id', 0);
+    }
+  }
+
+  // Re-seed essential data (admin user, org, etc.)
+  // The seed SQL restores the baseline state needed for tests
+  // This runs in ~1s vs ~30s for supabase db reset
+}
+
+export default globalSetup;
+```
+
+**Environment:** Requires `SUPABASE_SERVICE_ROLE_KEY` — document in `e2e/.env.example`:
+```
+SUPABASE_SERVICE_ROLE_KEY=<from supabase start output>
+```
 
 ## Tests
 
@@ -84,7 +158,7 @@ test('user logs in with valid credentials', async ({ page }) => {
 
 **Locator notes:** The login form uses custom `TextField` components with i18n labels. The rendered label text is `"Your email"` and `"Your password"` (from translation keys `login.email` / `login.password`). The `<label>` wraps a `<p>` tag (not a proper `for` attribute), so `getByLabel()` may not work reliably. Placeholder-based locators are safest.
 
-**Redirect note:** After login, the app redirects to `/org/[siteName]` (e.g., `/org/udemy-test` for the seed admin user). The assertion uses a URL pattern.
+**Redirect note:** After login, the app redirects to `/org/[siteName]` (e.g., `/org/udemy-test` for the seed admin user). There is a 1-second debounce in `getProfile` that affects redirect timing — the 10s timeout accommodates this. The assertion uses a URL pattern.
 
 ### Course Creation
 
@@ -100,20 +174,19 @@ test('logged-in user creates a new course', async ({ page }) => {
   await page.getByRole('button', { name: 'Log In' }).click();
   await expect(page).toHaveURL(/\/org\/.+/);
 
-  // Navigate to courses
-  await page.goto('/org/udemy-test/courses');
+  // Navigate to courses and open new course modal via URL param
+  await page.goto('/org/udemy-test/courses?create=true');
 
-  // Open new course modal
-  await page.getByRole('button', { name: 'Create Course' }).click();
-
-  // Step 0: Select course type, click Next
+  // Step 0: Select course type (default Live Class), click Next
   await page.getByRole('button', { name: 'Next' }).click();
 
   // Step 1: Enter title + description, click Finish
-  await page.getByPlaceholder('').first().fill('Playwright Test Course');
-  // TODO: verify actual placeholder/locator for title and description fields
+  await page.getByPlaceholder('Your course name').fill('Playwright Test Course');
+  await page.getByPlaceholder('A little description about this course').fill('E2E test course description');
   await page.getByRole('button', { name: 'Finish' }).click();
 
+  // After creation, app redirects to /courses/[id] — verify course title visible
+  await expect(page).toHaveURL(/\/courses\/.+/);
   await expect(page.getByText('Playwright Test Course')).toBeVisible();
 });
 ```
@@ -122,28 +195,11 @@ test('logged-in user creates a new course', async ({ page }) => {
 
 **Modal flow note:** The `NewCourseModal` is a two-step flow:
 1. **Step 0:** Select course type (Live Class or Self Paced), click "Next"
-2. **Step 1:** Enter course name and description (both required), click "Finish" (i18n key `courses.new_course_modal.button`)
+2. **Step 1:** Enter course name (`placeholder: 'Your course name'`) and description (`placeholder: 'A little description about this course'`), both required, click "Finish" (i18n key `courses.new_course_modal.button`)
 
-The modal can also be opened via URL query parameter `?create=true`.
+The modal can also be opened via URL query parameter `?create=true` (more reliable than clicking button which may be icon-only on narrow viewports).
 
-## Test Data Cleanup
-
-Tests that create data (e.g., new courses) must clean up after themselves. Each test that writes to the database should delete its created records in an `afterEach` or `afterAll` hook, using a direct Supabase client call with the service role key:
-
-```ts
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  'http://localhost:54321',
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-test.afterEach(async () => {
-  await supabase.from('course').delete().eq('title', 'Playwright Test Course');
-});
-```
-
-For a full reset, `supabase db reset` can be run before a test suite.
+**Post-creation redirect:** After finishing, the app redirects to `/courses/[id]`, not back to the courses list.
 
 ## Scripts
 
@@ -152,16 +208,15 @@ For a full reset, `supabase db reset` can be run before a test suite.
 ```json
 {
   "scripts": {
-    "pretest": "curl -sf http://localhost:5173 > /dev/null || (echo 'Dashboard not running. Start with: pnpm dev:container' && exit 1)",
+    "pretest": "node -e \"const http=require('http');const checks=[['localhost',5173,'Dashboard'],['localhost',3002,'API'],['localhost',54321,'Supabase']];Promise.all(checks.map(([h,p,n])=>new Promise((res,rej)=>{const r=http.get({hostname:h,port:p,path:'/',timeout:2000},()=>res());r.on('error',()=>rej(new Error(n+' not running on port '+p)));r.on('timeout',()=>{r.destroy();rej(new Error(n+' timeout on port '+p))})}))).catch(e=>{console.error('FAIL: '+e.message+'\\nStart services first: pnpm dev:container');process.exit(1)})\"",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
-    "report": "playwright show-report --host 0.0.0.0 --port 9323",
-    "install:browsers": "playwright install --with-deps chromium"
+    "report": "playwright show-report --host 0.0.0.0 --port 9323"
   }
 }
 ```
 
-The `pretest` script runs automatically before `test` and fails fast with a clear message if the dashboard is not reachable.
+The `pretest` script runs automatically before `test` and checks all three services (dashboard on 5173, API on 3002, Supabase on 54321). Fails fast with a clear message if any service is unreachable.
 
 **Note:** `test:headed` will not work inside the devcontainer (no display server). Use it on a local machine only.
 
@@ -172,9 +227,24 @@ The `pretest` script runs automatically before `test` and fails fast with a clea
 "e2e:report": "cd e2e && pnpm report"
 ```
 
+Single command to run all E2E tests: `pnpm e2e`
+
 ## DevContainer Changes
 
-**`.devcontainer/devcontainer.json`** — add `9323` to both `forwardPorts` and `appPort`, and add a `portsAttributes` label:
+### Dockerfile additions
+
+Playwright and Chromium browser dependencies MUST be installed during Docker build (not at runtime):
+
+```dockerfile
+# Install Playwright browsers + OS deps during build (runs as root)
+RUN npx playwright@latest install --with-deps chromium
+```
+
+This avoids `sudo` issues at runtime since the devcontainer runs as user `node`.
+
+### devcontainer.json additions
+
+Add port `9323` to both `appPort` and `forwardPorts`, and add a `portsAttributes` label:
 
 ```json
 "appPort": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324, 9323],
@@ -184,7 +254,7 @@ The `pretest` script runs automatically before `test` and fails fast with a clea
 }
 ```
 
-**Playwright browser dependencies:** The `install:browsers` script uses `--with-deps` to install both browser binaries and required OS-level libraries (libnss3, libatk, libgbm, etc.). This must be run inside the devcontainer.
+**Rebuild required:** After making these devcontainer changes, the user must rebuild the devcontainer for them to take effect.
 
 ## Gitignore Additions
 
@@ -193,17 +263,43 @@ e2e/playwright-report/
 e2e/test-results/
 ```
 
-## Workflow
+## CLAUDE.md Additions
 
-1. Start the stack: `pnpm dev:container`
-2. Install e2e dependencies (first time): `cd e2e && pnpm install && pnpm install:browsers`
-3. Run tests: `pnpm e2e`
-4. View report: `pnpm e2e:report` → open `localhost:9323` on host machine
+Add the following to the Testing section in `CLAUDE.md`:
+
+```markdown
+# E2E tests (Playwright)
+cd e2e && pnpm install               # First time only (browsers pre-installed in devcontainer)
+pnpm e2e                             # Run all E2E tests (checks services first)
+pnpm e2e:report                      # View HTML report at localhost:9323
+```
 
 ## Dependencies
 
 ```
 @playwright/test
+@supabase/supabase-js
+dotenv
 ```
 
-Browsers installed via: `cd e2e && pnpm install:browsers`
+`@supabase/supabase-js` is needed for the global setup data reset. `dotenv` loads `SUPABASE_SERVICE_ROLE_KEY` from `e2e/.env`.
+
+Browsers installed at Docker build time via: `npx playwright@latest install --with-deps chromium`
+
+## Workflow
+
+1. Rebuild devcontainer (if first time after these changes)
+2. Start the stack: `pnpm dev:container`
+3. Install e2e dependencies (first time): `cd e2e && pnpm install`
+4. Copy env: `cp e2e/.env.example e2e/.env` and fill in `SUPABASE_SERVICE_ROLE_KEY` from `supabase start` output
+5. Run tests: `pnpm e2e`
+6. View report: `pnpm e2e:report` → open `localhost:9323` on host machine
+
+## E2E Test Writing Skill
+
+When writing and debugging E2E tests, capture learned patterns and gotchas in the project skill `e2e-test-writing`. This skill should cover:
+- Locator strategies that work with ClassroomIO's component library (placeholder-based over label-based)
+- Handling i18n text in assertions
+- Navigation timing (debounce delays, redirects)
+- Data cleanup patterns
+- Common pitfalls (icon-only buttons on narrow viewports, modal flows, etc.)
