@@ -110,6 +110,28 @@ cp apps/api/.env.example apps/api/.env
 pnpm dev
 ```
 
+## E2E Tests
+
+Package: `apps/e2e` (`@cio/e2e`) — Playwright + BDD (Gherkin via playwright-bdd)
+
+### Running
+```bash
+pnpm test --filter=@cio/e2e          # headless
+pnpm test:ui --filter=@cio/e2e       # Playwright UI at http://localhost:9323
+pnpm report --filter=@cio/e2e        # HTML report at http://localhost:9222
+```
+
+### Requirements before running
+- Supabase must be running: `supabase start`
+- Dashboard must be running: `pnpm dev --filter=@cio/dashboard`
+- Tests will NOT start services automatically — health check fails fast if missing
+
+### Features covered
+- Login (success + failure)
+- Course creation
+
+---
+
 ## Key Conventions
 
 - **TypeScript** throughout; strict config inherited from `packages/tsconfig`

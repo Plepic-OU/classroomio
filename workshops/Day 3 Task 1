@@ -1,0 +1,36 @@
+--- Day 3 - task 1 - implement BDD framework
+
+
+Goals:
+
+
+  - [x] 1) Instruct claude to update the BDD setup design document according to the acceptance criteria.
+
+    Acceptance criteria: https://drive.google.com/file/d/1UARoaoIJsrRL2sPPiSHpYeQ-LEDWMwRL
+
+
+  - [x] 2) Install new agent, place into .claude/agents/implementation-validator.md
+
+    Agent content: https://drive.google.com/file/d/1dTmevoXtmzPFV0RKZ9Aflqgozwj51kCE
+
+    Optional: create one one yourself (with help of claude code). But match the name "implementation-validator"
+
+
+  - [ ] 3) Implement the BDD framework with initial tests
+
+    After adding agent, make a restart to claude code.
+
+    Instruct claude:
+
+      Implement the xxx.md plan. Split the task into smaller chunks and handle one by one. After each chunk use the implementation-validator agent verify that part.
+
+      When iterating on e2e tests make sure the timeout is small enough to get fast iteration (e.g. 10s is enough). And debug one test at a time - to keep iteration fast.
+
+
+  - [ ] 4) Use Claude Code official "code-review" plugin.
+
+    You need to install this using "/plugin" and browse the "claude-plugins-official"
+
+    When implementation is finished, run the "/code-review:code-review uncommited code" and let claude fix the bugs
+
+    https://github.com/anthropics/claude-code/blob/main/plugins/code-review/README.md
