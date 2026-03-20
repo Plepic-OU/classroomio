@@ -16,7 +16,7 @@ async function getOrgSlug(): Promise<string> {
   });
   // Get the first org the test user belongs to via organizationmember join
   const res = await ctx.get(
-    '/rest/v1/organizationmember?select=organization(site_name)&limit=1&order=id.asc',
+    '/rest/v1/organizationmember?select=organization(siteName)&limit=1&order=id.asc',
     {
       headers: {
         'Content-Profile': 'public',
@@ -26,7 +26,7 @@ async function getOrgSlug(): Promise<string> {
   );
   const data = await res.json();
   await ctx.dispose();
-  return data[0]?.organization?.site_name as string;
+  return data[0]?.organization?.siteName as string;
 }
 
 Given('I am on the courses page', async ({ page }) => {

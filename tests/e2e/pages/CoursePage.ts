@@ -8,9 +8,11 @@ export class CoursePage {
   }
 
   async selectCourseType(type: string) {
+    // Scope to the modal dialog (.dialog) to avoid matching course-card type tags
+    // (e.g., "Self Paced" appears on both the modal button and existing course cards).
     // The modal backdrop (fixed inset-0) can intercept pointer events during animation.
-    // Dispatch click directly to bypass hit-test checks.
-    await this.page.getByRole('button', { name: type }).click({ force: true });
+    // Use force:true to bypass hit-test checks.
+    await this.page.locator('.dialog').getByRole('button', { name: type }).click({ force: true });
     await this.page.getByRole('button', { name: 'Next' }).click();
   }
 

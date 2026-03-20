@@ -12,6 +12,9 @@ export default defineConfig({
   testDir,
   globalSetup: './global-setup.ts',
   fullyParallel: true,
+  // workers: 1 keeps tests serial — local Supabase in devcontainer can't handle
+  // multiple concurrent workers within the 10s per-test timeout.
+  workers: 1,
   retries: process.env.CI ? 2 : 0,
   timeout: 10_000,
   reporter: [['html', { open: 'never' }]],
