@@ -1,9 +1,38 @@
 # BDD Testing with Playwright + Gherkin — Design Document
 
 **Date:** 2026-03-13
+**Updated:** 2026-03-20
 **Status:** Draft
 **Scope:** Initial setup — login and course creation flows only
 **Maturity:** MVP
+
+---
+
+## Acceptance Criteria
+
+### Test setup
+- MUST capture all test videos and screenshots, including successful runs
+- Test result folders must be in `.gitignore`
+- Initial test cases (login + course creation) pass continuously
+- Data reset before tests is fast (truncate tables + re-seed, not full `supabase db reset`)
+- Timeouts must not exceed 10s per action (fail fast on broken flows)
+- The Playwright HTML report URL shows test runs and is reachable from the host
+
+### Running the tests
+- E2E tests run from a single `pnpm test:e2e` command
+- Tests MUST NOT start services automatically (no `webServer` in Playwright config)
+- A pre-flight check verifies dependent services (dashboard on 5173, API on 3002, Supabase on 54321) and fails fast with a clear error if any are missing
+
+### Devcontainer setup
+- Playwright and the Chromium browser MUST be installed during Docker build (in `Dockerfile`)
+- Playwright ports (9323 for HTML reporter, 9324 for UI mode) forwarded properly via both `appPort` and `forwardPorts` in `devcontainer.json`
+- User must rebuild devcontainer after these changes (prompt them)
+
+### Test writing
+- When writing and debugging E2E tests, distill knowledge into project skill `e2e-test-writing`
+
+### Documentation
+- `CLAUDE.md` includes information about the E2E test flow
 
 ---
 
@@ -21,6 +50,9 @@ Introduce BDD-style end-to-end tests using **Gherkin** feature files and **Playw
 
 - **Test location: repo root (`tests/e2e/`)** — Tests live at the repo root rather than inside `apps/dashboard/` so the directory can grow to include cross-app tests in the future.
 - **Dev server (port 5173) not preview build (port 4173)** — The existing Cypress workflow targets port 4173 (production preview). This Playwright setup intentionally targets the dev server for faster iteration. This difference is by design.
+- **No auto-start of services** — Tests expect services to already be running. A pre-flight health check fails fast if they are not. This avoids hiding startup failures and speeds up the test cycle.
+- **Always capture artifacts** — Screenshots and video are captured for all tests (pass or fail) so developers can review full test runs via the HTML report.
+- **Fast data reset** — Use SQL truncate + re-seed instead of `supabase db reset` to keep reset time under a few seconds.
 
 ## Dependencies
 
@@ -31,7 +63,7 @@ Install at repo root as dev dependencies:
 playwright-bdd
 ```
 
-After install, run `npx playwright install --with-deps chromium` to download the browser binary **and** its required OS-level dependencies (libgbm, libasound2, etc.). The `--with-deps` flag is required in devcontainer/CI environments where system libraries are not pre-installed.
+Playwright and Chromium are installed during the devcontainer Docker build (see Devcontainer section). No manual `npx playwright install` needed after container creation.
 
 ## Directory Structure
 
@@ -51,7 +83,9 @@ tests/e2e/
 │       └── course-creation.steps.ts # Course creation step definitions
 └── helpers/
     ├── test-users.ts               # Test user credential constants
-    └── login.ts                    # Shared login helper
+    ├── login.ts                    # Shared login helper
+    ├── preflight.ts                # Service health check (runs before tests)
+    └── reset-db.ts                 # Fast truncate + re-seed helper
 ```
 
 ## Playwright Configuration
@@ -70,44 +104,104 @@ const testDir = defineBddConfig({
 
 export default defineConfig({
   testDir,
+  globalSetup: require.resolve('./helpers/preflight'),
   reporter: [
     ['html', { host: '0.0.0.0', port: 9323, open: 'never' }],
   ],
+  timeout: 10_000,
+  expect: {
+    timeout: 5_000,
+  },
   use: {
     baseURL: 'http://localhost:5173',
-    screenshot: 'only-on-failure',
-    trace: 'on-first-retry',
-    video: 'retain-on-failure',
+    screenshot: 'on',
+    trace: 'on',
+    video: 'on',
+    actionTimeout: 10_000,
+    navigationTimeout: 10_000,
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   ],
   retries: 0,
   workers: 1,
-  webServer: [
-    {
-      command: 'pnpm dev --filter=@cio/dashboard',
-      url: 'http://localhost:5173',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120000,
-    },
-    {
-      command: 'pnpm dev --filter=@cio/api',
-      url: 'http://localhost:3002',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120000,
-    },
-  ],
+  // No webServer — services must be started manually before running tests.
+  // The globalSetup preflight check verifies they are reachable.
 });
 ```
 
 ### Key config decisions
 
+- **No `webServer`** — Tests do not start services. A `globalSetup` preflight check verifies dashboard (5173), API (3002), and Supabase (54321) are reachable and fails fast with a clear error if not.
+- **`timeout: 10_000`** — 10s max per test. Fail fast on broken flows.
+- **`actionTimeout: 10_000` / `navigationTimeout: 10_000`** — 10s max per individual action or navigation.
+- **`screenshot: 'on'`** — Captures screenshots for all tests (pass and fail).
+- **`video: 'on'`** — Records video for all tests (pass and fail).
+- **`trace: 'on'`** — Full trace for all tests, viewable in the HTML report.
 - **`workers: 1`** — Sequential execution to avoid shared DB state issues between parallel tests.
-- **`screenshot: 'only-on-failure'`** — Captures screenshots only when tests fail, avoiding large artifact overhead.
-- **`video: 'retain-on-failure'`** — Records video but only keeps it for failed tests.
 - **`open: 'never'`** on HTML reporter — Container environment; view manually via exposed port.
-- **`reuseExistingServer`** — Reuses running dev server locally, starts fresh in CI.
+
+## Pre-flight Health Check
+
+**`tests/e2e/helpers/preflight.ts`:**
+
+```ts
+import http from 'node:http';
+
+const SERVICES = [
+  { name: 'Dashboard', url: 'http://localhost:5173' },
+  { name: 'API', url: 'http://localhost:3002' },
+  { name: 'Supabase API', url: 'http://localhost:54321' },
+];
+
+function check(url: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    http.get(url, (res) => resolve(res.statusCode !== undefined))
+      .on('error', () => resolve(false));
+  });
+}
+
+export default async function globalSetup() {
+  const results = await Promise.all(
+    SERVICES.map(async (svc) => ({ ...svc, ok: await check(svc.url) }))
+  );
+  const missing = results.filter((r) => !r.ok);
+  if (missing.length > 0) {
+    const names = missing.map((m) => `  - ${m.name} (${m.url})`).join('\n');
+    throw new Error(
+      `E2E pre-flight failed. These services are not reachable:\n${names}\n\n` +
+      `Start them before running tests:\n` +
+      `  supabase start\n` +
+      `  pnpm dev --filter=@cio/dashboard\n` +
+      `  pnpm dev --filter=@cio/api`
+    );
+  }
+}
+```
+
+## Fast Data Reset
+
+**`tests/e2e/helpers/reset-db.ts`:**
+
+Uses Supabase's local PostgreSQL directly to truncate test-affected tables and re-run the seed, avoiding the slow `supabase db reset` which restarts containers.
+
+```ts
+import { execSync } from 'node:child_process';
+
+const DB_URL = 'postgresql://postgres:postgres@localhost:54322/postgres';
+
+const TRUNCATE_SQL = `
+  TRUNCATE course, lesson, exercise, submission, attendance
+  CASCADE;
+`;
+
+export function resetTestData() {
+  execSync(`psql "${DB_URL}" -c "${TRUNCATE_SQL}"`, { stdio: 'pipe' });
+  execSync(`psql "${DB_URL}" -f supabase/seed.sql`, { stdio: 'pipe' });
+}
+```
+
+This can be called in a `BeforeAll` hook or from the test:e2e script.
 
 ## Host Access (Container / Codespaces)
 
@@ -116,7 +210,38 @@ export default defineConfig({
 | HTML Reporter | `0.0.0.0` | 9323 | `pnpm test:e2e:report` |
 | UI Mode | `0.0.0.0` | 9324 | `pnpm test:e2e:ui` |
 
-**Devcontainer update required:** Add ports `9324` and `9323` to `forwardPorts` and `portsAttributes` in `.devcontainer/devcontainer.json` so they are accessible in Codespaces.
+Both ports must be forwarded in the devcontainer config (see Devcontainer section).
+
+## Devcontainer Changes
+
+### Dockerfile
+
+Add Playwright and Chromium installation to the Dockerfile so they are available immediately after container build:
+
+```dockerfile
+# Install Playwright browsers + OS deps during build
+RUN npx playwright install --with-deps chromium
+```
+
+### devcontainer.json
+
+Add port forwarding for the Playwright HTML reporter and UI mode:
+
+```jsonc
+{
+  "forwardPorts": [
+    // ... existing ports ...
+    9323,  // Playwright HTML reporter
+    9324   // Playwright UI mode
+  ],
+  "portsAttributes": {
+    "9323": { "label": "Playwright Report", "onAutoForward": "notify" },
+    "9324": { "label": "Playwright UI", "onAutoForward": "notify" }
+  }
+}
+```
+
+After making these changes, the user must **rebuild the devcontainer** for the Dockerfile changes to take effect.
 
 ## NPM Scripts
 
@@ -129,6 +254,8 @@ Add to root `package.json`:
   "test:e2e:report": "npx playwright show-report tests/e2e/playwright-report --host 0.0.0.0 --port 9323"
 }
 ```
+
+Single command: `pnpm test:e2e` generates BDD tests and runs them. Services must already be running — the preflight check will fail fast if they are not.
 
 ## Test Data
 
@@ -287,7 +414,7 @@ Then('I should see {string} in the course list', async ({ page }, title: string)
 
 **i18n consideration:** All text-based selectors assume English locale. Tests should pin the locale to English (e.g., via `localStorage` or route param) to avoid failures if the browser or user profile defaults to a different language.
 
-**Test data cleanup:** The course creation test creates a `"BDD Test Course"` that persists across runs. Either run `supabase db reset` before each test session, or add an `After` hook to delete test-created courses.
+**Test data cleanup:** The course creation test creates a `"BDD Test Course"` that persists across runs. The fast data reset (truncate + re-seed) should be run before each test session to ensure a clean state.
 
 ## .gitignore Addition
 
@@ -302,11 +429,34 @@ tests/e2e/test-results/
 tests/e2e/playwright-report/
 ```
 
+## CLAUDE.md Update
+
+Add to `CLAUDE.md` under the Testing section:
+
+```markdown
+### E2E Tests (Playwright + BDD)
+```bash
+# Prerequisites: supabase start, pnpm dev running for dashboard + API
+pnpm test:e2e                          # Run all BDD e2e tests
+pnpm test:e2e:ui                       # Playwright UI mode (port 9324)
+pnpm test:e2e:report                   # View HTML report (port 9323)
+```
+
+Tests live in `tests/e2e/`. Feature files in `features/`, step definitions in `steps/`.
+Services must be running before tests — the preflight check will fail fast if they are not.
+```
+
+## Skill: e2e-test-writing
+
+When writing and debugging E2E tests, distill learned patterns, selector strategies, common pitfalls, and debugging techniques into a project skill named `e2e-test-writing`. This skill should be updated continuously as new test patterns emerge.
+
 ## Prerequisites for Running Tests
 
 1. Docker running (for Supabase)
 2. `supabase start` (seeds test users)
-3. `pnpm test:e2e` (starts dev server via webServer config, generates tests, runs them)
+3. `pnpm dev --filter=@cio/dashboard` (dashboard on port 5173)
+4. `pnpm dev --filter=@cio/api` (API on port 3002)
+5. `pnpm test:e2e` (preflight checks services, generates BDD tests, runs them)
 
 ## Future Considerations (out of scope)
 

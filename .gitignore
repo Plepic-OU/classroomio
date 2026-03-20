@@ -44,3 +44,10 @@ vite.config.ts*.mjs
 .devcontainer/github-token
 .claude/hook-logs
 docs/c4/extracted-structure.json
+
+# Playwright BDD generated tests
+tests/e2e/.features-gen/
+
+# Playwright artifacts
+playwright-report/
+test-results/

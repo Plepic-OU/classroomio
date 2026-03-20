@@ -40,6 +40,17 @@ cd apps/api && pnpm test
 cd apps/api && pnpm test:coverage
 ```
 
+### E2E Tests (Playwright + BDD)
+```bash
+# Prerequisites: supabase start, pnpm dev running for dashboard + API
+pnpm test:e2e                          # Run all BDD e2e tests
+pnpm test:e2e:ui                       # Playwright UI mode (port 9324)
+pnpm test:e2e:report                   # View HTML report (port 9323)
+```
+
+Tests live in `tests/e2e/`. Feature files in `features/`, step definitions in `steps/`.
+Services must be running before tests — the preflight check will fail fast if they are not.
+
 ### Supabase
 ```bash
 supabase start                        # Start local Supabase (needs Docker)

@@ -14,15 +14,20 @@
     "dev:container": "turbo prepare --concurrency 13 && concurrently -n dashboard,api,website,docs -c blue,green,magenta,cyan \"cd apps/dashboard && npx vite dev --port 5173 --host\" \"cd apps/api && pnpm dev\" \"cd apps/classroomio-com && npx vite dev --port 5174 --host\" \"cd apps/docs && npx vite dev --host\"",
     "dashboard:start": "pnpm start --filter @cio/dashboard",
     "api:start": "pnpm start --filter @cio/api",
-    "supabase:push": "pnpx supabase link --project-ref $PROJECT_ID && pnpx supabase db push --include-all"
+    "supabase:push": "pnpx supabase link --project-ref $PROJECT_ID && pnpx supabase db push --include-all",
+    "test:e2e": "npx bddgen --config tests/e2e/playwright.config.ts && npx playwright test --config tests/e2e/playwright.config.ts",
+    "test:e2e:ui": "npx bddgen --config tests/e2e/playwright.config.ts && npx playwright test --config tests/e2e/playwright.config.ts --ui-host=0.0.0.0 --ui-port=9324",
+    "test:e2e:report": "npx playwright show-report playwright-report --host 0.0.0.0 --port 9323"
   },
   "license": "MIT",
   "dependencies": {
     "turbo": "^1.10.16"
   },
   "devDependencies": {
+    "@playwright/test": "^1.53.0",
     "concurrently": "^8.2.2",
     "eslint": "^8.54.0",
+    "playwright-bdd": "^8.5.0",
     "prettier": "^3.1.0",
     "prettier-plugin-svelte": "^3.1.2",
     "prettier-plugin-tailwindcss": "^0.5.7",
