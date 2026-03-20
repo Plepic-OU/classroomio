@@ -36,6 +36,10 @@ cd apps/dashboard && pnpm test        # Jest + @testing-library/svelte
 cd apps/api && pnpm test              # Vitest
 pnpm ci                               # Cypress E2E (root-level)
 
+# E2E tests (Playwright + BDD)
+pnpm test:e2e                         # Run headless (requires services running)
+pnpm test:e2e:ui                      # Playwright UI on :9323
+
 # Run a single test file
 cd apps/dashboard && pnpm test -- --testPathPattern=<pattern>
 cd apps/api && pnpm test <test-file>
@@ -142,3 +146,32 @@ Both `apps/dashboard/.env.example` and `apps/api/.env.example` contain required 
 - `docker/Dockerfile.dashboard` — multi-stage build, node:20.19.3-alpine, non-root user
 - `docker/Dockerfile.api` — node:20.19.3-slim
 - Set `PUBLIC_IS_SELFHOSTED=true` for self-hosted deployments (switches SvelteKit adapter to Node)
+
+## E2E Tests (Playwright + BDD)
+
+E2E tests live in `e2e/` as a separate workspace package (`@cio/e2e`). They use Playwright with `playwright-bdd` for Gherkin `.feature` file support.
+
+### Prerequisites
+
+Services must be running before tests: `supabase start && pnpm dev:container`. Tests do NOT start services automatically — global setup runs a health check and fails fast if services are down.
+
+### Structure
+
+| Path | Purpose |
+|------|---------|
+| `e2e/features/` | Gherkin `.feature` files |
+| `e2e/steps/` | Step definitions (one file per feature) |
+| `e2e/pages/` | Page objects (login, dashboard, course) |
+| `e2e/helpers/` | Health check + DB reset |
+| `e2e/global-setup.ts` | Runs health check + DB reset before all tests |
+| `e2e/playwright.config.ts` | Config — uses `defineBddConfig()`, Chromium only, sequential |
+
+### Running
+
+- `pnpm test:e2e` — headless run
+- `pnpm test:e2e:ui` — Playwright UI dashboard on port 9323
+- `cd e2e && pnpm test:report` — HTML report on port 9400
+
+### Test Data
+
+Global setup truncates all tables and re-seeds from `supabase/seed.sql` before each run. Demo account: `admin@test.com` / `123456`.

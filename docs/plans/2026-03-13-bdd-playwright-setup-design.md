@@ -29,6 +29,10 @@ e2e/
 │   ├── login.page.ts
 │   ├── dashboard.page.ts
 │   └── course.page.ts
+├── helpers/
+│   ├── health-check.ts
+│   └── db-reset.ts
+├── global-setup.ts
 ├── playwright.config.ts
 ├── tsconfig.json
 ├── .gitignore
@@ -54,7 +58,7 @@ e2e/
 |--------|---------|---------|
 | `test` | `npx playwright test` | Run tests headless (bddgen runs automatically via `defineBddConfig`) |
 | `test:ui` | `npx playwright test --ui-host=0.0.0.0 --ui-port=9323` | Playwright UI dashboard |
-| `test:report` | `npx playwright show-report` | Open HTML report |
+| `test:report` | `npx playwright show-report --host=0.0.0.0 --port=9400` | Open HTML report (accessible from host via forwarded port) |
 
 ### Root Convenience Scripts (`package.json`)
 
@@ -65,8 +69,14 @@ e2e/
 
 ### Devcontainer Changes
 
-- Add port `9323` (labeled "Playwright UI") to `forwardPorts` in `.devcontainer/devcontainer.json`
-- Add Playwright browser installation to setup: `cd e2e && npx playwright install --with-deps chromium` (in `.devcontainer/setup.sh` after `pnpm install`, or as a `postinstall` script in `e2e/package.json`)
+- **Dockerfile**: Install Playwright and Chromium browser during Docker build (not post-create), so the container is ready to run tests immediately. Add to the Dockerfile:
+  - `cd e2e && npx playwright install --with-deps chromium`
+  - This ensures browsers are baked into the image, not downloaded on every container start
+- **Port forwarding**: Add both ports to `forwardPorts` in `.devcontainer/devcontainer.json`:
+  - Port `9323` (labeled "Playwright UI") — for `test:ui` mode
+  - Port `9400` (labeled "Playwright Report") — for `test:report` HTML report server
+  - Both must be reachable from the host machine
+- **appPort vs forwardPorts**: Use `forwardPorts` for Playwright ports (forwarded on demand). The devcontainer must be rebuilt for these changes to take effect — prompt the user to rebuild when making devcontainer changes.
 
 ---
 
@@ -76,17 +86,38 @@ e2e/
 
 | Setting | Value | Rationale |
 |---------|-------|-----------|
+| `globalSetup` | `./global-setup.ts` | Health check + DB reset before all tests |
 | `baseURL` | `http://localhost:5173` | Dashboard dev server |
 | `testDir` | `defineBddConfig({ featuresRoot: './features' })` | Returns generated test dir; replaces `.bddrc.yaml` |
-| `use.trace` | `on-first-retry` | Debugging failed tests |
-| `use.screenshot` | `only-on-failure` | Minimize noise |
+| `use.trace` | `on` | Capture trace for every test (videos + screenshots always available) |
+| `use.screenshot` | `on` | Capture screenshots for all tests, not just failures |
+| `use.video` | `on` | Record video for every test run |
+| `timeout` | `10_000` | Max 10s per test — fail fast on hangs |
+| `expect.timeout` | `5_000` | Max 5s for assertions |
 | `use.locale` | `'en'` | Fix locale for text-based locators (i18n) |
 | `projects` | `chromium` only | Start simple, add browsers later |
 | `workers` | `1` | Sequential execution — tests share state via seeded DB |
 | `retries` | `1` in CI, `0` locally | `!!process.env.CI` toggle |
-| `webServer` | Not configured | Tests assume `pnpm dev` is already running |
+| `webServer` | Not configured | Tests MUST NOT start services automatically — they assume `pnpm dev` is already running |
+| `reporter` | `['html', { open: 'never' }]` | Always generate HTML report; open manually via `test:report` |
 
 **Note**: Configuration uses `defineBddConfig()` from `playwright-bdd` (v8+) directly in `playwright.config.ts`. No separate `.bddrc.yaml` file needed.
+
+### Global Setup (`e2e/global-setup.ts`)
+
+Registered via `globalSetup` in `playwright.config.ts`. Runs once before all tests:
+
+1. **Health check** (`helpers/health-check.ts`): Verify that dependent services are reachable before running any tests. Checks:
+   - Dashboard (`http://localhost:5173`) — HTTP GET, expect 2xx
+   - API (`http://localhost:3081`) — HTTP GET, expect 2xx
+   - Supabase (`http://localhost:54321`) — HTTP GET, expect 2xx
+   If any service is unreachable, **fail immediately** with a clear error message listing which services are down and how to start them.
+
+2. **Database reset** (`helpers/db-reset.ts`): Fast data reset to ensure a clean state:
+   - Connect to Supabase PostgreSQL directly (local connection string from `supabase status`)
+   - Truncate all user-created tables (cascade) — skip Supabase system tables
+   - Re-seed by executing `supabase/seed.sql`
+   - Must complete in under 2 seconds
 
 ### `e2e/tsconfig.json`
 
@@ -195,10 +226,10 @@ One step definition file per feature:
 
 ## 6. Test Data Strategy
 
-Use the existing seed data from `supabase/seed.sql`:
+- **Before each test run**: Global setup truncates all tables and re-seeds from `supabase/seed.sql` (fast — truncate + seed, not drop/recreate)
 - Demo account: `admin@test.com` / `123456`
-- Course creation tests create new courses against this seeded state
-- No programmatic setup/teardown needed for initial scope
+- Course creation tests create new courses against this clean seeded state
+- This ensures tests are idempotent and pass continuously regardless of previous runs
 
 ---
 
@@ -206,10 +237,12 @@ Use the existing seed data from `supabase/seed.sql`:
 
 1. Start Supabase: `supabase start` (requires Docker)
 2. Start the app: `pnpm dev` (or `pnpm dev:container`) — both dashboard AND API must be running
-3. Install browsers (first time only): `cd e2e && npx playwright install --with-deps chromium`
-4. Run tests headless: `pnpm test:e2e`
-5. Debug with UI dashboard: `pnpm test:e2e:ui` → open `http://localhost:9323`
-6. View failure report: `cd e2e && pnpm test:report`
+3. Run tests headless: `pnpm test:e2e` (browsers pre-installed in devcontainer)
+4. Debug with UI dashboard: `pnpm test:e2e:ui` → open `http://localhost:9323`
+5. View test report: `cd e2e && pnpm test:report` → opens HTML report with all test videos, screenshots, and traces
+6. If services aren't running, the test suite fails fast with a clear message listing missing services
+
+**Note**: Tests MUST NOT start services automatically. The global setup health check verifies services are running and fails immediately if they aren't, telling the developer exactly what to start.
 
 ### Gitignore (`e2e/.gitignore`)
 
@@ -222,9 +255,28 @@ blob-report/
 
 ---
 
-## 8. Out of Scope
+## 8. Documentation Updates
+
+### CLAUDE.md
+
+Add an E2E tests section to `CLAUDE.md` covering:
+- How to run E2E tests (`pnpm test:e2e`, `pnpm test:e2e:ui`)
+- That services must be running first (Supabase + `pnpm dev`)
+- Location of feature files, step definitions, and page objects
+- That global setup handles health checks and DB reset automatically
+
+### E2E Test-Writing Skill
+
+Create a project skill `e2e-test-writing` (`.claude/skills/e2e-test-writing.md`) that captures knowledge gained while writing and debugging E2E tests. This skill should be updated iteratively as tests are developed, covering:
+- Locator strategies that work with the dashboard's component library
+- Common pitfalls (e.g., `getByLabel` not working with `TextField`)
+- Patterns for handling async navigation and page transitions
+- How to add new feature files and step definitions
+
+---
+
+## 9. Out of Scope
 
 - **CI pipeline integration** — design supports it (Playwright GitHub Actions, `retries: 1` in CI) but not implemented now
 - **Cypress migration** — existing 3 Cypress tests in `cypress/` left untouched
 - **Multi-browser testing** — start with Chromium only
-- **Programmatic test data setup** — use seed data for now

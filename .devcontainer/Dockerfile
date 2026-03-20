@@ -18,5 +18,8 @@ RUN ARCH=$(dpkg --print-architecture) \
 # This plays nicer with devcontainer's
 RUN npm install -g @anthropic-ai/claude-code
 
+# Install Playwright browsers (Chromium only) so E2E tests work immediately
+RUN npx playwright install --with-deps chromium
+
 # Add alias for all bash sessions
 RUN echo "alias cskip='claude --dangerously-skip-permissions'" >> /etc/bash.bashrc
