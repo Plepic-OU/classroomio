@@ -32,6 +32,7 @@
   {name}
   {type}
   disabled={isLoading || isDisabled}
+  {...$$restProps}
 >
   {#if isLoading}
     <Loading withOverlay={false} small class="mr-2" />

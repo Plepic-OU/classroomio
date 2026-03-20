@@ -47,6 +47,7 @@ e2e/
   "devDependencies": {
     "@playwright/test": "^1.43",
     "@supabase/supabase-js": "^2",
+    "dotenv": "^16",
     "playwright-bdd": "^7"
   }
 }
@@ -85,6 +86,7 @@ export default async function globalSetup(config: FullConfig) {
 
 **`e2e/playwright.config.ts`:**
 ```typescript
+import 'dotenv/config';
 import { defineConfig, devices } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
 
@@ -101,12 +103,22 @@ export default defineConfig({
     baseURL: process.env.BASE_URL ?? 'http://localhost:5173',
     trace: 'on-first-retry',
     locale: 'en',  // pin locale so getByLabel/getByRole assertions match English strings
-    storageState: 'playwright/.auth/admin.json',  // restored from globalSetup
     screenshot: 'on',
     video: 'on',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // Unauthenticated project — login flows, no pre-loaded session
+    {
+      name: 'unauthenticated',
+      testMatch: /login\.feature/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    // Authenticated project — all other flows use saved admin session
+    {
+      name: 'authenticated',
+      testIgnore: /login\.feature/,
+      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/admin.json' },
+    },
   ],
   // Starts the dashboard dev server automatically before running tests.
   // Using the dev server (not a production build) ensures @test.com accounts
@@ -174,6 +186,7 @@ Feature: Course Creation
     When I navigate to the courses page
     And I click the create course button
     And I select the course type "Self Paced"
+    And I click the next button to proceed
     And I fill in the course title "Introduction to Testing"
     And I submit the course form
     Then I should see the new course in the courses list
@@ -277,9 +290,15 @@ When('I click the create course button', async ({ adminPage }) => {
   await adminPage.click('[data-testid="create-course-btn"]');
 });
 
-// Step 0 of NewCourseModal: select course type before the title form appears
+// Step 0 of NewCourseModal: select course type before the title form appears.
+// Use regex because the button's accessible name includes both title and subtitle text.
 When('I select the course type {string}', async ({ adminPage }, courseType: string) => {
-  await adminPage.getByRole('button', { name: courseType }).click();
+  await adminPage.getByRole('button', { name: new RegExp(courseType) }).click();
+});
+
+// Advance from step 0 (type selection) to step 1 (title form)
+When('I click the next button to proceed', async ({ adminPage }) => {
+  await adminPage.getByRole('button', { name: /next/i }).click();
 });
 
 When('I fill in the course title {string}', async ({ adminPage }, title: string) => {
@@ -432,10 +451,10 @@ Then open `http://localhost:3333` in your host machine browser.
 - [ ] Write `fixtures/index.ts`
 - [ ] Write `steps/login.steps.ts`
 - [ ] Write `steps/course-creation.steps.ts`
-- [ ] Add `name="email"` and `name="password"` to `TextField` components in `apps/dashboard/src/routes/login/+page.svelte`
-- [ ] Add `name="title"` to `TextField` in `apps/dashboard/src/lib/components/Course/NewCourseModal/index.svelte`
-- [ ] Add `data-testid="error-message"` to login error `<p>` in `apps/dashboard/src/routes/login/+page.svelte`
-- [ ] Add `data-testid="create-course-btn"` to create-course `PrimaryButton` in `apps/dashboard/src/routes/org/[slug]/courses/+page.svelte` (verify `PrimaryButton` forwards unknown props to `<button>`)
+- [x] Add `name="email"` and `name="password"` to `TextField` components in `apps/dashboard/src/routes/login/+page.svelte` ✓ done
+- [ ] Add `name="title"` to `TextField` in `apps/dashboard/src/lib/components/Courses/components/NewCourseModal/index.svelte`
+- [x] Add `data-testid="error-message"` to login error `<p>` in `apps/dashboard/src/routes/login/+page.svelte` ✓ done
+- [ ] Add `data-testid="create-course-btn"` to create-course `PrimaryButton` in `apps/dashboard/src/routes/org/[slug]/courses/+page.svelte` (`PrimaryButton` now forwards `$$restProps` to `<button>` ✓ done)
 - [ ] Verify `webServer` starts dashboard correctly before running `pnpm e2e`
 - [ ] ~~Add student seed user to `supabase/seed.sql`~~ — already exists, no action needed
 - [ ] Add `.features-gen/` and `e2e/playwright/.auth/` to root `.gitignore` (generated at runtime)

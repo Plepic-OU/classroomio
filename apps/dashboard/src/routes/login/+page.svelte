@@ -59,6 +59,7 @@
   <div class="mt-4 w-full">
     <p class="mb-6 text-lg font-semibold dark:text-white">{$t('login.welcome')}</p>
     <TextField
+      name="email"
       label={$t('login.email')}
       bind:value={fields.email}
       type="email"
@@ -70,6 +71,7 @@
       errorMessage={$t(errors.email)}
     />
     <TextField
+      name="password"
       label={$t('login.password')}
       bind:value={fields.password}
       type="password"
@@ -80,7 +82,7 @@
       errorMessage={$t(errors.password)}
     />
     {#if submitError}
-      <p class="text-sm text-red-500">{submitError}</p>
+      <p data-testid="error-message" class="text-sm text-red-500">{submitError}</p>
     {/if}
     <div class="w-full text-right">
       <a class="text-md text-primary-700" href="/forgot"> {$t('login.forgot')} </a>
