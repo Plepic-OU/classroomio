@@ -1,0 +1,16 @@
+{
+  "name": "@cio/e2e",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui-host=0.0.0.0 --ui-port=9323",
+    "test:report": "npx playwright show-report --host=0.0.0.0 --port=9400"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/pg": "^8.18.0",
+    "pg": "^8.20.0",
+    "playwright-bdd": "^8.5.0"
+  }
+}
