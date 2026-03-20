@@ -5,7 +5,7 @@
   "scripts": {
     "test": "bddgen && playwright test",
     "test:report": "playwright show-report --host 0.0.0.0 --port 9323",
-    "clean": "rm -rf playwright-report .features-gen dist"
+    "clean": "rm -rf playwright-report test-results .features-gen dist"
   },
   "devDependencies": {
     "@playwright/test": "^1.53.0",

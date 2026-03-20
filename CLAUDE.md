@@ -136,3 +136,45 @@ All database access goes through the Supabase JS client (`@supabase/supabase-js`
 ### `packages/shared`
 
 Contains shared constants imported by both the dashboard and API (e.g., `PLAN` enum, `ROLE` enum). Import as `shared/src/...`.
+
+## E2E Tests (`tests/e2e`)
+
+BDD end-to-end tests using `playwright-bdd` (Gherkin + Playwright). Package name: `@cio/e2e`.
+
+### Prerequisites
+
+The dashboard and Supabase must be running **before** executing the tests. The test runner does not start services automatically — it checks them and fails fast if unreachable.
+
+```bash
+supabase start                         # Start local Supabase
+pnpm dev --filter=@cio/dashboard       # Start dashboard on :5173
+```
+
+### Running E2E tests
+
+```bash
+# From the monorepo root — runs the full BDD suite
+pnpm test:e2e
+
+# View the HTML report (screenshots, videos, traces for every test)
+cd tests/e2e && pnpm test:report
+# Open http://localhost:9323
+```
+
+### What happens on each run
+
+1. **Global setup** checks that the dashboard (`5173`) and Supabase (`54321`) are reachable; exits immediately with a clear message if not.
+2. **Data reset**: `supabase db reset --local` truncates all tables and re-seeds from `supabase/seed.sql` so every run starts from a known state.
+3. Tests execute serially (1 worker) to avoid auth state conflicts.
+
+### Artifacts
+
+All test output is written to `tests/e2e/test-results/` and `tests/e2e/playwright-report/` (both gitignored). Every test — including passing ones — has screenshots, video, and a trace attached in the report.
+
+### Design document
+
+Full design with configuration, step definitions, and devcontainer setup: `docs/plans/2026-03-13-bdd-e2e-tests-design.md`
+
+### Writing new E2E tests
+
+When writing or debugging E2E tests, distill learnings (selectors, timing, step patterns, gotchas) into the project skill at `.claude/skills/e2e-test-writing/`.

@@ -46,5 +46,10 @@ vite.config.ts*.mjs
 .claude/skills/c4-model/node_modules/
 .claude/skills/c4-model/pnpm-lock.yaml
 
+# Playwright E2E test results
+tests/e2e/test-results/
+tests/e2e/playwright-report/
+tests/e2e/.features-gen/
+
 # GitHub auth token (never commit)
 .devcontainer/github-token
