@@ -103,6 +103,8 @@ const ID_QUERY = `
   logo,
   is_published,
   version,
+  max_capacity,
+  waitlist_enabled,
   group(*,
     members:groupmember(*,
       profile(*)

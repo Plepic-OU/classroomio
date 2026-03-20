@@ -19,8 +19,16 @@ async function globalSetup() {
 
   console.log('Running seed script...');
   const { execSync } = await import('child_process');
+  const seedCwd = import.meta.dirname ?? new URL('.', import.meta.url).pathname;
   execSync('npx tsx seed/test-users.ts', {
-    cwd: import.meta.dirname ?? new URL('.', import.meta.url).pathname,
+    cwd: seedCwd,
+    stdio: 'inherit',
+    env: process.env,
+  });
+
+  console.log('Running waitlist seed script...');
+  execSync('npx tsx seed/waitlist-courses.ts', {
+    cwd: seedCwd,
     stdio: 'inherit',
     env: process.env,
   });
