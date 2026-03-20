@@ -1,0 +1,9 @@
+{
+  "name": "c4-extract",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "ts-morph": "^23.0.0",
+    "tsx": "^4.19.0"
+  }
+}

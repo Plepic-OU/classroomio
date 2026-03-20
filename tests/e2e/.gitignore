@@ -1,0 +1,6 @@
+node_modules/
+.features-gen/
+test-results/
+playwright-report/
+.env
+auth-state.json

@@ -44,6 +44,26 @@ pnpm test --filter=@cio/api
 pnpm test:coverage --filter=@cio/api
 ```
 
+### E2E Tests (Playwright + BDD)
+
+Located in `tests/e2e/`. Run from the monorepo root:
+
+```bash
+pnpm test:e2e        # headless — view report at localhost:9324 (run: cd tests/e2e && pnpm report)
+pnpm test:e2e:ui     # interactive UI at localhost:9323
+```
+
+Prerequisites (must be running first — tests do not start them):
+
+```bash
+supabase start && supabase db reset   # start Supabase and apply seed data
+pnpm dev --filter=@cio/dashboard      # must use dev server (not a build)
+```
+
+Seed credentials: `admin@test.com` / `123456`.
+
+> **Note:** Tests will fail silently if run against a built/preview server — `appSetup.ts` auto-logs-out `@test.com` accounts when `dev` mode is off.
+
 ### Linting & Formatting
 
 ```bash
