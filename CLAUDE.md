@@ -141,3 +141,28 @@ Hono framework running on Node.js (port 3002). Structure:
 Default test account (seeded by Supabase):
 - Email: `admin@test.com`
 - Password: `123456`
+
+### E2E Tests (`tests/e2e`)
+
+BDD end-to-end tests using Playwright + playwright-bdd (Gherkin syntax).
+
+**Prerequisites:** Dashboard must be running (`pnpm dev --filter=@cio/dashboard`) and Supabase must be started (`supabase start`) before running tests.
+
+**Run tests:**
+```bash
+pnpm test:e2e
+```
+
+**View HTML report (with screenshots and videos):**
+```bash
+pnpm test:e2e:report   # served at http://localhost:9323
+```
+
+**How it works:**
+1. `global-setup.ts` — health-checks the dashboard URL, then logs in once and saves session to `tests/e2e/.auth/state.json`
+2. `fixtures.ts` worker-scoped `resetData` fixture — resets test data once per worker (truncates `[TEST]*` rows, re-seeds if needed)
+3. Feature files in `features/` describe scenarios in Gherkin
+4. Step definitions in `steps/` wire Gherkin steps to Page Object methods
+5. All screenshots and videos are captured for every test run (pass or fail)
+
+**Test data convention:** Test-created records are prefixed with `[TEST]` (e.g. `[TEST] My Course`) so they can be safely truncated before each run without touching real data.

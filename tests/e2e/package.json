@@ -1,0 +1,14 @@
+{
+  "name": "@cio/e2e",
+  "private": true,
+  "dependencies": {},
+  "devDependencies": {
+    "tsconfig": "workspace:*",
+    "@playwright/test": "^1.53.0",
+    "playwright-bdd": "^7"
+  },
+  "scripts": {
+    "test": "bddgen && playwright test",
+    "test:report": "playwright show-report --host 0.0.0.0 --port 9323"
+  }
+}

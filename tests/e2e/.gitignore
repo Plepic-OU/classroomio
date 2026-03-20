@@ -1,0 +1,5 @@
+.features-gen/
+playwright-report/
+test-results/
+.auth/
+.env

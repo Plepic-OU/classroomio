@@ -50,7 +50,7 @@ Avoid CSS class selectors — they break on refactors.
 
 - **Stale selectors**: If a step fails to find an element, inspect the actual dashboard markup — labels/roles may differ from the design doc
 - **Timing issues**: Don't use `page.waitForTimeout()` — always wait for a specific element or URL
-- **Org slug**: The slug is dynamic — always extract it from `page.url()` after login, never hardcode it
+- **Org slug**: The slug is dynamic — query Supabase REST API directly (`/rest/v1/organizationmember?select=organization(site_name)&limit=1`) rather than navigating to `/` and waiting for auth redirect (too slow for 10s timeout)
 - **`bddgen` must run first**: The `test` script runs `bddgen && playwright test` — never run `playwright test` alone or generated specs will be stale
 
 ## Running a Single Test (Fast Iteration)

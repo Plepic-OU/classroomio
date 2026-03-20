@@ -18,5 +18,13 @@ RUN ARCH=$(dpkg --print-architecture) \
 # This plays nicer with devcontainer's
 RUN npm install -g @anthropic-ai/claude-code
 
+# Install Playwright browser binaries + OS-level dependencies.
+# Set a shared path accessible by the non-root 'node' user (container default).
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+ENV NODE_OPTIONS=--max-old-space-size=4096
+RUN mkdir -p /ms-playwright \
+ && npx playwright install --with-deps chromium \
+ && chmod -R 777 /ms-playwright
+
 # Add alias for all bash sessions
 RUN echo "alias cskip='claude --dangerously-skip-permissions'" >> /etc/bash.bashrc
