@@ -24,6 +24,7 @@
   export let autoComplete = true;
   export let onChange = () => {}; // This is to know if element is 'dirty'
   export let onInputChange = () => {};
+  export let testId = '';
 
   let ref: HTMLInputElement | undefined = undefined;
   let fieldNode: HTMLInputElement | undefined = undefined;
@@ -91,6 +92,7 @@
     {name}
     {min}
     {max}
+    data-testid={testId || undefined}
   />
   {#if isPassword}
     <span class="password-eye">
@@ -100,7 +102,7 @@
     </span>
   {/if}
   {#if errorMessage}
-    <p class="text-sm text-red-500">{errorMessage}</p>
+    <p class="text-sm text-red-500" data-testid={testId ? `${testId}-error` : undefined}>{errorMessage}</p>
   {:else if helperMessage}
     <p class="dark:text-white text-sm opacity-70">
       {helperMessage}

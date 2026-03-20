@@ -195,6 +195,7 @@
           label={$t('courses.new_course_modal.next')}
           onClick={() => (step = 1)}
           isDisabled={!type}
+          testId="new-course-next"
         />
       </div>
     </div>
@@ -209,6 +210,7 @@
           isRequired={true}
           errorMessage={errors.title}
           autoComplete={false}
+          testId="new-course-title"
         />
       </div>
 
@@ -222,6 +224,7 @@
         errorMessage={errors.description}
         isAIEnabled={true}
         initAIPrompt="Write a 30 word description for a course titled: {$createCourseModal.title}"
+        testId="new-course-description"
       />
 
       <div class="mt-5 flex items-center justify-between">
@@ -237,6 +240,7 @@
           type="submit"
           isDisabled={isLoading}
           {isLoading}
+          testId="new-course-finish"
         />
       </div>
     </form>

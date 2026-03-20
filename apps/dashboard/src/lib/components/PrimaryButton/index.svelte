@@ -12,6 +12,7 @@
   export let isDisabled = false;
   export let isLoading = false;
   export let disableScale = false;
+  export let testId = '';
 
   $: loadingClass =
     isLoading || isDisabled
@@ -32,6 +33,7 @@
   {name}
   {type}
   disabled={isLoading || isDisabled}
+  data-testid={testId || undefined}
 >
   {#if isLoading}
     <Loading withOverlay={false} small class="mr-2" />
