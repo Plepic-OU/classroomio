@@ -14,6 +14,7 @@
   import { MultiSelect, Loading } from 'carbon-components-svelte';
   import { currentOrg, currentOrgDomain } from '$lib/utils/store/org';
   import { getOrgTeam } from '$lib/utils/services/org';
+  import { browser } from '$app/environment';
   import type { OrgTeamMember } from '$lib/utils/types/org';
   import { qrInviteNodeStore } from './store';
   import { getStudentInviteLink } from '$lib/utils/functions/course';
@@ -179,7 +180,7 @@
     addPeopleParm = query.get('add');
   }
 
-  $: setTutors($currentOrg.id);
+  $: if (browser) setTutors($currentOrg.id);
   $: generateQR(getStudentInviteLink($course, $currentOrg.siteName, $currentOrgDomain));
 </script>
 

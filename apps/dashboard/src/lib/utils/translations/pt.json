@@ -122,7 +122,8 @@
       "error": {
         "missing_data": "Faltam dados da organização. Atualize a página",
         "no": "Nenhum domínio organizacional atual"
-      }
+      },
+      "approved": "Estudante aprovado!"
     },
     "newsfeed": {
       "error": {
@@ -278,7 +279,13 @@
         "type": "Tipo de curso",
         "course_type_desc": "Atualize o tipo de curso para uma experiência mais personalizada",
         "live_class": "Aula ao vivo",
-        "self_paced": "Individualizado"
+        "self_paced": "Individualizado",
+        "waitlist_title": "Inscrição / Lista de espera",
+        "waitlist_desc": "Ative uma lista de espera para que os alunos possam entrar na fila quando o curso estiver cheio.",
+        "waitlist_capacity_label": "Capacidade máxima (alunos)",
+        "waitlist_enrolled_count": "Atualmente matriculados: {count} aluno(s)",
+        "waitlist_over_capacity_warning": "Já há {count} alunos matriculados. Ninguém será removido, mas novas matrículas serão bloqueadas.",
+        "waitlist_capacity_required": "A capacidade máxima é necessária quando a lista de espera está ativada."
       },
       "landing_page": {
         "start_course": "Iniciar curso",
@@ -483,7 +490,14 @@
           "remove": "Remover"
         },
         "view": "Visualizar",
-        "delete_profile": "Excluir perfil"
+        "delete_profile": "Excluir perfil",
+        "approve": "Aprovar",
+        "tab_students": "Estudantes",
+        "tab_waitlist": "Lista de espera",
+        "enrolled_count": "{count} inscrito(s)",
+        "waitlist_count": "{count} na lista de espera",
+        "waitlist_empty": "Nenhum estudante na lista de espera",
+        "joined": "Entrou"
       },
       "marks": {
         "title": "Marcas",
@@ -1654,5 +1668,13 @@
         "message": "Este link de verificação é inválido ou está incorreto. Verifique seu e-mail para obter o link correto ou solicite um novo e-mail de verificação."
       }
     }
+  },
+  "invite": {
+    "join_course": "Entrar no curso",
+    "join_waitlist": "Entrar na lista de espera",
+    "already_on_waitlist": "Você está na lista de espera",
+    "spots_remaining": "{count} vaga(s) disponível(is)",
+    "course_full_message": "Este curso está cheio. Entre na lista de espera e o professor notificará você quando houver uma vaga.",
+    "waitlist_joined_confirmation": "Você foi adicionado à lista de espera. Você receberá um e-mail quando for aprovado."
   }
 }

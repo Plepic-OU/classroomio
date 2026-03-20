@@ -74,6 +74,7 @@ type GroupStore = {
   id: string;
   tutors: GroupPerson[];
   students: GroupPerson[];
+  waitlisted: GroupPerson[];
   people: GroupPerson[];
   members?: GroupPerson[];
   memberId?: string;
@@ -83,6 +84,7 @@ export const group = writable<GroupStore>({
   id: '',
   tutors: [],
   students: [],
+  waitlisted: [],
   people: []
 });
 
@@ -95,13 +97,18 @@ export async function setCourse(data: Course, setLesson = true) {
     const groupData = Object.assign(copiedGroup, {
       tutors: [],
       students: [],
+      waitlisted: [],
       people: []
     }) as GroupStore;
 
     if (Array.isArray(groupData.members)) {
       for (const member of groupData.members) {
         if (member.role_id === ROLE.STUDENT) {
-          groupData.students.push(member);
+          if (member.enrollment_status === 'waitlisted') {
+            groupData.waitlisted.push(member);
+          } else {
+            groupData.students.push(member);
+          }
         } else if (member.profile) {
           groupData.tutors.push({
             ...member.profile,
@@ -112,6 +119,11 @@ export async function setCourse(data: Course, setLesson = true) {
 
       groupData.people = groupData.members;
     }
+
+    // Sort waitlisted FIFO — oldest first so approvals are processed in join order.
+    groupData.waitlisted.sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
 
     delete groupData.members;
 

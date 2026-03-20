@@ -12,6 +12,7 @@
   } from 'carbon-components-svelte';
   import { ArrowUpRight, Restart } from 'carbon-icons-svelte';
 
+  import NumberInput from 'carbon-components-svelte/src/NumberInput/NumberInput.svelte';
   import TextArea from '$lib/components/Form/TextArea.svelte';
   import TextField from '$lib/components/Form/TextField.svelte';
   import SectionTitle from '$lib/components/Org/SectionTitle.svelte';
@@ -19,7 +20,7 @@
   import UnsavedChanges from '$lib/components/UnsavedChanges/index.svelte';
   import DragAndDrop from './DragAndDrop.svelte';
 
-  import { course } from '$lib/components/Course/store';
+  import { course, group } from '$lib/components/Course/store';
   import { handleOpenWidget } from '$lib/components/CourseLandingPage/store';
   import IconButton from '$lib/components/IconButton/index.svelte';
   import DeleteModal from '$lib/components/Modal/DeleteModal.svelte';
@@ -30,7 +31,7 @@
   import generateSlug from '$lib/utils/functions/generateSlug';
   import { isObject } from '$lib/utils/functions/isObject';
   import { t } from '$lib/utils/functions/translations';
-  import { deleteCourse, updateCourse } from '$lib/utils/services/courses';
+  import { deleteCourse, updateCourse, updateWaitlistedToActive } from '$lib/utils/services/courses';
   import { currentOrg, currentOrgDomain, currentOrgPath, isFreePlan } from '$lib/utils/store/org';
   import type { Course } from '$lib/utils/types';
   import { COURSE_TYPE } from '$lib/utils/types';
@@ -139,15 +140,25 @@
       return;
     }
 
+    // Validate: max_capacity required when waitlist_enabled
+    if ($settings.waitlist_enabled && !$settings.max_capacity) {
+      snackbar.error($t('course.navItem.settings.waitlist_capacity_required'));
+      return;
+    }
+
     isSaving = true;
 
     try {
+      const disablingWaitlist = $course.waitlist_enabled && !$settings.waitlist_enabled;
+
       const updatedCourse = {
         title: $settings.course_title,
         description: $settings.course_description,
         type: $settings.type,
         logo: $settings.logo,
         is_published: $settings.is_published,
+        waitlist_enabled: $settings.waitlist_enabled,
+        max_capacity: $settings.waitlist_enabled ? $settings.max_capacity : null,
         metadata: {
           ...(isObject($course.metadata) ? $course.metadata : {}),
           lessonTabsOrder: $settings.tabs,
@@ -159,9 +170,16 @@
       };
       await updateCourse($course.id, avatar, updatedCourse);
 
+      // Q5: when disabling waitlist, auto-enroll all waitlisted students
+      if (disablingWaitlist && $course.group_id) {
+        await updateWaitlistedToActive($course.group_id);
+      }
+
       $course = {
         ...$course,
-        ...updatedCourse
+        ...updatedCourse,
+        waitlist_enabled: updatedCourse.waitlist_enabled,
+        max_capacity: updatedCourse.max_capacity
       };
 
       snackbar.success('snackbar.course_settings.success.saved');
@@ -191,7 +209,9 @@
       grading: !!course.metadata.grading,
       lesson_download: !!course.metadata.lessonDownload,
       is_published: !!course.is_published,
-      allow_new_students: course.metadata.allowNewStudent
+      allow_new_students: course.metadata.allowNewStudent,
+      waitlist_enabled: !!course.waitlist_enabled,
+      max_capacity: course.max_capacity ?? null
     });
   }
   $: setDefault($course);
@@ -401,6 +421,48 @@
         <span slot="labelA" style="color: gray">{$t('course.navItem.settings.disabled')}</span>
         <span slot="labelB" style="color: gray">{$t('course.navItem.settings.enabled')}</span>
       </Toggle>
+    </Column>
+  </Row>
+
+  <!-- Enrollment / Waiting List -->
+  <Row class="border-bottom-c flex flex-col py-7 lg:flex-row">
+    <Column sm={8} md={8} lg={8}>
+      <SectionTitle>{$t('course.navItem.settings.waitlist_title')}</SectionTitle>
+      <p>{$t('course.navItem.settings.waitlist_desc')}</p>
+    </Column>
+    <Column sm={8} md={8} lg={8}>
+      <Toggle
+        size="sm"
+        bind:toggled={$settings.waitlist_enabled}
+        on:click={() => {
+          hasUnsavedChanges = true;
+          if (!$settings.waitlist_enabled) {
+            $settings.max_capacity = null;
+          }
+        }}
+      >
+        <span slot="labelA" style="color: gray">{$t('course.navItem.settings.disabled')}</span>
+        <span slot="labelB" style="color: gray">{$t('course.navItem.settings.enabled')}</span>
+      </Toggle>
+
+      {#if $settings.waitlist_enabled}
+        <div class="mt-4">
+          <NumberInput
+            label={$t('course.navItem.settings.waitlist_capacity_label')}
+            min={1}
+            bind:value={$settings.max_capacity}
+            on:change={() => { hasUnsavedChanges = true; }}
+          />
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {$t('course.navItem.settings.waitlist_enrolled_count', { count: $group.students.filter(s => s.enrollment_status !== 'waitlisted').length })}
+          </p>
+          {#if $settings.max_capacity && $group.students.filter(s => s.enrollment_status !== 'waitlisted').length > $settings.max_capacity}
+            <p class="mt-2 text-sm text-yellow-600 dark:text-yellow-400">
+              {$t('course.navItem.settings.waitlist_over_capacity_warning', { count: $group.students.filter(s => s.enrollment_status !== 'waitlisted').length })}
+            </p>
+          {/if}
+        </div>
+      {/if}
     </Column>
   </Row>
 

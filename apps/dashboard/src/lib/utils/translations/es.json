@@ -122,7 +122,8 @@
       "error": {
         "missing_data": "Faltan datos de la organización, por favor recarga la página",
         "no": "No hay dominio de organización actual"
-      }
+      },
+      "approved": "¡Estudiante aprobado!"
     },
     "newsfeed": {
       "error": {
@@ -278,7 +279,13 @@
         "type": "Tipo de curso",
         "course_type_desc": "Actualiza el tipo de curso para una experiencia más personalizada",
         "live_class": "clase en vivo",
-        "self_paced": "Ritmo propio"
+        "self_paced": "Ritmo propio",
+        "waitlist_title": "Inscripción / Lista de espera",
+        "waitlist_desc": "Habilita una lista de espera para que los estudiantes puedan unirse cuando el curso esté lleno.",
+        "waitlist_capacity_label": "Capacidad máxima (estudiantes)",
+        "waitlist_enrolled_count": "Inscritos actualmente: {count} estudiante(s)",
+        "waitlist_over_capacity_warning": "Ya hay {count} estudiantes inscritos. Nadie será eliminado, pero nuevas inscripciones serán bloqueadas.",
+        "waitlist_capacity_required": "La capacidad máxima es requerida cuando la lista de espera está habilitada."
       },
       "landing_page": {
         "start_course": "Iniciar curso",
@@ -483,7 +490,14 @@
           "remove": "Eliminar"
         },
         "view": "Vista",
-        "delete_profile": "Eliminar perfil"
+        "delete_profile": "Eliminar perfil",
+        "approve": "Aprobar",
+        "tab_students": "Estudiantes",
+        "tab_waitlist": "Lista de espera",
+        "enrolled_count": "{count} inscrito(s)",
+        "waitlist_count": "{count} en lista de espera",
+        "waitlist_empty": "No hay estudiantes en la lista de espera",
+        "joined": "Se unió"
       },
       "marks": {
         "title": "Marcas",
@@ -1654,5 +1668,13 @@
         "message": "Este enlace de verificación no es válido o tiene un formato incorrecto. Revise su correo electrónico para ver el enlace correcto o solicite un nuevo correo electrónico de verificación."
       }
     }
+  },
+  "invite": {
+    "join_course": "Unirse al curso",
+    "join_waitlist": "Unirse a la lista de espera",
+    "already_on_waitlist": "Estás en la lista de espera",
+    "spots_remaining": "{count} lugar(es) disponible(s)",
+    "course_full_message": "Este curso está lleno. Únete a la lista de espera y el profesor te notificará si se abre un lugar.",
+    "waitlist_joined_confirmation": "Has sido agregado a la lista de espera. Recibirás un correo cuando seas aprobado."
   }
 }

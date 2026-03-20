@@ -233,7 +233,8 @@
       "error": {
         "missing_data": "Brak danych org, ponownie załaduj stronę",
         "no": "Brak aktualnej domeny org"
-      }
+      },
+      "approved": "Uczeń zatwierdzony!"
     },
     "newsfeed": {
       "error": {
@@ -433,7 +434,13 @@
         "self_paced": "Samo krążył",
         "delete": "Usuń kurs",
         "delete_text": "Usuń ten kurs, tego działania nie można cofnąć",
-        "save": "Zapisz zmiany"
+        "save": "Zapisz zmiany",
+        "waitlist_title": "Rejestracja / Lista oczekujących",
+        "waitlist_desc": "Włącz listę oczekujących, aby studenci mogli dołączyć do kolejki, gdy kurs jest pełny.",
+        "waitlist_capacity_label": "Maksymalna pojemność (studenci)",
+        "waitlist_enrolled_count": "Aktualnie zapisanych: {count} student(ów)",
+        "waitlist_over_capacity_warning": "Już {count} studentów jest zapisanych. Nikt nie zostanie usunięty, ale nowe rejestracje będą zablokowane.",
+        "waitlist_capacity_required": "Maksymalna pojemność jest wymagana, gdy lista oczekujących jest włączona."
       },
       "landing_page": {
         "course_content": "Treść kursu",
@@ -638,7 +645,14 @@
           "copy_link": "Kopiuj link",
           "success": "Skopiowane pomyślnie",
           "finish": "Skończyć"
-        }
+        },
+        "approve": "Zatwierdź",
+        "tab_students": "Uczniowie",
+        "tab_waitlist": "Lista oczekujących",
+        "enrolled_count": "{count} zapisanych",
+        "waitlist_count": "{count} na liście oczekujących",
+        "waitlist_empty": "Brak uczniów na liście oczekujących",
+        "joined": "Dołączył(a)"
       },
       "marks": {
         "title": "Znaki",
@@ -1624,5 +1638,13 @@
         "message": "Ten link weryfikacyjny jest nieprawidłowy lub źle sformułowany. Sprawdź, czy w skrzynce e-mail znajduje się właściwy link, lub poproś o nowy e-mail weryfikacyjny."
       }
     }
+  },
+  "invite": {
+    "join_course": "Dołącz do kursu",
+    "join_waitlist": "Dołącz do listy oczekujących",
+    "already_on_waitlist": "Jesteś na liście oczekujących",
+    "spots_remaining": "Pozostało {count} miejsce(a)",
+    "course_full_message": "Kurs jest pełny. Dołącz do listy oczekujących, a nauczyciel powiadomi Cię, gdy zwolni się miejsce.",
+    "waitlist_joined_confirmation": "Zostałeś dodany do listy oczekujących. Otrzymasz e-mail, gdy zostaniesz zatwierdzony."
   }
 }

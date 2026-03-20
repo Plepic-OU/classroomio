@@ -122,7 +122,8 @@
       "error": {
         "missing_data": "Organisationsdaten fehlen. Bitte laden Sie die Seite neu",
         "no": "Keine aktuelle Organisationsdomäne"
-      }
+      },
+      "approved": "Studierende genehmigt!"
     },
     "newsfeed": {
       "error": {
@@ -278,7 +279,13 @@
         "type": "Kurstyp",
         "course_type_desc": "Aktualisieren Sie den Kurstyp für ein persönlicheres Erlebnis",
         "live_class": "Live-Klasse",
-        "self_paced": "Eigenständig"
+        "self_paced": "Eigenständig",
+        "waitlist_title": "Einschreibung / Warteliste",
+        "waitlist_desc": "Aktiviere eine Warteliste, damit Studenten in eine Warteschlange aufgenommen werden können, wenn der Kurs voll ist.",
+        "waitlist_capacity_label": "Maximale Kapazität (Studenten)",
+        "waitlist_enrolled_count": "Derzeit eingeschrieben: {count} Student(en)",
+        "waitlist_over_capacity_warning": "Es sind bereits {count} Studenten eingeschrieben. Niemand wird entfernt, aber neue Einschreibungen werden blockiert.",
+        "waitlist_capacity_required": "Maximale Kapazität ist erforderlich, wenn die Warteliste aktiviert ist."
       },
       "landing_page": {
         "start_course": "Kurs starten",
@@ -483,7 +490,14 @@
           "remove": "Entfernen"
         },
         "view": "Sicht",
-        "delete_profile": "Profil löschen"
+        "delete_profile": "Profil löschen",
+        "approve": "Genehmigen",
+        "tab_students": "Studierende",
+        "tab_waitlist": "Warteliste",
+        "enrolled_count": "{count} eingeschrieben",
+        "waitlist_count": "{count} auf der Warteliste",
+        "waitlist_empty": "Keine Studierende auf der Warteliste",
+        "joined": "Beigetreten"
       },
       "marks": {
         "title": "Markierungen",
@@ -1654,5 +1668,13 @@
         "message": "Dieser Bestätigungslink ist ungültig oder fehlerhaft. Bitte überprüfen Sie Ihre E-Mails auf den richtigen Link oder fordern Sie eine neue Bestätigungs-E-Mail an."
       }
     }
+  },
+  "invite": {
+    "join_course": "Kurs beitreten",
+    "join_waitlist": "Warteliste beitreten",
+    "already_on_waitlist": "Sie stehen auf der Warteliste",
+    "spots_remaining": "{count} Platz/Plätze verfügbar",
+    "course_full_message": "Dieser Kurs ist voll. Treten Sie der Warteliste bei und der Lehrer benachrichtigt Sie, wenn ein Platz frei wird.",
+    "waitlist_joined_confirmation": "Sie wurden zur Warteliste hinzugefügt. Sie erhalten eine E-Mail, wenn Sie genehmigt wurden."
   }
 }

@@ -122,7 +122,8 @@
       "error": {
         "missing_data": "Thiếu dữ liệu tổ chức, vui lòng tải lại trang",
         "no": "Không có miền tổ chức hiện tại"
-      }
+      },
+      "approved": "Học sinh đã được phê duyệt!"
     },
     "newsfeed": {
       "error": {
@@ -278,7 +279,13 @@
         "type": "Loại khóa học",
         "course_type_desc": "Cập nhật loại khóa học để có trải nghiệm cá nhân hóa hơn",
         "live_class": "Lớp học trực tiếp",
-        "self_paced": "Tự nhịp độ"
+        "self_paced": "Tự nhịp độ",
+        "waitlist_title": "Đăng ký / Danh sách chờ",
+        "waitlist_desc": "Bật danh sách chờ để học sinh có thể xếp hàng khi khóa học đã đầy.",
+        "waitlist_capacity_label": "Số lượng tối đa (học sinh)",
+        "waitlist_enrolled_count": "Hiện đang đăng ký: {count} học sinh",
+        "waitlist_over_capacity_warning": "Đã có {count} học sinh đăng ký. Không ai bị xóa, nhưng đăng ký mới sẽ bị chặn.",
+        "waitlist_capacity_required": "Số lượng tối đa là bắt buộc khi danh sách chờ được bật."
       },
       "landing_page": {
         "start_course": "Bắt đầu khóa học",
@@ -483,7 +490,14 @@
           "remove": "Di dời"
         },
         "view": "Xem",
-        "delete_profile": "Xóa hồ sơ"
+        "delete_profile": "Xóa hồ sơ",
+        "approve": "Phê duyệt",
+        "tab_students": "Học sinh",
+        "tab_waitlist": "Danh sách chờ",
+        "enrolled_count": "{count} đã đăng ký",
+        "waitlist_count": "{count} trong danh sách chờ",
+        "waitlist_empty": "Không có học sinh nào trong danh sách chờ",
+        "joined": "Đã tham gia"
       },
       "marks": {
         "title": "Điểm",
@@ -1654,5 +1668,13 @@
         "message": "Liên kết xác minh này không hợp lệ hoặc không đúng định dạng. Vui lòng kiểm tra email của bạn để tìm liên kết chính xác hoặc yêu cầu email xác minh mới."
       }
     }
+  },
+  "invite": {
+    "join_course": "Tham gia khóa học",
+    "join_waitlist": "Tham gia danh sách chờ",
+    "already_on_waitlist": "Bạn đang trong danh sách chờ",
+    "spots_remaining": "Còn {count} chỗ trống",
+    "course_full_message": "Khóa học đã đầy. Tham gia danh sách chờ và giáo viên sẽ thông báo cho bạn khi có chỗ trống.",
+    "waitlist_joined_confirmation": "Bạn đã được thêm vào danh sách chờ. Bạn sẽ nhận được email khi được chấp thuận."
   }
 }

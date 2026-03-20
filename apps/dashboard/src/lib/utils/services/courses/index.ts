@@ -103,6 +103,7 @@ const ID_QUERY = `
   logo,
   is_published,
   version,
+  group_id,
   group(*,
     members:groupmember(*,
       profile(*)
@@ -114,6 +115,8 @@ const ID_QUERY = `
   metadata,
   is_certificate_downloadable,
   certificate_theme,
+  waitlist_enabled,
+  max_capacity,
   lesson_section(id, title, order, created_at),
   lessons:lesson(
     id, title, public, lesson_at, is_unlocked, order, created_at, section_id,
@@ -278,6 +281,15 @@ export function updatedGroupMember(update: any, match: any) {
 
 export function deleteGroupMember(groupMemberId: Groupmember['id']) {
   return supabase.from('groupmember').delete().match({ id: groupMemberId });
+}
+
+/** Auto-enrolls all waitlisted members in a group when the waitlist is disabled (Q5). */
+export function updateWaitlistedToActive(groupId: string) {
+  return supabase
+    .from('groupmember')
+    .update({ enrollment_status: 'active' })
+    .eq('group_id', groupId)
+    .eq('enrollment_status', 'waitlisted');
 }
 
 export async function getMarks(courseId) {

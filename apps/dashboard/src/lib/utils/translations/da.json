@@ -238,7 +238,8 @@
       "error": {
         "missing_data": "Org -data mangler, skal du indlæse siden",
         "no": "Intet nuværende org -domæne"
-      }
+      },
+      "approved": "Studerende godkendt!"
     },
     "newsfeed": {
       "error": {
@@ -438,7 +439,13 @@
         "self_paced": "Selv tempo",
         "delete": "Slet kursus",
         "delete_text": "Slet dette kursus, denne handling kan ikke fortrydes",
-        "save": "Gem ændringer"
+        "save": "Gem ændringer",
+        "waitlist_title": "Tilmelding / Venteliste",
+        "waitlist_desc": "Aktivér en venteliste, så elever kan tilmelde sig en kø, når kurset er fuldt.",
+        "waitlist_capacity_label": "Maksimal kapacitet (elever)",
+        "waitlist_enrolled_count": "Aktuelt tilmeldt: {count} elev(er)",
+        "waitlist_over_capacity_warning": "Der er allerede {count} tilmeldte elever. Ingen vil blive fjernet, men nye tilmeldinger vil blive blokeret.",
+        "waitlist_capacity_required": "Maksimal kapacitet er påkrævet, når ventelisten er aktiveret."
       },
       "analytics": {
         "title": "Analytics"
@@ -646,7 +653,14 @@
           "copy_link": "Kopier link",
           "success": "Kopieret med succes",
           "finish": "Slutte"
-        }
+        },
+        "approve": "Godkend",
+        "tab_students": "Studerende",
+        "tab_waitlist": "Venteliste",
+        "enrolled_count": "{count} tilmeldt",
+        "waitlist_count": "{count} på venteliste",
+        "waitlist_empty": "Ingen studerende på ventelisten",
+        "joined": "Tilmeldt"
       },
       "marks": {
         "title": "Mærker",
@@ -1623,5 +1637,13 @@
         "message": "Dette bekræftelseslink er ugyldigt eller forkert udformet. Tjek venligst din e-mail for det korrekte link, eller anmod om en ny bekræftelses-e-mail."
       }
     }
+  },
+  "invite": {
+    "join_course": "Tilmeld dig kurset",
+    "join_waitlist": "Tilmeld venteliste",
+    "already_on_waitlist": "Du er på ventelisten",
+    "spots_remaining": "{count} plads(er) tilbage",
+    "course_full_message": "Kurset er fuldt. Tilmeld ventelisten, og læreren giver dig besked, når der er en ledig plads.",
+    "waitlist_joined_confirmation": "Du er blevet tilføjet til ventelisten. Du modtager en e-mail, når du er godkendt."
   }
 }
