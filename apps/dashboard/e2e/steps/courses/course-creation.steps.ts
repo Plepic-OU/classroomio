@@ -1,6 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { createBdd } from 'playwright-bdd';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { test, expect } from '../../fixtures';
 
 const { Given, When, Then } = createBdd(test);
@@ -23,6 +26,8 @@ When('I select the course type {string}', async ({ page }, courseType: string) =
 
 When('I fill in the course title {string}', async ({ page }, title: string) => {
   await page.getByLabel(/course name/i).fill(title);
+  // Short Description is required — target by placeholder to avoid strict mode violation
+  await page.getByPlaceholder('A little description about this course').fill('Test course description');
 });
 
 When('I submit the course form', async ({ page }) => {

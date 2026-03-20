@@ -13,7 +13,7 @@ When('I enter my test credentials', async ({ page }) => {
 });
 
 When('I click the login button', async ({ page }) => {
-  await page.getByRole('button', { name: /login/i }).click();
+  await page.getByRole('button', { name: /log in/i }).click();
 });
 
 Then('I should be redirected to the dashboard', async ({ page }) => {

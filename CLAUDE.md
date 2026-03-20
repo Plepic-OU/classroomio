@@ -141,6 +141,40 @@ C4 model diagrams are in `docs/c4/`:
 
 Refresh: run `/c4-model` in Claude Code.
 
+## E2E Tests
+
+BDD-style Playwright tests live in `apps/dashboard/e2e/`. Use `playwright-bdd` with Gherkin feature files.
+
+### Running
+
+```bash
+# Start services first (dashboard + Supabase must be running)
+pnpm dev --filter=@cio/dashboard &
+supabase start
+
+# Run all E2E tests (check services → reset DB → generate BDD → run)
+cd apps/dashboard && pnpm test:e2e
+
+# Run with interactive UI on http://localhost:9323
+cd apps/dashboard && pnpm test:e2e:ui
+```
+
+### Test artifacts
+
+Videos, screenshots, and traces are recorded for every test (including passing ones).
+View them with:
+
+```bash
+cd apps/dashboard && pnpm exec playwright show-report
+```
+
+### Adding tests
+
+1. Write a Gherkin scenario in `e2e/features/<domain>/<name>.feature`
+2. Implement step definitions in `e2e/steps/<domain>/<name>.steps.ts`
+3. Add any new tables touched by the scenario to `e2e/scripts/reset-db.ts`
+4. Distill any non-obvious selector or fixture patterns into the `e2e-test-writing` skill
+
 ## Code Style
 
 Prettier config (`.prettierrc`): no tabs, single quotes, no trailing commas, printWidth 100. Plugins: `prettier-plugin-svelte` (with `parser: "svelte"` override for `.svelte` files), `prettier-plugin-tailwindcss`. TailwindCSS uses `class` strategy for dark mode.

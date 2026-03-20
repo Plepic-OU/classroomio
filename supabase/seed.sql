@@ -11,7 +11,7 @@
 INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encrypted_password", "email_confirmed_at", "invited_at", "confirmation_token", "confirmation_sent_at", "recovery_token", "recovery_sent_at", "email_change_token_new", "email_change", "email_change_sent_at", "last_sign_in_at", "raw_app_meta_data", "raw_user_meta_data", "is_super_admin", "created_at", "updated_at", "phone", "phone_confirmed_at", "phone_change", "phone_change_token", "phone_change_sent_at", "email_change_token_current", "email_change_confirm_status", "banned_until", "reauthentication_token", "reauthentication_sent_at", "is_sso_user", "deleted_at") VALUES
 	('00000000-0000-0000-0000-000000000000', '0c256e75-aa40-4f62-8d30-0217ca1c60d9', 'authenticated', 'authenticated', 'student@test.com', '$2a$10$dgxySj.k12gDKhLx7X4x6./J.Nzhz7WQrwh5lkjLKwIwWW4o5GJcW', '2023-12-18 17:08:57.413996+00', NULL, '', NULL, '', NULL, '', '', NULL, '2023-12-19 18:22:55.359055+00', '{"provider": "email", "providers": ["email"]}', '{}', NULL, '2023-12-18 17:08:57.399895+00', '2024-01-22 19:48:40.922563+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL),
 	('00000000-0000-0000-0000-000000000000', '7ac00503-8519-43c8-a5ea-b79aeca900b1', 'authenticated', 'authenticated', 'admin@test.com', '$2a$10$n8vBI6.pyE0W/RO9DcJDseLKF/CRwsU4X4Lc2MaQogt8pQgnJavTa', '2023-12-16 14:04:38.311724+00', NULL, '', NULL, '', NULL, '', '', NULL, '2023-12-19 18:21:06.60122+00', '{"provider": "email", "providers": ["email"]}', '{}', NULL, '2023-12-16 14:04:38.281783+00', '2024-01-22 19:48:43.852203+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL),
-	('00000000-0000-0000-0000-000000000000', '01676a50-bb56-4c5e-8a61-fb9e9190fb10', 'authenticated', 'authenticated', 'test@test.com', '$2a$10$WmfPO84h.8SbkZWSzXAygead77QQQXdeO5XIMd8iXk8SFQKB3Udy2', '2023-11-22 10:09:32.250231+00', NULL, '', NULL, '', NULL, '', '', NULL, '2023-12-04 12:57:34.337219+00', '{"provider": "email", "providers": ["email"]}', '{}', NULL, '2023-11-22 10:09:32.171201+00', '2023-12-16 14:00:35.986845+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL);
+	('00000000-0000-0000-0000-000000000000', '01676a50-bb56-4c5e-8a61-fb9e9190fb10', 'authenticated', 'authenticated', 'test@test.com', '$2a$10$WmfPO84h.8SbkZWSzXAygead77QQQXdeO5XIMd8iXk8SFQKB3Udy2', '2023-11-22 10:09:32.250231+00', NULL, '', NULL, '', NULL, '', '', NULL, '2023-12-04 12:57:34.337219+00', '{"provider": "email", "providers": ["email"]}', '{}', NULL, '2023-11-22 10:09:32.171201+00', '2023-12-16 14:00:35.986845+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL) ON CONFLICT DO NOTHING;
 
 
 
@@ -22,7 +22,7 @@ INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encryp
 INSERT INTO "auth"."identities" ("provider_id", "user_id", "identity_data", "provider", "last_sign_in_at", "created_at", "updated_at") VALUES
 	('01676a50-bb56-4c5e-8a61-fb9e9190fb10', '01676a50-bb56-4c5e-8a61-fb9e9190fb10', '{"sub": "01676a50-bb56-4c5e-8a61-fb9e9190fb10", "email": "test@test.com"}', 'email', '2023-11-22 10:09:32.225444+00', '2023-11-22 10:09:32.225521+00', '2023-11-22 10:09:32.225521+00'),
 	('7ac00503-8519-43c8-a5ea-b79aeca900b1', '7ac00503-8519-43c8-a5ea-b79aeca900b1', '{"sub": "7ac00503-8519-43c8-a5ea-b79aeca900b1", "email": "admin@test.com"}', 'email', '2023-12-16 14:04:38.302264+00', '2023-12-16 14:04:38.302326+00', '2023-12-16 14:04:38.302326+00'),
-	('0c256e75-aa40-4f62-8d30-0217ca1c60d9', '0c256e75-aa40-4f62-8d30-0217ca1c60d9', '{"sub": "0c256e75-aa40-4f62-8d30-0217ca1c60d9", "email": "student@test.com"}', 'email', '2023-12-18 17:08:57.410285+00', '2023-12-18 17:08:57.410344+00', '2023-12-18 17:08:57.410344+00');
+	('0c256e75-aa40-4f62-8d30-0217ca1c60d9', '0c256e75-aa40-4f62-8d30-0217ca1c60d9', '{"sub": "0c256e75-aa40-4f62-8d30-0217ca1c60d9", "email": "student@test.com"}', 'email', '2023-12-18 17:08:57.410285+00', '2023-12-18 17:08:57.410344+00', '2023-12-18 17:08:57.410344+00') ON CONFLICT DO NOTHING;
 
 
 --
@@ -181,6 +181,16 @@ INSERT INTO "public"."profile" ("id", "fullname", "username", "avatar_url", "cre
 
 
 --
+-- Data for Name: role; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."role" ("id", "type", "description") VALUES
+	(1, 'ADMIN', 'The main controller'),
+	(2, 'TUTOR', 'Can make changes to content, courses, but cant control passwords and cant add other tutors'),
+	(3, 'STUDENT', 'A student role, can interact with application but cant make changes') ON CONFLICT DO NOTHING;
+
+
+--
 -- Data for Name: groupmember; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -331,6 +341,26 @@ INSERT INTO "public"."lesson_comment" ("id", "created_at", "updated_at", "lesson
 
 
 
+--
+-- Data for Name: submissionstatus; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."submissionstatus" ("label") VALUES
+	('Submitted'),
+	('In Progress'),
+	('Graded') ON CONFLICT DO NOTHING;
+
+
+--
+-- Data for Name: question_type; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."question_type" ("label", "created_at", "updated_at", "typename") VALUES
+	('Single answer', '2021-08-07 18:49:46.246529+00', '2021-08-15 00:57:08.12069+00', 'RADIO'),
+	('Multiple answers', '2021-08-07 18:49:46.246529+00', '2021-08-15 00:57:27.935478+00', 'CHECKBOX'),
+	('Paragraph', '2021-08-07 18:49:46.246529+00', '2021-08-15 00:57:38.634665+00', 'TEXTAREA') ON CONFLICT DO NOTHING;
+
+
 INSERT INTO "public"."question" ("id", "question_type_id", "title", "created_at", "updated_at", "exercise_id", "name", "points", "order") VALUES
 	(1, 2, 'What does MVC stand for', '2023-12-16 14:51:49.433261+00', '2023-12-16 14:51:49.433261+00', 'e2ea9fb8-6448-4f6c-a1d5-02c2b12cf862', 'd7316838-284f-4096-bf55-e51db9a98d47', 0, 0),
 	(2, 3, 'What is the primary responsibility of the "Controller" component in the Model-View-Controller (MVC) architecture, and how does it differ from the responsibilities of the "Model" and "View"?', '2023-12-18 07:33:47.030263+00', '2023-12-18 07:33:47.030263+00', '8b6084b0-a936-411d-9408-a1289aeed068', '30c37146-5060-4fc7-beac-1a0b2cfcf3cc', 0, 0),
@@ -451,7 +481,7 @@ INSERT INTO "public"."question_answer" ("id", "answers", "question_id", "open_an
 --
 
 INSERT INTO "storage"."buckets" ("id", "name", "owner", "created_at", "updated_at", "public", "avif_autodetection", "file_size_limit", "allowed_mime_types", "owner_id") VALUES
-	('avatars', 'avatars', NULL, '2023-11-22 09:29:04.533114+00', '2023-11-22 09:29:04.533114+00', true, false, NULL, NULL, NULL);
+	('avatars', 'avatars', NULL, '2023-11-22 09:29:04.533114+00', '2023-11-22 09:29:04.533114+00', true, false, NULL, NULL, NULL) ON CONFLICT DO NOTHING;
 
 
 --

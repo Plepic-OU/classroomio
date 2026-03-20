@@ -1,11 +1,14 @@
 # BDD Playwright E2E Tests — Design Document
 
 > Created: 2026-03-13
+> Updated: 2026-03-20 — aligned with acceptance criteria
 > Scope: Initial setup with login and course creation flows
 
 ## Overview
 
 Add BDD-style end-to-end tests to the dashboard app using Gherkin feature files and Playwright, co-located in `apps/dashboard/e2e/`. Playwright UI dashboard exposed on port `9323` for host machine access via devcontainer port forwarding.
+
+Tests **do not start services automatically**. A pre-flight check verifies that the dashboard (`localhost:5173`) and Supabase (`localhost:54321`) are reachable before any test runs — failing fast if they are not.
 
 ---
 
@@ -27,6 +30,9 @@ apps/dashboard/
 │   │       └── course-creation.steps.ts
 │   ├── fixtures/
 │   │   └── index.ts                # shared test fixtures
+│   ├── scripts/
+│   │   ├── check-services.ts       # pre-flight service health check
+│   │   └── reset-db.ts             # truncate tables + re-seed
 │   └── .auth/                      # gitignored — saved session state
 │       ├── user.json
 │       └── context.json            # stores orgSlug captured after login
@@ -50,9 +56,11 @@ Add to `apps/dashboard/package.json`:
 Scripts:
 
 ```json
-"test:e2e": "bddgen && playwright test",
-"test:e2e:ui": "bddgen && playwright test --ui --ui-host=0.0.0.0 --ui-port=9323"
+"test:e2e": "tsx e2e/scripts/check-services.ts && tsx e2e/scripts/reset-db.ts && bddgen && playwright test",
+"test:e2e:ui": "tsx e2e/scripts/check-services.ts && tsx e2e/scripts/reset-db.ts && bddgen && playwright test --ui --ui-host=0.0.0.0 --ui-port=9323"
 ```
+
+The single `pnpm test:e2e` command covers the full flow: service check → DB reset → BDD code-gen → test run.
 
 ---
 
@@ -89,16 +97,15 @@ const testDir = defineBddConfig({
 
 export default defineConfig({
   testDir,
-  reporter: [['html'], ['list']],
+  timeout: 10_000,           // max 10 s per test step — fail fast on hangs
+  reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: 'http://localhost:5173',
-    trace: 'on-first-retry',
+    video: 'on',             // record video for every test (including passing)
+    screenshot: 'on',        // capture screenshot for every test (including passing)
+    trace: 'on',             // capture trace for every test
   },
-  webServer: {
-    command: 'pnpm dev --filter=@cio/dashboard',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-  },
+  // No webServer block — services must be started manually before running tests
   projects: [
     {
       name: 'setup',
@@ -124,7 +131,86 @@ export default defineConfig({
 });
 ```
 
+Key decisions:
+- **No `webServer` block** — tests never start the dev server; `check-services.ts` enforces services are up.
+- `video: 'on'` / `screenshot: 'on'` / `trace: 'on'` — artifacts recorded for **every** test, including passing ones, so failures can be diagnosed without re-running.
+- `timeout: 10_000` — 10 s ceiling per test action; keeps feedback loop tight.
+- `reporter: [['html', { open: 'never' }]]` — Playwright HTML report written to `playwright-report/`; open manually via `pnpm exec playwright show-report` or serve the folder.
+
 The `@unauthenticated` tag routes scenarios (like login) to a project without `storageState`, so they can exercise the login UI without being immediately redirected.
+
+---
+
+## Pre-flight Service Check
+
+**`e2e/scripts/check-services.ts`**
+
+```typescript
+const SERVICES = [
+  { name: 'Dashboard', url: 'http://localhost:5173' },
+  { name: 'Supabase', url: 'http://localhost:54321/health' },
+];
+
+async function checkServices() {
+  const failures: string[] = [];
+  for (const { name, url } of SERVICES) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+      if (!res.ok) failures.push(`${name} (${url}) returned HTTP ${res.status}`);
+    } catch {
+      failures.push(`${name} (${url}) is not reachable`);
+    }
+  }
+  if (failures.length) {
+    console.error('\n❌ Required services are not running:\n');
+    failures.forEach(f => console.error(`  • ${f}`));
+    console.error('\nStart them first (e.g. pnpm dev --filter=@cio/dashboard, supabase start), then re-run tests.\n');
+    process.exit(1);
+  }
+  console.log('✅ All required services are reachable.');
+}
+
+checkServices();
+```
+
+---
+
+## Data Reset
+
+**`e2e/scripts/reset-db.ts`**
+
+Truncates test-affected tables and re-seeds from `supabase/seed.sql` before every test run. Uses the Supabase service-role key (from `.env.test`) so it bypasses RLS.
+
+```typescript
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.PUBLIC_SUPABASE_URL ?? 'http://localhost:54321',
+  process.env.PRIVATE_SUPABASE_SERVICE_ROLE ?? '',
+);
+
+const TABLES_TO_TRUNCATE = [
+  'course',
+  'course_module',
+  'course_module_lesson',
+  // extend as new features are tested
+];
+
+async function resetDb() {
+  for (const table of TABLES_TO_TRUNCATE) {
+    const { error } = await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (error) {
+      console.error(`Failed to truncate ${table}:`, error.message);
+      process.exit(1);
+    }
+  }
+  console.log('✅ Test tables truncated and ready.');
+}
+
+resetDb();
+```
+
+> Seed data (users, org, roles) is not truncated — only mutable content tables used by tests. This keeps reset fast (no need to recreate auth users or re-run all migrations).
 
 ---
 
@@ -286,6 +372,8 @@ mkdir -p e2e/.auth
 cd - > /dev/null
 ```
 
+> **Action required:** after updating `devcontainer.json` and `setup.sh`, ask the user to rebuild the devcontainer so Playwright and the Chromium browser are installed via the Docker build step (not post-attach). Both `appPort` and `forwardPorts` must include `9323` so the Playwright UI is reachable from the host machine.
+
 ---
 
 ## Turbo Config
@@ -295,9 +383,11 @@ Add to `turbo.json` `pipeline`:
 ```json
 "test:e2e": {
   "cache": false,
-  "dependsOn": ["@cio/dashboard#build"]
+  "dependsOn": []
 }
 ```
+
+> `dependsOn` is intentionally empty — the service check script enforces prerequisites at runtime. No Turbo-level build dependency.
 
 ---
 
@@ -312,6 +402,69 @@ test-results/
 .playwright-bdd/
 ```
 
+`test-results/` is where Playwright stores per-test videos, screenshots, and traces. It is gitignored — access artifacts via `playwright show-report` or the CI artifact uploader.
+
+---
+
+## Viewing Test Results
+
+After a run:
+
+```bash
+# Open the HTML report (shows all tests, videos, screenshots, traces)
+cd apps/dashboard && pnpm exec playwright show-report
+```
+
+The report is served locally and shows pass/fail status, video replays, and trace viewer for **every** test — not just failures. This satisfies the requirement to inspect passing tests as well.
+
+---
+
+## Test Writing Skill
+
+Patterns and hard-won knowledge discovered while writing or debugging E2E tests (selector quirks, step-definition conventions, fixture patterns) **must be distilled into the project skill `e2e-test-writing`** so future sessions start with that context pre-loaded. Update the skill after any non-obvious fix or successful pattern is discovered.
+
+---
+
+## CLAUDE.md Additions
+
+Add the following section to `CLAUDE.md` under a new `## E2E Tests` heading:
+
+```markdown
+## E2E Tests
+
+BDD-style Playwright tests live in `apps/dashboard/e2e/`. Use `playwright-bdd` with Gherkin feature files.
+
+### Running
+
+```bash
+# Start services first (dashboard + Supabase must be running)
+pnpm dev --filter=@cio/dashboard &
+supabase start
+
+# Run all E2E tests (check services → reset DB → generate BDD → run)
+cd apps/dashboard && pnpm test:e2e
+
+# Run with interactive UI on http://localhost:9323
+cd apps/dashboard && pnpm test:e2e:ui
+```
+
+### Test artifacts
+
+Videos, screenshots, and traces are recorded for every test (including passing ones).
+View them with:
+
+```bash
+cd apps/dashboard && pnpm exec playwright show-report
+```
+
+### Adding tests
+
+1. Write a Gherkin scenario in `e2e/features/<domain>/<name>.feature`
+2. Implement step definitions in `e2e/steps/<domain>/<name>.steps.ts`
+3. Add any new tables touched by the scenario to `e2e/scripts/reset-db.ts`
+4. Distill any non-obvious selector or fixture patterns into the `e2e-test-writing` skill
+```
+
 ---
 
 ## Notes
@@ -322,3 +475,4 @@ test-results/
 - `orgSlug` is captured dynamically after login and written to `e2e/.auth/context.json` — no hardcoded slugs
 - `--ui-host=0.0.0.0` is required to make the Playwright UI reachable through the devcontainer port forward
 - Course creation modal is a two-step flow: step 1 selects course type, step 2 fills in the title
+- DB reset only truncates mutable content tables — auth users and org records are seeded once and left intact, keeping reset fast

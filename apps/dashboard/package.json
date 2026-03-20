@@ -14,8 +14,9 @@
     "prepare": "svelte-kit sync",
     "test": "jest",
     "test:watch": "pnpm run test --watch",
-    "test:e2e": "bddgen && playwright test",
-    "test:e2e:ui": "bddgen && playwright test --ui --ui-host=0.0.0.0 --ui-port=9323",
+    "test:e2e": "tsx e2e/scripts/check-services.ts && tsx e2e/scripts/reset-db.ts && bddgen && playwright test",
+    "test:e2e:ui": "tsx e2e/scripts/check-services.ts && tsx e2e/scripts/reset-db.ts && bddgen && playwright test --ui --ui-host=0.0.0.0 --ui-port=9323",
+    "test:e2e:report": "playwright show-report --host 0.0.0.0 --port 9323",
     "ci": "cp .env.example .env && vite build && vite preview",
     "script:translate": "node ./scripts/translate.cjs"
   },
@@ -77,6 +78,7 @@
     "@babel/preset-env": "^7.22.9",
     "@babel/preset-typescript": "^7.23.3",
     "@babel/runtime": "^7.22.6",
+    "@playwright/test": "^1.44.0",
     "@sveltejs/kit": "^1.29.0",
     "@tailwindcss/typography": "^0.5.9",
     "@testing-library/jest-dom": "^6.1.5",
@@ -93,6 +95,7 @@
     "dotenv": "^16.3.1",
     "jessy": "^3.1.1",
     "jest": "^29.7.0",
+    "playwright-bdd": "^7.0.0",
     "postcss": "^8.4.24",
     "postcss-load-config": "^4.0.1",
     "qrcode": "^1.5.3",
@@ -107,10 +110,10 @@
     "ts-node": "^10.9.2",
     "tsconfig": "workspace:*",
     "tslib": "^2.6.1",
+    "postgres": "^3.4.4",
+    "tsx": "^4.20.3",
     "typescript": "^5.1.6",
-    "vite": "^4.4.8",
-    "@playwright/test": "^1.44.0",
-    "playwright-bdd": "^7.0.0"
+    "vite": "^4.4.8"
   },
   "type": "module",
   "engines": {

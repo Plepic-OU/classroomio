@@ -1,27 +1,28 @@
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { defineConfig, devices } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const authFile = path.join(__dirname, 'e2e/.auth/user.json');
 
 const testDir = defineBddConfig({
   features: 'e2e/features/**/*.feature',
-  steps: 'e2e/steps/**/*.steps.ts',
-  importTestFrom: 'e2e/fixtures/index.ts',
+  steps: ['e2e/steps/**/*.steps.ts', 'e2e/fixtures/index.ts'],
+  disableWarnings: { importTestFrom: true },
 });
 
 export default defineConfig({
   testDir,
-  reporter: [['html'], ['list']],
+  timeout: 10_000,
+  reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: 'http://localhost:5173',
-    trace: 'on-first-retry',
+    video: 'on',
+    screenshot: 'on',
+    trace: 'on',
   },
-  webServer: {
-    command: 'pnpm dev --filter=@cio/dashboard',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-  },
+  // No webServer block — services must be started manually before running tests
   projects: [
     {
       name: 'setup',
