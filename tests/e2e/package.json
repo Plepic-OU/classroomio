@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "test": "bddgen && playwright test",
-    "test:report": "playwright show-report --host 0.0.0.0 --port 9323",
+    "test:ui": "bddgen && playwright test --ui --ui-host=0.0.0.0 --ui-port=9324 2>&1 | sed 's|http://0\\.0\\.0\\.0|http://localhost|g'",
+    "test:report": "playwright show-report playwright-report --host 0.0.0.0 --port 9323 2>&1 | sed 's|http://0\\.0\\.0\\.0|http://localhost|g'",
     "clean": "rm -rf playwright-report test-results .features-gen dist"
   },
   "devDependencies": {

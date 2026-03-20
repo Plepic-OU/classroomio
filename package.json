@@ -15,7 +15,9 @@
     "dashboard:start": "pnpm start --filter @cio/dashboard",
     "api:start": "pnpm start --filter @cio/api",
     "supabase:push": "pnpx supabase link --project-ref $PROJECT_ID && pnpx supabase db push --include-all",
-    "test:e2e": "pnpm --filter=@cio/e2e test"
+    "test:e2e": "pnpm --filter=@cio/e2e test",
+    "test:e2e:ui": "pnpm --filter=@cio/e2e test:ui",
+    "test:e2e:report": "pnpm --filter=@cio/e2e test:report"
   },
   "license": "MIT",
   "dependencies": {
