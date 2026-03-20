@@ -68,6 +68,7 @@
       inputClassName="w-full"
       isDisabled={loading}
       errorMessage={$t(errors.email)}
+      testId="login-email"
     />
     <TextField
       label={$t('login.password')}
@@ -78,9 +79,10 @@
       inputClassName="w-full"
       isDisabled={loading}
       errorMessage={$t(errors.password)}
+      testId="login-password"
     />
     {#if submitError}
-      <p class="text-sm text-red-500">{submitError}</p>
+      <p class="text-sm text-red-500" data-testid="login-error">{submitError}</p>
     {/if}
     <div class="w-full text-right">
       <a class="text-md text-primary-700" href="/forgot"> {$t('login.forgot')} </a>
@@ -95,6 +97,7 @@
       className="sm:w-full w-full"
       isDisabled={loading}
       isLoading={loading}
+      testId="login-submit"
     />
   </div>
 </AuthUI>

@@ -10,6 +10,34 @@ Introduce BDD-style E2E tests using Gherkin feature files and Playwright, via th
 
 `playwright-bdd` generates standard Playwright spec files from `.feature` files and step definitions via `defineBddConfig()` in `playwright.config.ts`. This means Playwright stays the native test runner — so the HTML reporter, UI mode, traces, and web dashboard all work out of the box.
 
+## Acceptance Criteria
+
+### Test Setup
+- All test videos and screenshots are retained, including successful runs
+- Test result folder is listed in `.gitignore`
+- The initial test cases pass continuously
+- Data reset before tests is fast (e.g. truncate tables + re-seed)
+- Quick turnaround for test failures — timeout MUST NOT exceed 10s
+- The Playwright report URL shows test runs
+
+### Running the Tests
+- E2E tests can be run from one `pnpm` command
+- Tests MUST NOT start the services automatically
+- There is a quick check for dependent services — if they are missing, fail fast
+
+### Devcontainer Setup
+- Playwright and the browser plugin MUST be installed during Docker build
+- Playwright ports are forwarded properly — both `appPort` and `forwardPorts` endpoints MUST be reachable from the host machine
+- User is prompted to rebuild the devcontainer after setup changes
+
+### Writing E2E Tests
+- When writing and debugging E2E tests, distill that knowledge into a project skill `e2e-test-writing`
+
+### Documentation
+- `CLAUDE.md` includes information about the E2E tests flow
+
+---
+
 ## Project Structure
 
 ```

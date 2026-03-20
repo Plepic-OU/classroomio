@@ -48,3 +48,8 @@ vite.config.ts*.mjs
 
 # C4 model AST extraction output
 docs/c4/components.json
+
+# E2E test generated files and results
+e2e/.features-gen/
+e2e/test-results/
+e2e/playwright-report/

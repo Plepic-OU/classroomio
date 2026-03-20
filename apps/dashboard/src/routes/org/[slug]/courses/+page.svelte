@@ -114,6 +114,7 @@
           variant={VARIANTS.CONTAINED_DARK}
           isDisabled={!$isOrgAdmin}
           onClick={openNewCourseModal}
+          testId="create-course-btn"
         />
       {/if}
     </div>

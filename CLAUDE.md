@@ -71,6 +71,11 @@ supabase stop                        # stop local Supabase
 
 # E2E tests (Cypress)
 pnpm ci                              # from root
+
+# E2E tests (BDD Playwright) — prerequisites: supabase start + services running
+pnpm test:e2e                        # run all BDD e2e tests (headless)
+pnpm test:e2e:ui                     # open Playwright UI mode
+pnpm test:e2e:report                 # serve last HTML report on port 9323
 ```
 
 ## Environment Setup
@@ -91,3 +96,59 @@ Both `apps/dashboard` and `apps/api` need `.env` files (copy from `.env.example`
 ## Dev Login
 
 Local dashboard at `http://localhost:5173/login`: email `admin@test.com`, password `123456`.
+
+## E2E Tests (BDD Playwright)
+
+BDD-style E2E tests live in `e2e/` using Gherkin feature files + `playwright-bdd`.
+
+### Structure
+
+```
+e2e/
+├── features/           # Gherkin .feature files
+│   ├── login.feature
+│   └── course-creation.feature
+├── steps/              # TypeScript step definitions
+│   ├── login.steps.ts
+│   ├── course-creation.steps.ts
+│   └── supabase.ts     # Admin Supabase client for test data cleanup
+├── playwright.config.ts
+├── tsconfig.json
+└── package.json
+```
+
+### Prerequisites
+
+1. Supabase must be running: `supabase start`
+2. The dashboard (port 5173) and API (port 3002) are started automatically by `webServer` config if not already running. If they are running, they are reused.
+
+### Test Data
+
+- Login tests use `admin@test.com` / `123456` (from `supabase/seed.sql`)
+- Course creation tests create uniquely-named courses (title + timestamp) and delete them via `afterAll` using the Supabase admin client
+- Before each test run, any leftover `BDD Test Course%` records are cleaned up
+
+### Env Variables
+
+The e2e Supabase client reads from `e2e/.env` (if present) or falls back to `apps/dashboard/.env`.
+
+### Playwright Report
+
+The HTML report is served on port 9323. In devcontainer, this port is forwarded to the host.
+
+### `data-testid` Attributes
+
+Key test IDs added to the dashboard for reliable selectors:
+
+| Element | `data-testid` |
+|---------|--------------|
+| Login email input | `login-email` |
+| Login password input | `login-password` |
+| Login submit button | `login-submit` |
+| Login error message | `login-error` |
+| Create course button | `create-course-btn` |
+| Course type option | `course-type-{SELF_PACED\|LIVE_CLASS}` |
+| Next button (modal step 1) | `course-type-next` |
+| Course title input | `course-title-input` |
+| Course description input | `course-description-input` |
+| Create/Finish button | `course-create-submit` |

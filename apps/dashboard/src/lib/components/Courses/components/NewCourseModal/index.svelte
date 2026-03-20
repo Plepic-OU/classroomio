@@ -63,7 +63,10 @@
     const { hasError, fieldErrors } = validateForm($createCourseModal);
 
     errors = fieldErrors;
-    if (hasError) return;
+    if (hasError) {
+      isLoading = false;
+      return;
+    }
 
     const { title, description } = $createCourseModal;
     // 1. Create group
@@ -74,7 +77,10 @@
 
     console.log(`newGroup`, newGroup);
 
-    if (!newGroup) return;
+    if (!newGroup) {
+      isLoading = false;
+      return;
+    }
 
     const { id: group_id } = newGroup[0];
 
@@ -91,7 +97,10 @@
       .select();
     console.log(`newCourse data`, newCourseData);
 
-    if (!newCourseData) return;
+    if (!newCourseData) {
+      isLoading = false;
+      return;
+    }
 
     const newCourse = newCourseData[0];
     courses.update((_courses) => [..._courses, newCourse]);
@@ -164,6 +173,7 @@
               'cursor-not-allowed opacity-60'} transition-all ease-in-out"
             type="button"
             on:click={!option.isDisabled ? () => (type = option.type) : undefined}
+            data-testid="course-type-{option.type}"
           >
             <div class="flex h-[70%] w-full flex-row-reverse">
               {#if option.type === type}
@@ -195,11 +205,12 @@
           label={$t('courses.new_course_modal.next')}
           onClick={() => (step = 1)}
           isDisabled={!type}
+          testId="course-type-next"
         />
       </div>
     </div>
   {:else}
-    <form on:submit|preventDefault={createCourse}>
+    <div>
       <div class="mb-4 flex items-end space-x-2">
         <TextField
           label={$t('courses.new_course_modal.course_name')}
@@ -209,6 +220,7 @@
           isRequired={true}
           errorMessage={errors.title}
           autoComplete={false}
+          testId="course-title-input"
         />
       </div>
 
@@ -222,6 +234,7 @@
         errorMessage={errors.description}
         isAIEnabled={true}
         initAIPrompt="Write a 30 word description for a course titled: {$createCourseModal.title}"
+        testId="course-description-input"
       />
 
       <div class="mt-5 flex items-center justify-between">
@@ -234,11 +247,13 @@
         <PrimaryButton
           className="px-6 py-3"
           label={$t('courses.new_course_modal.button')}
-          type="submit"
+          type="button"
+          onClick={createCourse}
           isDisabled={isLoading}
           {isLoading}
+          testId="course-create-submit"
         />
       </div>
-    </form>
+    </div>
   {/if}
 </Modal>
