@@ -106,7 +106,7 @@ Rules:
 - Only import the aliases you actually use (e.g., if no `When` steps, omit it)
 - Always import `'dotenv/config'` if reading env vars
 - Read credentials from `process.env` with defaults matching `seed/test-users.ts`
-- Use `await page.waitForTimeout(2000)` after `page.goto()` for SvelteKit hydration when the page has interactive forms. **Do NOT use `networkidle`** — SvelteKit dev server keeps an HMR WebSocket open so `networkidle` never resolves. The 2000ms delay is necessary because Svelte replaces SSR inputs during hydration; `fill()` before hydration silently fails
+- Use `await page.waitForTimeout(2000)` after `page.goto()` for SvelteKit hydration when the page has interactive forms. For login pages use `3000ms` (login tests run with clean sessions in parallel and are more sensitive to load). **Do NOT use `networkidle`** — SvelteKit dev server keeps an HMR WebSocket open so `networkidle` never resolves. The delay is necessary because Svelte replaces SSR inputs during hydration; `fill()` before hydration silently fails
 - Use `waitFor({ state: 'visible' })` or `toBeVisible({ timeout: ... })` for assertions — never bare `expect` without waiting
 - Keep timeout values at or below 10_000ms (the global test timeout)
 - **Check ALL existing step files** before writing new steps — not just `common.steps.ts`. Steps like `I am logged in` and `I am on the org courses page` are defined in `course-creation.steps.ts`. Duplicate step definitions cause `bddgen` errors.

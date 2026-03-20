@@ -9,8 +9,9 @@ const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD ?? 'TestPass123!';
 
 given('I am on the login page', async ({ page }) => {
   await page.goto('/login');
-  // Wait for SvelteKit hydration — fixed delay because networkidle won't resolve (HMR WebSocket)
-  await page.waitForTimeout(2000);
+  // Wait for SvelteKit hydration — fixed delay because networkidle won't resolve (HMR WebSocket).
+  // 3000ms needed because login runs in parallel with 7+ workers under heavy load.
+  await page.waitForTimeout(3000);
 });
 
 when('I enter the test user credentials', async ({ page }) => {
