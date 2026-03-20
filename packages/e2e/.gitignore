@@ -1,0 +1,6 @@
+.features-gen/
+.auth/
+test-results/
+playwright-report/
+blob-report/
+.env

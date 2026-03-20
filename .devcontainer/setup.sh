@@ -39,7 +39,21 @@ else
       echo "    Updated $app/.env"
     fi
   done
+
+  # Create e2e .env with Supabase credentials
+  echo "==> Creating packages/e2e/.env..."
+  cat > packages/e2e/.env <<EOL
+SUPABASE_URL=http://localhost:54321
+SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY
+TEST_USER_EMAIL=testuser@classroomio.test
+TEST_USER_PASSWORD=TestPass123!
+EOL
+  echo "    Created packages/e2e/.env"
 fi
+
+echo "==> Installing Playwright browsers..."
+cd /workspaces/classroomio/packages/e2e && npx playwright install --with-deps chromium
+cd /workspaces/classroomio
 
 # Fix claude code permissions for auto updater
 sudo chmod -R g+w /usr/local/share/npm-global/lib/node_modules/@anthropic-ai/

@@ -1,0 +1,20 @@
+{
+  "name": "e2e",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "npx bddgen",
+    "test": "npx bddgen && npx playwright test",
+    "test:ui": "npx bddgen && npx playwright test --ui-port=9324 --ui-host=0.0.0.0",
+    "report": "npx playwright show-report --port 9323",
+    "seed": "npx tsx seed/test-users.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "playwright-bdd": "^8.1.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "tsx": "^4.7.0",
+    "dotenv": "^16.4.0"
+  }
+}

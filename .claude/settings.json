@@ -49,5 +49,8 @@
     "command": "python3 /workspaces/classroomio/.claude/statusline.py"
   },
   "autoUpdatesChannel": "latest",
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "enabledPlugins": {
+    "code-review@claude-plugins-official": true
+  }
 }
