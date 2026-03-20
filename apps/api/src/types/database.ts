@@ -142,4 +142,3 @@ export interface CloneCourseErrorResponse {
   error: string;
   details?: string;
 }
-

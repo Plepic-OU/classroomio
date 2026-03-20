@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Motion } from "svelte-motion";
+  import { Motion } from 'svelte-motion';
 
   export let id;
   export let x;
@@ -14,7 +14,7 @@
   animate={{
     opacity: [0, 1, 0],
     scale: [0, scale, 0],
-    rotate: [75, 120, 150],
+    rotate: [75, 120, 150]
   }}
   transition={{ duration: 0.8, repeat: Infinity, delay }}
   let:motion

@@ -28,4 +28,3 @@ export function getSupabase(config?: SupabaseConfig): SupabaseClient {
 
   return supabase;
 }
-

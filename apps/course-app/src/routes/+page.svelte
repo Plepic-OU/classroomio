@@ -102,7 +102,8 @@
 
         <BlurFade delay={0.25}>
           <p class="text-md max-w-[500px] text-center">
-            With our prebuilt templates, you can setup a fully functional course website for your product & idea in minutes.<br />
+            With our prebuilt templates, you can setup a fully functional course website for your
+            product & idea in minutes.<br />
             <span>
               Similar to the likes of
 
@@ -181,7 +182,7 @@
 
 <!-- Features -->
 <section id="features" class="m-5 w-full px-4 pt-0 md:mb-10 md:mt-0 md:pt-24">
-  <div class="font-drawn mx-auto flex max-w-4xl flex-col items-center">
+  <div class="mx-auto flex max-w-4xl flex-col items-center font-drawn">
     <h2 class="mb-2 text-center text-3xl font-semibold md:mb-10 md:text-start md:text-5xl">
       Features
     </h2>
@@ -246,7 +247,7 @@
           <div class=" flex items-center justify-center">
             <ShimmerButton href="/npm" target="_blank" rel="noopener noreferrer" class="shadow-2xl">
               <span
-                class="whitespace-pre-wrap text-center text-sm font-medium leading-none tracking-tight text-white lg:text-lg dark:from-white dark:to-slate-900/10"
+                class="whitespace-pre-wrap text-center text-sm font-medium leading-none tracking-tight text-white dark:from-white dark:to-slate-900/10 lg:text-lg"
               >
                 Learn More
               </span>

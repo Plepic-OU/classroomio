@@ -1,4 +1,10 @@
-import { TCourseClone,TCourseDownloadContent, TCertificateDownload, ZCertificateDownload, ZCourseDownloadContent } from '$src/types/course';
+import {
+  TCourseClone,
+  TCourseDownloadContent,
+  TCertificateDownload,
+  ZCertificateDownload,
+  ZCourseDownloadContent
+} from '$src/types/course';
 
 import { Hono } from 'hono';
 import { generateCertificate } from '$src/utils/certificate';

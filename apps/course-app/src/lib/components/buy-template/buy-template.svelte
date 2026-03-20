@@ -53,7 +53,7 @@
         class="w-full px-6 shadow-2xl"
       >
         <span
-          class="whitespace-pre-wrap text-center text-sm font-medium leading-none tracking-tight text-white lg:text-lg dark:from-white dark:to-slate-900/10"
+          class="whitespace-pre-wrap text-center text-sm font-medium leading-none tracking-tight text-white dark:from-white dark:to-slate-900/10 lg:text-lg"
         >
           Buy ($50)
         </span>

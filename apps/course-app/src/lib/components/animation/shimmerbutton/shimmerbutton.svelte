@@ -32,11 +32,11 @@
 >
   <div class={cn('-z-30 blur-[2px]', 'absolute inset-0 overflow-visible [container-type:size]')}>
     <div
-      class="animate-magicslide absolute inset-0 h-[100cqh] [aspect-ratio:1] [border-radius:0] [mask:none]"
+      class="absolute inset-0 h-[100cqh] animate-magicslide [aspect-ratio:1] [border-radius:0] [mask:none]"
     >
       <!--  spark before  -->
       <div
-        class="animate-spin-around absolute inset-[-100%] w-auto rotate-0 [background:conic-gradient(from_calc(270deg-(var(--spread)*0.5)),transparent_0,var(--shimmer-color)_var(--spread),transparent_var(--spread))] [translate:0_0]"
+        class="absolute inset-[-100%] w-auto rotate-0 animate-spin-around [background:conic-gradient(from_calc(270deg-(var(--spread)*0.5)),transparent_0,var(--shimmer-color)_var(--spread),transparent_var(--spread))] [translate:0_0]"
       />
     </div>
   </div>
