@@ -1262,7 +1262,17 @@
         "self_paced": "Self paced",
         "delete": "Delete Course",
         "delete_text": "Delete this course,this action cannot be undone",
-        "save": "Save Changes"
+        "save": "Save Changes",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Set the maximum number of students that can enroll in this course. Leave empty for unlimited.",
+        "enable_waitlist": "Enable Waitlist",
+        "enable_waitlist_desc": "When enabled, students can join a waitlist when the course is full",
+        "waitlist_join_button": "Join Waitlist",
+        "waitlist_course_full": "This course is full",
+        "waitlist_course_full_waitlist": "This course is full. You'll be notified when a spot opens.",
+        "waitlist_added_success": "You've been added to the waitlist.",
+        "waitlist_section_header": "Waitlist",
+        "waitlist_approve_button": "Approve"
       }
     },
 

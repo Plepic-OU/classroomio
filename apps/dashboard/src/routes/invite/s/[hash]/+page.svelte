@@ -6,7 +6,7 @@
   import AuthUI from '$lib/components/AuthUI/index.svelte';
   import { currentOrg } from '$lib/utils/store/org';
   import { setTheme } from '$lib/utils/functions/theme';
-  import { addGroupMember } from '$lib/utils/services/courses';
+  import { addGroupMember, getCourseCapacityInfo, addToWaitlist } from '$lib/utils/services/courses';
   import type { CurrentOrg } from '$lib/utils/types/org.js';
   import { ROLE } from '$lib/utils/constants/roles';
   import { profile } from '$lib/utils/store/user';
@@ -17,6 +17,7 @@
   import { snackbar } from '$lib/components/Snackbar/store.js';
   import { capturePosthogEvent } from '$lib/utils/services/posthog';
   import { page } from '$app/stores';
+  import { t } from '$lib/utils/functions/translations';
 
   export let data;
 
@@ -25,6 +26,42 @@
 
   let disableSubmit = false;
   let formRef: HTMLFormElement;
+  let isFull = false;
+  let waitlistEnabled = false;
+  let capacityChecked = false;
+
+  async function checkCapacity() {
+    const capacityInfo = await getCourseCapacityInfo(data.id);
+    isFull = capacityInfo.isFull;
+    waitlistEnabled = capacityInfo.waitlistEnabled;
+    capacityChecked = true;
+  }
+
+  async function handleJoinWaitlist() {
+    loading = true;
+
+    if (!$profile.id || !$profile.email) {
+      return goto(`/signup?redirect=${$page.url?.pathname || ''}`);
+    }
+
+    const { error } = await addToWaitlist({ courseId: data.id, profileId: $profile.id });
+
+    if (error) {
+      console.error('Error joining waitlist', error);
+      snackbar.error('snackbar.invite.failed_join');
+      loading = false;
+      return;
+    }
+
+    triggerSendEmail(NOTIFICATION_NAME.STUDENT_WAITLISTED, {
+      to: $profile.email,
+      courseName: data.name,
+      studentName: $profile.fullname
+    });
+
+    snackbar.success($t('course.navItem.settings.waitlist_added_success'));
+    loading = false;
+  }
 
   async function handleSubmit() {
     loading = true;
@@ -32,6 +69,11 @@
     if (!$profile.id || !$profile.email) {
       console.log('Profile not found', $profile);
       return goto(`/signup?redirect=${$page.url?.pathname || ''}`);
+    }
+
+    // If course is full and waitlist enabled, join waitlist instead
+    if (isFull && waitlistEnabled) {
+      return handleJoinWaitlist();
     }
 
     const { data: courseData, error } = await supabase
@@ -126,6 +168,7 @@
     }
 
     setTheme(data.currentOrg?.theme || '');
+    await checkCapacity();
   });
 
   $: setCurOrg(data.currentOrg as CurrentOrg);
@@ -149,12 +192,31 @@
     <p class="text-center text-sm font-light dark:text-white">{data.description}</p>
   </div>
 
-  <div class="my-4 flex w-full items-center justify-center">
-    <PrimaryButton
-      label="Join Course"
-      type="submit"
-      isDisabled={disableSubmit || loading}
-      isLoading={loading || !$profile.id}
-    />
+  <div class="my-4 flex w-full flex-col items-center justify-center gap-2">
+    {#if !capacityChecked}
+      <PrimaryButton
+        label="Join Course"
+        type="submit"
+        isDisabled={true}
+        isLoading={true}
+      />
+    {:else if isFull && !waitlistEnabled}
+      <p class="text-center text-sm font-medium text-red-500">{$t('course.navItem.settings.waitlist_course_full')}</p>
+    {:else if isFull && waitlistEnabled}
+      <p class="mb-2 text-center text-sm text-gray-500 dark:text-gray-400">{$t('course.navItem.settings.waitlist_course_full_waitlist')}</p>
+      <PrimaryButton
+        label={$t('course.navItem.settings.waitlist_join_button')}
+        type="submit"
+        isDisabled={disableSubmit || loading}
+        isLoading={loading || !$profile.id}
+      />
+    {:else}
+      <PrimaryButton
+        label="Join Course"
+        type="submit"
+        isDisabled={disableSubmit || loading}
+        isLoading={loading || !$profile.id}
+      />
+    {/if}
   </div>
 </AuthUI>

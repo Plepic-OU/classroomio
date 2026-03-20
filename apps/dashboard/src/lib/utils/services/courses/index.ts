@@ -280,6 +280,61 @@ export function deleteGroupMember(groupMemberId: Groupmember['id']) {
   return supabase.from('groupmember').delete().match({ id: groupMemberId });
 }
 
+export async function getCourseCapacityInfo(courseId: string) {
+  const { data: course } = await supabase
+    .from('course')
+    .select('max_capacity, waitlist_enabled, group_id')
+    .eq('id', courseId)
+    .single();
+
+  if (!course?.max_capacity) return { isFull: false, waitlistEnabled: false };
+
+  const { count } = await supabase
+    .from('groupmember')
+    .select('*', { count: 'exact', head: true })
+    .eq('group_id', course.group_id)
+    .eq('role_id', 3);
+
+  return {
+    isFull: (count ?? 0) >= course.max_capacity,
+    waitlistEnabled: course.waitlist_enabled,
+    enrolledCount: count ?? 0,
+    maxCapacity: course.max_capacity
+  };
+}
+
+export function addToWaitlist({ courseId, profileId }: { courseId: string; profileId: string }) {
+  return supabase
+    .from('course_waitlist')
+    .insert({ course_id: courseId, profile_id: profileId });
+}
+
+export async function approveFromWaitlist({
+  courseId,
+  profileId,
+  groupId
+}: {
+  courseId: string;
+  profileId: string;
+  groupId: string;
+}) {
+  const { error } = await supabase.rpc('approve_waitlist_member', {
+    p_course_id: courseId,
+    p_profile_id: profileId,
+    p_group_id: groupId
+  });
+
+  if (error) throw error;
+}
+
+export async function getWaitlistMembers(courseId: string) {
+  return supabase
+    .from('course_waitlist')
+    .select('id, created_at, profile_id, profile:profile_id(fullname, email)')
+    .eq('course_id', courseId)
+    .order('created_at', { ascending: true });
+}
+
 export async function getMarks(courseId) {
   if (!courseId) return;
 

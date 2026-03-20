@@ -49,7 +49,9 @@ export const defaultCourse: Course = {
     grading: false,
     lessonDownload: true,
     allowNewStudent: false
-  }
+  },
+  max_capacity: null,
+  waitlist_enabled: false
 };
 
 export const course: Writable<Course> = writable({ ...defaultCourse });
