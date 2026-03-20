@@ -29,6 +29,6 @@ then('I should be redirected to the org courses page', async ({ page }) => {
 });
 
 then('I should see an error message', async ({ page }) => {
-  const errorMessage = page.locator('.text-red-500');
+  const errorMessage = page.locator('.text-red-500').first();
   await expect(errorMessage).toBeVisible({ timeout: 5_000 });
 });
