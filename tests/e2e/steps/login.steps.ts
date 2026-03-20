@@ -1,9 +1,9 @@
 import { expect } from '@playwright/test';
-import { Given, When, Then } from './fixtures';
+import { Given, When, Then, waitForHydration } from './fixtures';
 
 Given('I am on the login page', async ({ page }) => {
   await page.goto('/login');
-  await page.locator('input[type="email"]').waitFor({ state: 'visible' });
+  await waitForHydration(page);
 });
 
 When('I enter email {string}', async ({ page }, email: string) => {

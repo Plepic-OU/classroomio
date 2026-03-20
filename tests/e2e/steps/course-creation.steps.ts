@@ -1,11 +1,11 @@
 import { expect } from '@playwright/test';
-import { Given, When, Then } from './fixtures';
+import { Given, When, Then, waitForHydration } from './fixtures';
 
 Given(
   'I am logged in as {string} with password {string}',
   async ({ page }, email: string, password: string) => {
     await page.goto('/login');
-    await page.locator('input[type="email"]').waitFor({ state: 'visible' });
+    await waitForHydration(page);
     await page.locator('input[type="email"]').fill(email);
     await page.locator('input[type="password"]').fill(password);
     await page.getByRole('button', { name: /log in/i }).click();
@@ -18,6 +18,7 @@ Given('I am on the courses page', async ({ page }) => {
   const url = page.url();
   const orgSlug = url.match(/\/org\/([^/]+)/)?.[1];
   await page.goto(`/org/${orgSlug}/courses`);
+  await waitForHydration(page);
 });
 
 When('I click the create course button', async ({ page }) => {

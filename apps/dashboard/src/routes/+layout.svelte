@@ -77,6 +77,7 @@
   }
 
   onMount(() => {
+    document.body.dataset.hydrated = '';
     pageSetup();
 
     if (!hasSession() && !isPublicRoute($page.url?.pathname)) {
