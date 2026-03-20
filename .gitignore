@@ -46,6 +46,9 @@ vite.config.ts*.mjs
 # Claude Code hook outputs
 .claude/tool-inputs/
 
+# Claude Code local settings (user-specific, not shared)
+.claude/settings.local.json
+
 # GitHub auth token — never commit
 .devcontainer/github-token
 
