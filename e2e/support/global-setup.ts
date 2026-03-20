@@ -35,11 +35,12 @@ export default async function globalSetup() {
     .filter(Boolean);
 
   if (failures.length > 0) {
-    console.error(`\n❌ Service(s) not reachable: ${failures.join(', ')}`);
-    console.error('\nStart services before running E2E tests:');
-    console.error('  pnpm dev:container  # dashboard + api');
-    console.error('  supabase start      # database\n');
-    process.exit(1);
+    throw new Error(
+      `Service(s) not reachable: ${failures.join(', ')}.\n` +
+        'Start services before running E2E tests:\n' +
+        '  pnpm dev:container  # dashboard + api\n' +
+        '  supabase start      # database'
+    );
   }
 
   console.log('✅ Services reachable\n');

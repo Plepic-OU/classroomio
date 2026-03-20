@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
 import { Given, When, Then } from './fixtures';
+import { TEST_USER_EMAIL, TEST_USER_PASSWORD } from '../support/auth';
 
 Given('I am on the login page', async ({ page }) => {
   await page.goto('/login');
@@ -14,6 +15,11 @@ When(
     await page.locator('[data-testid="login-password"]').fill(password);
   }
 );
+
+When('I enter the test user credentials', async ({ page }) => {
+  await page.locator('[data-testid="login-email"]').fill(TEST_USER_EMAIL);
+  await page.locator('[data-testid="login-password"]').fill(TEST_USER_PASSWORD);
+});
 
 When('I click the login button', async ({ page }) => {
   await page.locator('[data-testid="login-submit"]').click();

@@ -15,7 +15,7 @@ export function getSupabaseClient() {
 // Seed user from supabase/seed.sql — admin@test.com
 const TEST_USER_ID = '7ac00503-8519-43c8-a5ea-b79aeca900b1';
 const TEST_USER_EMAIL = 'admin@test.com';
-const TEST_USER_PASSWORD = 'TestPass123!';
+const TEST_USER_PASSWORD = process.env.E2E_TEST_PASSWORD || 'TestPass123!';
 
 // Seed org from supabase/seed.sql — Udemy Test
 const TEST_ORG_SITENAME = 'udemy-test';
@@ -51,4 +51,13 @@ export async function getTestUserSession() {
   return data.session;
 }
 
-export { TEST_USER_EMAIL, TEST_ORG_SITENAME };
+/**
+ * Derive the Supabase localStorage key from the configured URL.
+ * Supabase JS uses `sb-<hostname>-auth-token` as the storage key.
+ */
+export function getSupabaseStorageKey() {
+  const url = new URL(process.env.SUPABASE_URL || 'http://localhost:54321');
+  return `sb-${url.hostname}-auth-token`;
+}
+
+export { TEST_USER_EMAIL, TEST_USER_PASSWORD, TEST_ORG_SITENAME };

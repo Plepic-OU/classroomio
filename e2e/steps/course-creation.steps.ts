@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 import { Given, When, Then } from './fixtures';
-import { getTestUserSession, TEST_ORG_SITENAME } from '../support/auth';
+import { getTestUserSession, getSupabaseStorageKey, TEST_ORG_SITENAME } from '../support/auth';
 
 Given('I am logged in as an instructor', async ({ page }) => {
   const session = await getTestUserSession();
@@ -8,18 +8,26 @@ Given('I am logged in as an instructor', async ({ page }) => {
   await page.goto('/login');
   await page.locator('body[data-hydrated]').waitFor();
 
-  await page.evaluate((s) => {
-    const key = `sb-localhost-auth-token`;
-    const value = JSON.stringify({
-      access_token: s.access_token,
-      refresh_token: s.refresh_token,
-      expires_at: s.expires_at,
-      expires_in: s.expires_in,
-      token_type: s.token_type,
-      user: s.user,
-    });
-    localStorage.setItem(key, value);
-  }, session);
+  const storageKey = getSupabaseStorageKey();
+
+  await page.evaluate(
+    ({ s, key }) => {
+      const value = JSON.stringify({
+        access_token: s.access_token,
+        refresh_token: s.refresh_token,
+        expires_at: s.expires_at,
+        expires_in: s.expires_in,
+        token_type: s.token_type,
+        user: s.user,
+      });
+      localStorage.setItem(key, value);
+    },
+    { s: session, key: storageKey }
+  );
+
+  // Reload so the app reads the injected session from localStorage
+  await page.reload();
+  await page.locator('body[data-hydrated]').waitFor();
 });
 
 Given('I am on the courses page', async ({ page }) => {

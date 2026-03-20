@@ -30,6 +30,7 @@ export async function resetDatabase() {
       .filter((name) => !PROTECTED_TABLES.has(name));
 
     if (toTruncate.length > 0) {
+      // Safe: table names come from pg_tables catalog, not user input
       const quoted = toTruncate.map((t) => `"public"."${t}"`).join(', ');
       console.log(`  Truncating ${toTruncate.length} public tables...`);
       await sql.unsafe(`TRUNCATE ${quoted} CASCADE`);
