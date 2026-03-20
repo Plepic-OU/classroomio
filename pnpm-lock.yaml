@@ -775,6 +775,18 @@ importers:
 
   packages/tsconfig: {}
 
+  tests/e2e:
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.50.0
+        version: 1.53.0
+      '@supabase/supabase-js':
+        specifier: ^2.39.0
+        version: 2.50.0(bufferutil@4.0.9)(utf-8-validate@6.0.5)
+      playwright:
+        specifier: ^1.50.0
+        version: 1.53.0
+
 packages:
 
   '@adobe/css-tools@4.4.3':

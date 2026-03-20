@@ -2,3 +2,4 @@ packages:
   - apps/*
   - packages/*
   - packages/course-app/src/*
+  - tests/e2e

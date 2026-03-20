@@ -18,5 +18,8 @@ RUN ARCH=$(dpkg --print-architecture) \
 # This plays nicer with devcontainer's
 RUN npm install -g @anthropic-ai/claude-code
 
+# Install Playwright + Chromium (OS deps + browser binary) during image build
+RUN cd /tmp && npm init -y && npm install playwright && npx playwright install --with-deps chromium && rm -rf /tmp/node_modules /tmp/package*.json
+
 # Add alias for all bash sessions
 RUN echo "alias cskip='claude --dangerously-skip-permissions'" >> /etc/bash.bashrc

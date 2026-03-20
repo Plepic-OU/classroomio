@@ -36,6 +36,16 @@ cd apps/api && pnpm test
 cd apps/api && pnpm test:coverage
 ```
 
+### E2E Tests (Playwright)
+```bash
+# Prerequisites: supabase start + pnpm dev:container must be running
+pnpm test:e2e                              # run all E2E tests from repo root
+cd tests/e2e && pnpm show-report           # serve HTML report → localhost:9323
+
+# Test artifacts (videos, screenshots, traces) are in tests/e2e/test-results/
+# These are gitignored and captured for every test run, including passing tests.
+```
+
 ### Supabase (local)
 ```bash
 supabase start    # start local Supabase (requires Docker)

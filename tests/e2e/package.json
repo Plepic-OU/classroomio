@@ -1,0 +1,14 @@
+{
+  "name": "@cio/e2e",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "show-report": "playwright show-report --host 0.0.0.0 --port 9323"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "@supabase/supabase-js": "^2.39.0",
+    "playwright": "^1.50.0"
+  }
+}

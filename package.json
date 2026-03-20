@@ -10,7 +10,7 @@
     "clean:pnpm": "pnpm clean && pnpm store prune",
     "format": "prettier . --write",
     "release": "standard-version",
-    "ci": "cypress run",
+    "test:e2e": "pnpm --filter=@cio/e2e test",
     "dev:container": "turbo prepare --concurrency 13 && concurrently -n dashboard,api,website,docs -c blue,green,magenta,cyan \"cd apps/dashboard && npx vite dev --port 5173 --host\" \"cd apps/api && pnpm dev\" \"cd apps/classroomio-com && npx vite dev --port 5174 --host\" \"cd apps/docs && npx vite dev --host\"",
     "dashboard:start": "pnpm start --filter @cio/dashboard",
     "api:start": "pnpm start --filter @cio/api",

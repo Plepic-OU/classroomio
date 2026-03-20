@@ -20,13 +20,14 @@ tests/e2e/
 ├── package.json          # @cio/e2e workspace package
 ├── playwright.config.ts
 ├── tsconfig.json
+├── global-setup.ts       # service health check + data reset
 ├── tests/
 │   ├── login.spec.ts
 │   └── course-creation.spec.ts
 ├── fixtures/
 │   └── base.ts           # shared Playwright fixtures (e.g. authenticated page)
 ├── playwright-report/    # gitignored, HTML report output
-└── test-results/         # gitignored, test artifacts
+└── test-results/         # gitignored, test artifacts (videos, screenshots)
 ```
 
 ## Dependencies
@@ -42,10 +43,15 @@ tests/e2e/
 **`playwright.config.ts`:**
 - `testDir`: `./tests/`
 - `baseURL`: `http://localhost:5173`
+- `globalSetup`: `./global-setup.ts` — runs service health checks and data reset before any tests
+- `timeout`: `10_000` — test timeout capped at 10 seconds for quick failure turnaround
+- `expect.timeout`: `5_000`
 - Single project: Chromium only
 - Reporter: `html` with `open: 'never'` (container environment, served manually)
-- Traces: `on-first-retry`
-- No `webServer` config — expects `pnpm dev:container` already running
+- `video`: `'on'` — record video for every test, including passing ones
+- `screenshot`: `'on'` — capture screenshot after every test, including passing ones
+- `trace`: `'on'` — full trace for all tests
+- No `webServer` config — expects services already running
 
 ## Package Scripts
 
@@ -57,6 +63,55 @@ tests/e2e/
 ```
 
 `--host 0.0.0.0` is required so the report server is reachable from the host through devcontainer port forwarding.
+
+## Root-level pnpm Command
+
+Add to root `package.json` scripts so tests can be run from anywhere in the repo with a single command:
+
+```json
+{
+  "test:e2e": "pnpm --filter=@cio/e2e test"
+}
+```
+
+Running E2E tests: `pnpm test:e2e` (from repo root).
+
+## Global Setup: Service Health Check + Data Reset
+
+`global-setup.ts` runs before any test. It does two things in order:
+
+1. **Fail fast if services are missing** — check that the dashboard and Supabase are reachable. Print a clear message and exit with a non-zero code if not.
+2. **Fast data reset** — truncate test-affected tables and re-seed via the Supabase admin client. This is faster than `supabase db reset` and keeps the known-good seed data intact.
+
+```typescript
+// global-setup.ts
+import { createClient } from '@supabase/supabase-js';
+
+async function checkService(url: string, name: string) {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  } catch (e) {
+    console.error(`\n[E2E] FAIL: ${name} is not reachable at ${url}`);
+    console.error(`       Start it first, then re-run tests.\n`);
+    process.exit(1);
+  }
+}
+
+export default async function globalSetup() {
+  // 1. Fail fast if services are down
+  await checkService('http://localhost:5173', 'Dashboard');
+  await checkService(process.env.PUBLIC_SUPABASE_URL + '/rest/v1/', 'Supabase');
+
+  // 2. Truncate test data and re-seed
+  const supabase = createClient(
+    process.env.PUBLIC_SUPABASE_URL!,
+    process.env.PRIVATE_SUPABASE_SERVICE_ROLE!
+  );
+  await supabase.from('course').delete().like('title', 'Test%');
+  // Add additional truncation as test coverage grows
+}
+```
 
 ## Test Files
 
@@ -103,10 +158,13 @@ test.describe('Course creation', () => {
 
 `fixtures/base.ts` extends Playwright's base `test` fixture to provide:
 - `authenticatedPage` — logs in via the UI, reusable for any flow that needs an authenticated user (e.g. course creation)
+- `supabaseAdmin` — a Supabase admin client (service role) for use in `afterAll` cleanup hooks
 
-## Test Data Cleanup
+## Test Data Strategy
 
-Tests that create data (e.g. course creation) clean up after themselves via a Supabase admin client in `afterAll` hooks. A shared helper in `fixtures/base.ts` initializes a Supabase client using the service role key (`PRIVATE_SUPABASE_SERVICE_ROLE`) to delete test-created records directly.
+**Before all tests** (`global-setup.ts`): truncate affected tables and re-seed. This is fast (no full DB reset) and ensures a known-good state.
+
+**After each test suite** (`afterAll` hooks): delete records created by the test using the `supabaseAdmin` fixture. This prevents cross-test pollution without needing a full reset between runs.
 
 ```typescript
 // fixtures/base.ts
@@ -123,7 +181,7 @@ test.afterAll(async () => {
 });
 ```
 
-This keeps the database clean between runs without the overhead of a full `supabase db reset`. The service role key is already available in the dashboard's `.env`.
+The service role key is already available in the dashboard's `.env`.
 
 ## Prerequisites
 
@@ -131,6 +189,8 @@ This keeps the database clean between runs without the overhead of a full `supab
 - Local Supabase running (`supabase start`) with seed data loaded (provides `admin@test.com` / `123456`)
 - Dashboard dev server running (`pnpm dev:container`) on port 5173
 - **Dev mode is mandatory:** emails ending in `@test.com` are force-logged-out in non-dev builds (see `appSetup.ts` lines 79-83)
+
+If either service is missing, `global-setup.ts` will print a clear error and exit immediately (no hanging timeouts).
 
 ## Workspace Integration
 
@@ -140,24 +200,29 @@ Add `- tests/e2e` to the packages list.
 
 ### devcontainer.json
 
-- Add port `9323` to `forwardPorts`
-- Add `"9323": { "label": "Playwright Report" }` to `portsAttributes`
+- Add ports `5173` and `9323` to `forwardPorts` — both the dashboard app and the Playwright report server must be reachable from the host
+- Add port labels to `portsAttributes`:
+  ```json
+  "5173": { "label": "Dashboard" },
+  "9323": { "label": "Playwright Report" }
+  ```
+
+> **Note:** After updating `devcontainer.json` and `Dockerfile`, ask the user to rebuild the devcontainer (`Ctrl+Shift+P` → "Dev Containers: Rebuild Container") so that Playwright and its browser binaries are installed into the image.
 
 ### .devcontainer/Dockerfile
 
-Add Chromium OS dependencies (cached as Docker layer):
+Install both Playwright OS dependencies **and** the Chromium browser binary during Docker build, so the image is fully self-contained and no post-start script is needed:
+
 ```dockerfile
-RUN npx playwright install-deps chromium
+# Install Playwright + Chromium (OS deps + browser binary) during image build
+RUN cd /tmp && npm init -y && npm install playwright && npx playwright install --with-deps chromium && rm -rf /tmp/node_modules /tmp/package*.json
 ```
+
+This keeps browser installation as a cached Docker layer, making devcontainer starts fast.
 
 ### .devcontainer/setup.sh
 
-Install browser binary only (OS deps already in image):
-```bash
-if [ -f tests/e2e/package.json ]; then
-  (cd tests/e2e && npx playwright install chromium)
-fi
-```
+No Playwright install step needed — the Dockerfile handles it.
 
 ### Cypress removal
 
@@ -169,19 +234,34 @@ Remove the following:
 
 ### CLAUDE.md
 
-Add E2E test commands to the Commands section.
+Add an E2E Tests section to the Commands section:
+
+```markdown
+### E2E Tests (Playwright)
+# Prerequisites: supabase start + pnpm dev:container must be running
+pnpm test:e2e                              # run all E2E tests from repo root
+cd tests/e2e && pnpm show-report           # serve HTML report → localhost:9323
+
+# Test artifacts (videos, screenshots, traces) are in tests/e2e/test-results/
+# These are gitignored and captured for every test run, including passing tests.
+```
 
 ### .gitignore (in tests/e2e/)
 
 - `playwright-report/`
 - `test-results/`
 
+## E2E Test Writing Skill
+
+When writing and debugging E2E tests, distill the learnings (selectors, patterns, gotchas) into the project skill `e2e-test-writing` so that future test authors benefit from accumulated knowledge.
+
 ## Developer Workflow
 
 1. Start Supabase: `supabase start`
 2. Start dev server: `pnpm dev:container`
-3. Run tests: `cd tests/e2e && pnpm test`
+3. Run tests: `pnpm test:e2e` (from repo root)
 4. View report: `cd tests/e2e && pnpm show-report` → open `localhost:9323` in host browser
+5. Inspect artifacts: `tests/e2e/test-results/` contains videos, screenshots, and traces for every test
 
 ## Decisions
 
@@ -190,7 +270,12 @@ Add E2E test commands to the Commands section.
 | Test location | `tests/e2e/` at repo root | E2E tests exercise full stack, not just dashboard |
 | Test framework | Plain Playwright (no BDD) | For 2 tests, Gherkin adds unnecessary layers; plain `test.describe` is equally readable |
 | Dev server | Manual (expect running) | Simpler, dev server usually already running |
+| Service check | `global-setup.ts` fail-fast | Immediate feedback instead of hanging until timeout |
+| Data reset | Truncate + re-seed in `global-setup.ts` | Faster than `supabase db reset`, predictable state before every run |
+| Test timeout | 10s | Quick failure turnaround; forces tests to stay focused |
+| Video/screenshots | `on` for all tests | Visibility into passing tests, easier debugging |
 | Reporter | HTML on port 9323 | Built-in, one command to view, forwarded to host |
+| Browser install | Dockerfile (build time) | Cached layer, fast devcontainer starts, no post-start step |
 | Browser scope | Chromium only | YAGNI, expand later if needed |
 | Replaces | Cypress | Single canonical E2E framework, Playwright has better DX |
-| Data cleanup | `afterAll` hook via Supabase admin client | Surgical cleanup, fast, no db reset needed |
+| Root command | `pnpm test:e2e` | One command from anywhere in the monorepo |
