@@ -34,12 +34,11 @@ async function waitForHydration(page: import('@playwright/test').Page) {
 }
 
 Given('I am logged in as {string}', async ({ page }, email: string) => {
-  const password = email === 'admin@test.com' ? '123456' : 'unknown';
   await page.goto('/login');
   await waitForHydration(page);
   await page.waitForSelector('[data-testid="login-email"]');
   await page.fill('[data-testid="login-email"]', email);
-  await page.fill('[data-testid="login-password"]', password);
+  await page.fill('[data-testid="login-password"]', '123456');
   await page.click('[data-testid="login-submit"]');
   await expect(page).toHaveURL(/\/org\//, { timeout: 10_000 });
 });

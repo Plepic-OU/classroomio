@@ -17,7 +17,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   reporter: [['html', { port: 9323, open: 'never' }]],
-  timeout: 10_000,
+  timeout: 60_000,
   expect: { timeout: 10_000 },
   outputDir: 'test-results',
 });

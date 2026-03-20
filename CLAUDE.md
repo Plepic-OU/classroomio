@@ -152,3 +152,5 @@ Key test IDs added to the dashboard for reliable selectors:
 | Course title input | `course-title-input` |
 | Course description input | `course-description-input` |
 | Create/Finish button | `course-create-submit` |
+| Invite page course title | `invite-course-title` |
+| Invite page join button | `invite-join-btn` |
