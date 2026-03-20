@@ -1,0 +1,15 @@
+{
+  "name": "@cio/e2e",
+  "private": true,
+  "scripts": {
+    "test": "bddgen && playwright test",
+    "test:ui": "bddgen && playwright test --ui --ui-host=0.0.0.0 --ui-port=3333",
+    "test:report": "playwright show-report --host 0.0.0.0 --port 9323"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.43",
+    "@supabase/supabase-js": "^2",
+    "dotenv": "^16",
+    "playwright-bdd": "^7"
+  }
+}

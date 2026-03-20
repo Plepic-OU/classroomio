@@ -105,11 +105,12 @@
     <div class="flex items-center justify-between mb-5">
       <h1 class="dark:text-white text-2xl md:text-3xl font-bold">{$t('courses.heading')}</h1>
       {#if $isMobile}
-        <PrimaryButton isDisabled={!$isOrgAdmin} onClick={openNewCourseModal}>
+        <PrimaryButton data-testid="create-course-btn" isDisabled={!$isOrgAdmin} onClick={openNewCourseModal}>
           <Add size={24} />
         </PrimaryButton>
       {:else}
         <PrimaryButton
+          data-testid="create-course-btn"
           label={$t('courses.heading_button')}
           variant={VARIANTS.CONTAINED_DARK}
           isDisabled={!$isOrgAdmin}

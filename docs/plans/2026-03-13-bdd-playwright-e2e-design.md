@@ -42,7 +42,8 @@ e2e/
   "private": true,
   "scripts": {
     "test": "bddgen && playwright test",
-    "test:ui": "bddgen && playwright test --ui --ui-host=0.0.0.0 --ui-port=3333"
+    "test:ui": "bddgen && playwright test --ui --ui-host=0.0.0.0 --ui-port=3333",
+    "test:report": "playwright show-report --host 0.0.0.0 --port 9323"
   },
   "devDependencies": {
     "@playwright/test": "^1.43",
@@ -61,10 +62,25 @@ e2e/
 
 **`e2e/global-setup.ts`:**
 ```typescript
-import { chromium, FullConfig } from '@playwright/test';
+import { chromium, FullConfig, request } from '@playwright/test';
+import { createClient } from '@supabase/supabase-js';
 
 export default async function globalSetup(config: FullConfig) {
-  const { baseURL } = config.projects[0].use;
+  const baseURL = (config.projects[0].use.baseURL as string) ?? 'http://localhost:5173';
+  const supabaseUrl = process.env.SUPABASE_URL ?? 'http://127.0.0.1:54321';
+
+  // ── Preflight: fail fast if required services are not reachable ──────────
+  await checkService('Dashboard', baseURL);
+  await checkService('Supabase', `${supabaseUrl}/health`);
+
+  // ── Data reset: truncate + re-seed for a clean, reproducible state ───────
+  // Uses the service-role key (bypasses RLS) to truncate test-affected tables
+  // and re-insert the seed rows defined in supabase/seed.sql.
+  // Truncating is much faster than row-by-row deletes inside After hooks.
+  const supabase = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  await supabase.rpc('reset_test_data');  // calls a DB function that truncates + re-seeds
+
+  // ── Auth: log in once and persist session for authenticated tests ─────────
   const browser = await chromium.launch();
   const page = await browser.newPage();
 
@@ -74,11 +90,46 @@ export default async function globalSetup(config: FullConfig) {
   await page.click('[type="submit"]');
   await page.waitForURL('**/org/**');
 
-  // Save session so all tests can restore it without logging in again
   await page.context().storageState({ path: 'playwright/.auth/admin.json' });
   await browser.close();
 }
+
+async function checkService(name: string, url: string): Promise<void> {
+  try {
+    const ctx = await request.newContext();
+    const res = await ctx.get(url, { timeout: 3_000 });
+    await ctx.dispose();
+    if (!res.ok()) throw new Error(`HTTP ${res.status()}`);
+  } catch (err) {
+    throw new Error(
+      `[preflight] ${name} is not reachable at ${url}.\n` +
+      `Start it before running e2e tests.\n` +
+      `Cause: ${err}`,
+    );
+  }
+}
 ```
+
+### Data reset helper — `supabase/migrations/<timestamp>_reset_test_data.sql`
+
+Define `reset_test_data()` as a Postgres function (SECURITY DEFINER, callable only from service role):
+
+```sql
+create or replace function public.reset_test_data()
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  -- truncate tables that tests create rows in; cascade handles FK children
+  truncate table public.course restart identity cascade;
+  -- re-seed test accounts and org (idempotent inserts)
+  -- (copy the relevant INSERT blocks from supabase/seed.sql here)
+end;
+$$;
+```
+
+This keeps teardown in SQL — no per-test `After` hooks needed for data cleanup, and the reset completes in milliseconds.
 
 ---
 
@@ -97,14 +148,16 @@ const testDir = defineBddConfig({
 
 export default defineConfig({
   testDir,
-  reporter: 'html',
+  timeout: 10_000,  // fail fast — no test step may take longer than 10s
+  reporter: [['html', { open: 'never', outputFolder: 'playwright-report' }]],
   globalSetup: './global-setup.ts',
+  outputDir: 'test-results',  // screenshots, videos, traces land here (gitignored)
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:5173',
     trace: 'on-first-retry',
     locale: 'en',  // pin locale so getByLabel/getByRole assertions match English strings
-    screenshot: 'on',
-    video: 'on',
+    screenshot: 'on',  // capture for every test, including passes
+    video: 'on',       // record for every test, including passes
   },
   projects: [
     // Unauthenticated project — login flows, no pre-loaded session
@@ -120,14 +173,9 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/admin.json' },
     },
   ],
-  // Starts the dashboard dev server automatically before running tests.
-  // Using the dev server (not a production build) ensures @test.com accounts
-  // are not auto-logged out by the appSetup.ts guard (which only fires when dev === false).
-  webServer: {
-    command: 'pnpm --filter=@cio/dashboard dev',
-    url: process.env.BASE_URL ?? 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-  },
+  // No webServer block — tests MUST NOT auto-start services.
+  // The dashboard and Supabase must be running before invoking `pnpm e2e`.
+  // globalSetup performs a preflight check and fails fast if they are not reachable.
 });
 ```
 
@@ -141,7 +189,7 @@ TEST_ADMIN_PASSWORD=123456
 TEST_STUDENT_EMAIL=student@test.com
 TEST_STUDENT_PASSWORD=123456
 
-# Used by After hooks to clean up test-created data (bypasses RLS)
+# Used by globalSetup to reset test data before each run (bypasses RLS)
 SUPABASE_URL=http://127.0.0.1:54321
 SUPABASE_SERVICE_ROLE_KEY=<your-local-service-role-key>
 ```
@@ -266,19 +314,11 @@ Then('I should see an error message', async ({ page }) => {
 **`e2e/steps/course-creation.steps.ts`:**
 ```typescript
 import { createBdd } from 'playwright-bdd';
-import { createClient } from '@supabase/supabase-js';
 import { test } from '../fixtures';
 
-const { Given, When, Then, After } = createBdd(test);
+const { Given, When, Then } = createBdd(test);
 
-// Clean up courses created during test runs so each run starts from a clean state
-After(async () => {
-  const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!, // service role bypasses RLS
-  );
-  await supabase.from('course').delete().eq('title', 'Introduction to Testing');
-});
+// No After cleanup hook needed — globalSetup truncates + re-seeds before every run.
 
 Given('I am logged in as an admin', async ({ adminPage }) => {});
 
@@ -323,7 +363,6 @@ Then('I should see the new course in the courses list', async ({ adminPage }) =>
 {
   "pipeline": {
     "e2e": {
-      "dependsOn": ["@cio/dashboard#build"],
       "cache": false,
       "env": [
         "BASE_URL",
@@ -341,15 +380,7 @@ Then('I should see the new course in the courses list', async ({ adminPage }) =>
 
 `cache: false` is required because E2E tests are stateful (they hit a live server and DB) and must never be replayed from cache.
 
-**Root `package.json`** — add scripts:
-```json
-{
-  "scripts": {
-    "e2e": "pnpm --filter=@cio/e2e test",
-    "e2e:ui": "pnpm --filter=@cio/e2e test:ui"
-  }
-}
-```
+No `dependsOn` — services must be started independently before running the suite. The global-setup preflight check will fail fast with a clear message if they are not reachable.
 
 ---
 
@@ -416,7 +447,9 @@ Verify `PrimaryButton` forwards unknown props (or `data-testid` specifically) to
 
 ---
 
-## Playwright UI Access from Host
+## Playwright UI and Report Access from Host
+
+### Interactive UI mode (test authoring / debugging)
 
 Run:
 ```bash
@@ -425,41 +458,93 @@ pnpm e2e:ui
 
 Then open `http://localhost:3333` in your host machine browser.
 
-**Devcontainer config** — add port `3333` to `.devcontainer/devcontainer.json` in three places to match the existing pattern for other app ports:
+### HTML report (CI / post-run review)
+
+After `pnpm e2e` finishes the terminal prints the report path. Serve it with a fixed URL so it is always reachable from the host:
+
+```bash
+pnpm e2e:report   # runs: playwright show-report --host 0.0.0.0 --port 9323
+```
+
+Then open `http://localhost:9323` in your host machine browser. The report includes all test runs with videos and screenshots — even for passing tests (`video: 'on'`, `screenshot: 'on'` in config).
+
+**Root `package.json`** — add all three scripts:
 ```json
 {
-  "runArgs": ["...", "-p", "0.0.0.0:3333:3333"],
-  "forwardPorts": [..., 3333],
-  "portsAttributes": {
-    "3333": { "label": "Playwright UI", "onAutoForward": "notify" }
+  "scripts": {
+    "e2e": "pnpm --filter=@cio/e2e test",
+    "e2e:ui": "pnpm --filter=@cio/e2e test:ui",
+    "e2e:report": "pnpm --filter=@cio/e2e exec playwright show-report --host 0.0.0.0 --port 9323"
   }
 }
 ```
+
+**`e2e/package.json`** — expose the `test:ui` script:
+```json
+{
+  "scripts": {
+    "test": "bddgen && playwright test",
+    "test:ui": "bddgen && playwright test --ui --ui-host=0.0.0.0 --ui-port=3333"
+  }
+}
+```
+
+### Devcontainer port forwarding
+
+Add both ports (`3333` Playwright UI, `9323` HTML report) to `.devcontainer/devcontainer.json`:
+```json
+{
+  "runArgs": ["...", "-p", "0.0.0.0:3333:3333", "-p", "0.0.0.0:9323:9323"],
+  "forwardPorts": [..., 3333, 9323],
+  "portsAttributes": {
+    "3333": { "label": "Playwright UI",     "onAutoForward": "notify" },
+    "9323": { "label": "Playwright Report", "onAutoForward": "notify" }
+  }
+}
+```
+
+Both endpoints must be reachable from the host machine: port `3333` for the interactive runner, port `9323` for the static HTML report.
 
 ---
 
 ## Implementation Checklist
 
+### Package scaffold
 - [ ] Create `e2e/` directory and `package.json`
 - [ ] Add `e2e` to `pnpm-workspace.yaml` (currently only covers `apps/*` and `packages/*`)
-- [ ] Add `playwright.config.ts`
+- [ ] Add `playwright.config.ts` (no `webServer`, `timeout: 10_000`, `screenshot/video: 'on'`)
 - [ ] Add `.env.example` and `.env` (gitignored)
-- [ ] Add `e2e/` to setup.sh `.env` copy loop (alongside `apps/dashboard`, `apps/api`, etc.)
+- [ ] Add `e2e/` to `setup.sh` `.env` copy loop (alongside `apps/dashboard`, `apps/api`, etc.)
+
+### Test files
 - [ ] Write `features/login.feature`
 - [ ] Write `features/course-creation.feature`
-- [ ] Write `global-setup.ts`
+- [ ] Write `global-setup.ts` (preflight check + data reset + auth session save)
 - [ ] Write `fixtures/index.ts`
 - [ ] Write `steps/login.steps.ts`
-- [ ] Write `steps/course-creation.steps.ts`
+- [ ] Write `steps/course-creation.steps.ts` (no `After` cleanup hooks needed — global reset handles it)
+
+### Data reset
+- [ ] Write `supabase/migrations/<timestamp>_reset_test_data.sql` — `reset_test_data()` function (truncate + re-seed)
+
+### Dashboard source changes
 - [x] Add `name="email"` and `name="password"` to `TextField` components in `apps/dashboard/src/routes/login/+page.svelte` ✓ done
 - [ ] Add `name="title"` to `TextField` in `apps/dashboard/src/lib/components/Courses/components/NewCourseModal/index.svelte`
 - [x] Add `data-testid="error-message"` to login error `<p>` in `apps/dashboard/src/routes/login/+page.svelte` ✓ done
 - [ ] Add `data-testid="create-course-btn"` to create-course `PrimaryButton` in `apps/dashboard/src/routes/org/[slug]/courses/+page.svelte` (`PrimaryButton` now forwards `$$restProps` to `<button>` ✓ done)
-- [ ] Verify `webServer` starts dashboard correctly before running `pnpm e2e`
-- [ ] ~~Add student seed user to `supabase/seed.sql`~~ — already exists, no action needed
-- [ ] Add `.features-gen/` and `e2e/playwright/.auth/` to root `.gitignore` (generated at runtime)
-- [ ] Update `turbo.json` `"pipeline"` key with `e2e` task (with `cache: false`)
-- [ ] Update root `package.json` with `e2e` and `e2e:ui` scripts
-- [ ] Update `.devcontainer/devcontainer.json` to forward port `3333` (see "Playwright UI Access" section)
-- [ ] Install Playwright browsers: `pnpm --filter=@cio/e2e exec playwright install`
-- [ ] Add browser install step to `setup.sh` so it runs automatically on container rebuild
+
+### Gitignore
+- [ ] Add to root `.gitignore`: `.features-gen/`, `e2e/playwright/.auth/`, `e2e/test-results/`, `e2e/playwright-report/`
+
+### Turbo + scripts
+- [ ] Update `turbo.json` `"pipeline"` key with `e2e` task (`cache: false`, no `dependsOn`)
+- [ ] Update root `package.json` with `e2e`, `e2e:ui`, and `e2e:report` scripts
+
+### Devcontainer
+- [ ] Add Playwright + Chromium install to `.devcontainer/Dockerfile` (during image build, not post-create): `RUN npx playwright install --with-deps chromium`
+- [ ] Update `.devcontainer/devcontainer.json` to forward ports `3333` (Playwright UI) and `9323` (HTML report) — see "Playwright UI and Report Access" section
+- [ ] **Ask user to trigger a devcontainer rebuild** so browser binaries are baked into the image
+
+### Documentation
+- [ ] Update `CLAUDE.md` with E2E test information: location of `e2e/`, how to run (`pnpm e2e`), how to open the report (`pnpm e2e:report`), and the requirement that services must be running first
+- [ ] Create/update project skill `e2e-test-writing` with lessons learned from writing and debugging E2E tests in this codebase

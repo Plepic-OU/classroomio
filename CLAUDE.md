@@ -23,6 +23,12 @@ supabase/
   migrations/      # Database schema migrations (PostgreSQL)
   functions/       # Edge Functions (Deno runtime)
   seed.sql         # Seed data for local dev
+e2e/               # BDD E2E tests (playwright-bdd + Gherkin)
+  features/        # .feature files (Gherkin scenarios)
+  steps/           # Step definitions (TypeScript)
+  fixtures/        # Custom Playwright fixtures (adminPage, orgSlug)
+  playwright.config.ts
+  global-setup.ts  # Preflight check + data reset + auth session save
 ```
 
 ## Commands
@@ -43,6 +49,20 @@ pnpm dev --filter=@cio/api
 pnpm dev --filter=@cio/classroomio-com
 pnpm dev --filter=@cio/docs
 ```
+
+### E2E tests (Playwright BDD)
+
+The `e2e/` package contains BDD-style end-to-end tests written with `playwright-bdd` (Gherkin feature files + Playwright native runner).
+
+**Prerequisite:** The dashboard (`pnpm dev:container`) and Supabase (`supabase start`) must be running before executing E2E tests. Global setup performs a preflight check and fails fast if they are not reachable.
+
+```bash
+pnpm e2e                          # Run all E2E tests (bddgen + playwright test)
+pnpm e2e:ui                       # Interactive UI mode — open http://localhost:3333
+pnpm e2e:report                   # Serve HTML report at http://localhost:9323
+```
+
+Tests live in `e2e/features/*.feature` (Gherkin) with step definitions in `e2e/steps/`. Playwright UI is exposed on port `3333`, HTML report on port `9323` — both forwarded from the devcontainer.
 
 ### Dashboard tests (Jest)
 ```bash

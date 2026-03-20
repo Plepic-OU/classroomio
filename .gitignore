@@ -49,3 +49,9 @@ docs/c4/components.json
 
 # GitHub auth token for devcontainer
 .devcontainer/github-token
+
+# E2E tests — generated files and runtime artifacts
+.features-gen/
+e2e/playwright/.auth/
+e2e/test-results/
+e2e/playwright-report/

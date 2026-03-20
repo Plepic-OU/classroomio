@@ -8,7 +8,7 @@ echo "==> Installing dependencies..."
 pnpm install
 
 # Copy .env.example -> .env for each app (skip if .env already exists)
-for app in apps/dashboard apps/api apps/classroomio-com; do
+for app in apps/dashboard apps/api apps/classroomio-com e2e; do
   if [ -f "$app/.env.example" ] && [ ! -f "$app/.env" ]; then
     echo "==> Creating $app/.env from .env.example"
     cp "$app/.env.example" "$app/.env"

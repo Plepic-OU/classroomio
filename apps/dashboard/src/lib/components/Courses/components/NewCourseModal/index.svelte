@@ -202,6 +202,7 @@
     <form on:submit|preventDefault={createCourse}>
       <div class="mb-4 flex items-end space-x-2">
         <TextField
+          name="title"
           label={$t('courses.new_course_modal.course_name')}
           bind:value={$createCourseModal.title}
           placeholder={$t('courses.new_course_modal.course_name_placeholder')}

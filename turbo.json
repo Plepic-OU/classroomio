@@ -28,6 +28,18 @@
     "clean": { "cache": false },
     "db:generate": { "cache": false },
     "db:push": { "cache": false },
-    "db:format": { "cache": false }
+    "db:format": { "cache": false },
+    "e2e": {
+      "cache": false,
+      "env": [
+        "BASE_URL",
+        "TEST_ADMIN_EMAIL",
+        "TEST_ADMIN_PASSWORD",
+        "TEST_STUDENT_EMAIL",
+        "TEST_STUDENT_PASSWORD",
+        "SUPABASE_URL",
+        "SUPABASE_SERVICE_ROLE_KEY"
+      ]
+    }
   }
 }
