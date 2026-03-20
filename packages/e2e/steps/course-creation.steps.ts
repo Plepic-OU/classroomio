@@ -33,8 +33,8 @@ when('I enter {string} as the description', async ({ page }, description: string
 
 then('I should see the created course in the course list', async ({ page }) => {
   // After course creation, the app redirects to the course page.
-  // Navigate back to courses list and verify the course appears.
+  // Navigate back to courses list and wait for courses to fully load.
   await page.goto('/org/testorg/courses');
-  await page.getByRole('heading', { name: /courses/i }).waitFor({ state: 'visible' });
+  await expect(page.getByRole('button', { name: 'Create Course' })).toBeEnabled({ timeout: 10_000 });
   await expect(page.getByText(courseTitle)).toBeVisible({ timeout: 10_000 });
 });

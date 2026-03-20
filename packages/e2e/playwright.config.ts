@@ -23,10 +23,22 @@ export default defineConfig({
       name: 'setup',
       testDir: './setup',
       testMatch: '**/*.setup.ts',
+      timeout: 30_000,
+    },
+    {
+      name: 'login-tests',
+      testDir,
+      testMatch: '**/login.feature.spec.js',
+      dependencies: ['setup'],
+      use: {
+        // Login tests need a clean session — no storageState
+        storageState: { cookies: [], origins: [] },
+      },
     },
     {
       name: 'tests',
       testDir,
+      testMatch: '**/!(login).feature.spec.js',
       dependencies: ['setup'],
       use: {
         storageState: '.auth/user.json',
