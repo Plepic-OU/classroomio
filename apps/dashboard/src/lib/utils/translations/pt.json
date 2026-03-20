@@ -278,7 +278,13 @@
         "type": "Tipo de curso",
         "course_type_desc": "Atualize o tipo de curso para uma experiência mais personalizada",
         "live_class": "Aula ao vivo",
-        "self_paced": "Individualizado"
+        "self_paced": "Individualizado",
+        "enrollment": "Enrollment",
+        "max_capacity": "Max Capacity",
+        "max_capacity_placeholder": "Unlimited",
+        "waitlist": "Waiting List",
+        "waitlist_note": "Students will be able to join a waiting list when the course is full.",
+        "waitlist_note_desc": "Set a maximum number of students and optionally enable a waiting list."
       },
       "landing_page": {
         "start_course": "Iniciar curso",
@@ -890,6 +896,15 @@
       "header": "Sem permissão",
       "body": "Infelizmente você não tem acesso a este curso.",
       "button": "Ir para casa"
+    },
+    "invite": {
+      "join_waitlist": "Join Waiting List",
+      "course_full": "Course is full",
+      "already_waitlisted": "You are on the waiting list"
+    },
+    "people": {
+      "waitlist_heading": "Waiting List",
+      "approve": "Approve"
     }
   },
   "courses": {

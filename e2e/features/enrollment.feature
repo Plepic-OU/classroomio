@@ -7,3 +7,4 @@ Feature: Student course enrollment
     Then I should see the course invite page with title "Getting started with MVC"
     When I click the join course button
     Then I should be redirected to the LMS page
+    And the enrollment status should be "enrolled"

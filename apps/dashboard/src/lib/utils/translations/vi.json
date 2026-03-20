@@ -278,7 +278,13 @@
         "type": "Loại khóa học",
         "course_type_desc": "Cập nhật loại khóa học để có trải nghiệm cá nhân hóa hơn",
         "live_class": "Lớp học trực tiếp",
-        "self_paced": "Tự nhịp độ"
+        "self_paced": "Tự nhịp độ",
+        "enrollment": "Enrollment",
+        "max_capacity": "Max Capacity",
+        "max_capacity_placeholder": "Unlimited",
+        "waitlist": "Waiting List",
+        "waitlist_note": "Students will be able to join a waiting list when the course is full.",
+        "waitlist_note_desc": "Set a maximum number of students and optionally enable a waiting list."
       },
       "landing_page": {
         "start_course": "Bắt đầu khóa học",
@@ -890,6 +896,15 @@
       "header": "Không cho phép",
       "body": "Rất tiếc, bạn không có quyền truy cập vào khóa học này.",
       "button": "Về nhà"
+    },
+    "invite": {
+      "join_waitlist": "Join Waiting List",
+      "course_full": "Course is full",
+      "already_waitlisted": "You are on the waiting list"
+    },
+    "people": {
+      "waitlist_heading": "Waiting List",
+      "approve": "Approve"
     }
   },
   "courses": {

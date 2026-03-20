@@ -13,6 +13,8 @@ export interface Person {
   profile?: Profile;
   profile_id?: string;
   assigned_student_id: string;
+  status?: 'enrolled' | 'waitlisted';
+  created_at?: string;
 }
 
 export interface ProfileRole {

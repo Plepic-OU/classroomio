@@ -5,6 +5,7 @@
     CodeSnippet,
     Column,
     Grid,
+    NumberInput,
     RadioButton,
     RadioButtonGroup,
     Row,
@@ -155,6 +156,8 @@
           lessonDownload: $settings.lesson_download,
           allowNewStudent: $settings.allow_new_students
         },
+        max_capacity: $settings.max_capacity || null,
+        waitlist_enabled: $settings.waitlist_enabled,
         slug: $course.slug
       };
       await updateCourse($course.id, avatar, updatedCourse);
@@ -191,7 +194,9 @@
       grading: !!course.metadata.grading,
       lesson_download: !!course.metadata.lessonDownload,
       is_published: !!course.is_published,
-      allow_new_students: course.metadata.allowNewStudent
+      allow_new_students: course.metadata.allowNewStudent,
+      max_capacity: course.max_capacity ?? null,
+      waitlist_enabled: !!course.waitlist_enabled
     });
   }
   $: setDefault($course);
@@ -387,6 +392,41 @@
 
   <Row class="border-bottom-c flex flex-col py-7 lg:flex-row">
     <Column sm={8} md={8} lg={8}>
+      <SectionTitle>{$t('course.navItem.settings.enrollment')}</SectionTitle>
+      <p>{$t('course.navItem.settings.waitlist_note_desc')}</p>
+    </Column>
+    <Column sm={8} md={8} lg={8}>
+      <NumberInput
+        id="course-max-capacity-input"
+        label={$t('course.navItem.settings.max_capacity')}
+        placeholder={$t('course.navItem.settings.max_capacity_placeholder')}
+        min={1}
+        bind:value={$settings.max_capacity}
+        on:change={() => {
+          hasUnsavedChanges = true;
+        }}
+      />
+      <div class="mt-4" data-testid="course-waitlist-toggle">
+        <Toggle
+          size="sm"
+          disabled={!$settings.max_capacity}
+          bind:toggled={$settings.waitlist_enabled}
+          on:toggle={() => {
+            hasUnsavedChanges = true;
+          }}
+        >
+          <span slot="labelA" style="color: gray">{$t('course.navItem.settings.disabled')}</span>
+          <span slot="labelB" style="color: gray">{$t('course.navItem.settings.waitlist')}</span>
+        </Toggle>
+        {#if $settings.waitlist_enabled}
+          <p class="mt-2 text-sm text-gray-500">{$t('course.navItem.settings.waitlist_note')}</p>
+        {/if}
+      </div>
+    </Column>
+  </Row>
+
+  <Row class="border-bottom-c flex flex-col py-7 lg:flex-row">
+    <Column sm={8} md={8} lg={8}>
       <SectionTitle>{$t('course.navItem.settings.allow')}</SectionTitle>
       <p>{$t('course.navItem.settings.access')}</p>
     </Column>
@@ -451,6 +491,7 @@
       isLoading={isSaving}
       isDisabled={isSaving}
       onClick={handleSave}
+      testId="settings-save-btn"
     />
   </Row>
 </Grid>

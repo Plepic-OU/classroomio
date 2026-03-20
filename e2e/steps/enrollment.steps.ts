@@ -99,3 +99,18 @@ When('I click the join course button', async ({ page }) => {
 Then('I should be redirected to the LMS page', async ({ page }) => {
   await expect(page).toHaveURL(/\/lms/, { timeout: 15_000 });
 });
+
+Then('the enrollment status should be {string}', async ({}, expectedStatus: string) => {
+  if (!enrollmentGroupId || !studentProfileId) {
+    throw new Error('enrollmentGroupId or studentProfileId not set — cannot verify enrollment status');
+  }
+  const { data, error } = await adminClient
+    .from('groupmember')
+    .select('status')
+    .eq('group_id', enrollmentGroupId)
+    .eq('profile_id', studentProfileId)
+    .eq('role_id', 3)
+    .single();
+  if (error || !data) throw new Error(`Could not find groupmember row: ${error?.message}`);
+  expect(data.status).toBe(expectedStatus);
+});

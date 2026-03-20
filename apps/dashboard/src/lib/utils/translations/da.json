@@ -438,7 +438,13 @@
         "self_paced": "Selv tempo",
         "delete": "Slet kursus",
         "delete_text": "Slet dette kursus, denne handling kan ikke fortrydes",
-        "save": "Gem ændringer"
+        "save": "Gem ændringer",
+        "enrollment": "Enrollment",
+        "max_capacity": "Max Capacity",
+        "max_capacity_placeholder": "Unlimited",
+        "waitlist": "Waiting List",
+        "waitlist_note": "Students will be able to join a waiting list when the course is full.",
+        "waitlist_note_desc": "Set a maximum number of students and optionally enable a waiting list."
       },
       "analytics": {
         "title": "Analytics"
@@ -1044,6 +1050,15 @@
       "nav_certificates": "Certifikater",
       "nav_landing_page": "Landingsside",
       "nav_settings": "Indstillinger"
+    },
+    "invite": {
+      "join_waitlist": "Join Waiting List",
+      "course_full": "Course is full",
+      "already_waitlisted": "You are on the waiting list"
+    },
+    "people": {
+      "waitlist_heading": "Waiting List",
+      "approve": "Approve"
     }
   },
   "courses": {

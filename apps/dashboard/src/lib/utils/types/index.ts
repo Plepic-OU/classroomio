@@ -34,6 +34,7 @@ export interface GroupPerson {
   profile_id: string;
   role_id: Role['id'];
   fullname?: string;
+  status?: 'enrolled' | 'waitlisted';
 }
 
 export interface CustomQuestionType {
@@ -244,6 +245,8 @@ export interface Course {
   lesson_section?: LessonSection[];
   lessons?: Lesson[];
   polls: { status: string }[];
+  max_capacity?: number | null;
+  waitlist_enabled?: boolean;
 }
 
 export interface Groupmember {
@@ -254,6 +257,7 @@ export interface Groupmember {
   email?: any; // type unknown;
   created_at?: string;
   assigned_student_id?: any; // type unknown;
+  status?: 'enrolled' | 'waitlisted';
   group?: Group;
   role?: Role;
   profile?: Profile;

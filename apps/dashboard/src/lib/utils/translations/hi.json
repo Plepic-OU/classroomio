@@ -278,7 +278,13 @@
         "type": "कोर्स का प्रकार",
         "course_type_desc": "अधिक वैयक्तिकृत अनुभव के लिए पाठ्यक्रम प्रकार को अपडेट करें",
         "live_class": "लाइव क्लास",
-        "self_paced": "स्वयं गति"
+        "self_paced": "स्वयं गति",
+        "enrollment": "Enrollment",
+        "max_capacity": "Max Capacity",
+        "max_capacity_placeholder": "Unlimited",
+        "waitlist": "Waiting List",
+        "waitlist_note": "Students will be able to join a waiting list when the course is full.",
+        "waitlist_note_desc": "Set a maximum number of students and optionally enable a waiting list."
       },
       "landing_page": {
         "start_course": "कोर्स प्रारंभ करें",
@@ -890,6 +896,15 @@
       "header": "अनुमति नहीं",
       "body": "दुर्भाग्य से आपके पास इस पाठ्यक्रम तक पहुंच नहीं है।",
       "button": "घर जाओ"
+    },
+    "invite": {
+      "join_waitlist": "Join Waiting List",
+      "course_full": "Course is full",
+      "already_waitlisted": "You are on the waiting list"
+    },
+    "people": {
+      "waitlist_heading": "Waiting List",
+      "approve": "Approve"
     }
   },
   "courses": {

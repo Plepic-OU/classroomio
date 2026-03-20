@@ -278,7 +278,13 @@
         "type": "Kurstyp",
         "course_type_desc": "Aktualisieren Sie den Kurstyp für ein persönlicheres Erlebnis",
         "live_class": "Live-Klasse",
-        "self_paced": "Eigenständig"
+        "self_paced": "Eigenständig",
+        "enrollment": "Enrollment",
+        "max_capacity": "Max Capacity",
+        "max_capacity_placeholder": "Unlimited",
+        "waitlist": "Waiting List",
+        "waitlist_note": "Students will be able to join a waiting list when the course is full.",
+        "waitlist_note_desc": "Set a maximum number of students and optionally enable a waiting list."
       },
       "landing_page": {
         "start_course": "Kurs starten",
@@ -890,6 +896,15 @@
       "header": "Keine Erlaubnis",
       "body": "Leider haben Sie keinen Zugriff auf diesen Kurs.",
       "button": "Nach Hause gehen"
+    },
+    "invite": {
+      "join_waitlist": "Join Waiting List",
+      "course_full": "Course is full",
+      "already_waitlisted": "You are on the waiting list"
+    },
+    "people": {
+      "waitlist_heading": "Waiting List",
+      "approve": "Approve"
     }
   },
   "courses": {
