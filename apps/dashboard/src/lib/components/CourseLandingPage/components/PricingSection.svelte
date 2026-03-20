@@ -1,5 +1,6 @@
 <script lang="ts">
   import get from 'lodash/get';
+  import { onMount } from 'svelte';
   import PrimaryButton from '$lib/components/PrimaryButton/index.svelte';
   import getCurrencyFormatter from '$lib/utils/functions/getCurrencyFormatter';
   import {
@@ -15,6 +16,7 @@
   import { ROLE } from '$lib/utils/constants/roles';
   import { capturePosthogEvent } from '$lib/utils/services/posthog';
   import { t } from '$lib/utils/functions/translations';
+  import { getSupabase } from '$lib/utils/functions/supabase';
 
   export let className = '';
   export let editMode = false;
@@ -27,6 +29,25 @@
   let discount = 0;
   let formatter: Intl.NumberFormat | undefined;
   let isFree = false;
+  let isFull = false;
+  let totalStudents = 0;
+
+  // Fetch student count to determine if course is full
+  async function checkCapacity() {
+    if (!courseData?.max_capacity || !courseData?.group_id) return;
+
+    const supabase = getSupabase();
+    const { count } = await supabase
+      .from('groupmember')
+      .select('*', { count: 'exact', head: true })
+      .eq('group_id', courseData.group_id)
+      .eq('role_id', ROLE.STUDENT);
+
+    totalStudents = count || 0;
+    isFull = totalStudents >= (courseData.max_capacity || Infinity);
+  }
+
+  onMount(checkCapacity);
 
   function handleJoinCourse() {
     if (editMode) return;
@@ -119,9 +140,11 @@
         <!-- Call To Action Buttons -->
         <div class="flex h-full w-full flex-col items-center">
           <PrimaryButton
-            label={isFree
-              ? $t('course.navItem.landing_page.pricing_section.enroll')
-              : $t('course.navItem.landing_page.pricing_section.buy')}
+            label={isFull
+              ? $t('course.navItem.landing_page.pricing_section.join_waitlist')
+              : isFree
+                ? $t('course.navItem.landing_page.pricing_section.enroll')
+                : $t('course.navItem.landing_page.pricing_section.buy')}
             className="w-full sm:w-full h-[40px]"
             onClick={handleJoinCourse}
             isDisabled={!courseData.metadata.allowNewStudent}
@@ -166,9 +189,11 @@
       <!-- Call To Action Buttons -->
       <div class="flex w-full flex-col items-center">
         <PrimaryButton
-          label={isFree
-            ? $t('course.navItem.landing_page.pricing_section.enroll')
-            : $t('course.navItem.landing_page.pricing_section.buy')}
+          label={isFull
+            ? $t('course.navItem.landing_page.pricing_section.join_waitlist')
+            : isFree
+              ? $t('course.navItem.landing_page.pricing_section.enroll')
+              : $t('course.navItem.landing_page.pricing_section.buy')}
           className="w-full sm:w-full py-3 mb-3"
           onClick={handleJoinCourse}
           isDisabled={!courseData.metadata.allowNewStudent}

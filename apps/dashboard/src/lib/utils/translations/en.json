@@ -1017,6 +1017,8 @@
         "action": "Action",
         "feedback": "Copied Email to clipboard",
         "view": "View",
+        "waiting_list": "Waiting List",
+        "waiting_list_empty": "No one on the waiting list",
         "delete_profile": "Delete profile",
         "invite_modal": {
           "title": "Invite people",
@@ -1176,7 +1178,8 @@
           "discount": "Discount",
           "enroll": "Enroll Now",
           "buy": "Buy Now",
-          "bird": "Early bird offer. Buy ASAP"
+          "bird": "Early bird offer. Buy ASAP",
+          "join_waitlist": "Join Waiting List"
         },
 
         "course_content": "Course content",
@@ -1260,6 +1263,11 @@
         "course_type_desc": "Update the course type for a more personalized experience",
         "live_class": "Live class",
         "self_paced": "Self paced",
+        "max_students": "Max Students",
+        "max_students_desc": "Set a maximum number of students. Leave empty for unlimited.",
+        "max_students_placeholder": "Unlimited",
+        "max_students_warning": "Current enrollment exceeds this limit. Existing students will not be removed.",
+        "students_enrolled": "students enrolled",
         "delete": "Delete Course",
         "delete_text": "Delete this course,this action cannot be undone",
         "save": "Save Changes"
@@ -1550,7 +1558,13 @@
     },
 
     "invite": {
-      "failed_join": "Joining failed, please contact your admin"
+      "failed_join": "Joining failed, please contact your admin",
+      "closed": "This course is not accepting new students"
+    },
+
+    "waitlist": {
+      "added": "You've been added to the waiting list. You'll be automatically enrolled when a spot opens up.",
+      "removed": "Removed from waiting list"
     },
 
     "community": {

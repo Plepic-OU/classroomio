@@ -6,7 +6,6 @@
   import AuthUI from '$lib/components/AuthUI/index.svelte';
   import { currentOrg } from '$lib/utils/store/org';
   import { setTheme } from '$lib/utils/functions/theme';
-  import { addGroupMember } from '$lib/utils/services/courses';
   import type { CurrentOrg } from '$lib/utils/types/org.js';
   import { ROLE } from '$lib/utils/constants/roles';
   import { profile } from '$lib/utils/store/user';
@@ -34,24 +33,57 @@
       return goto(`/signup?redirect=${$page.url?.pathname || ''}`);
     }
 
+    // Get course group_id for the RPC call
     const { data: courseData, error } = await supabase
       .from('course')
       .select('group_id')
       .eq('id', data.id)
       .single();
 
-    console.log({ courseData });
     if (!courseData?.group_id) {
       console.error('error getting group', error);
+      loading = false;
       return;
     }
 
-    const member = {
-      profile_id: $profile.id,
-      group_id: courseData.group_id,
-      role_id: ROLE.STUDENT
-    };
+    // Atomic enroll-or-waitlist via RPC (enforces capacity + allowNewStudent server-side)
+    const { data: result, error: rpcError } = await supabase.rpc('try_enroll_or_waitlist', {
+      p_course_id: data.id,
+      p_group_id: courseData.group_id
+    });
 
+    if (rpcError) {
+      console.error('Enrollment RPC error', rpcError);
+      snackbar.error('snackbar.invite.failed_join');
+      window.location.href = '/lms';
+      return;
+    }
+
+    if (result === 'closed') {
+      snackbar.error('snackbar.invite.closed');
+      loading = false;
+      return;
+    }
+
+    if (result === 'waitlisted') {
+      capturePosthogEvent('student_waitlisted', {
+        course_name: data.name,
+        student_id: $profile.id,
+        student_email: $profile.email
+      });
+
+      snackbar.success('snackbar.waitlist.added');
+      return goto('/lms');
+    }
+
+    // result === 'enrolled'
+    capturePosthogEvent('student_joined_course', {
+      course_name: data.name,
+      student_id: $profile.id,
+      student_email: $profile.email
+    });
+
+    // Fetch teachers for notification
     const teacherMembers = await supabase
       .from('groupmember')
       .select('id, profile(email)')
@@ -67,48 +99,28 @@
       >();
 
     const teachers: Array<string> =
-      teacherMembers.data?.map((teacher) => {
-        return teacher.profile?.email || '';
-      }) || [];
+      teacherMembers.data?.map((teacher) => teacher.profile?.email || '') || [];
 
-    addGroupMember(member).then((addedMember) => {
-      if (addedMember.error) {
-        console.error('Error adding student to group', courseData.group_id, addedMember.error);
-        snackbar.error('snackbar.invite.failed_join');
-
-        // Full page load to lms if error joining, probably user already joined
-        window.location.href = '/lms';
-        return;
-      }
-
-      capturePosthogEvent('student_joined_course', {
-        course_name: data.name,
-        student_id: $profile.id,
-        student_email: $profile.email
-      });
-
-      // Send email welcoming student to the course
-      triggerSendEmail(NOTIFICATION_NAME.STUDENT_COURSE_WELCOME, {
-        to: $profile.email,
-        orgName: data.currentOrg?.name,
-        courseName: data.name
-      });
-
-      // Send notification to all teacher(s) that a student has joined the course.
-      Promise.all(
-        teachers.map((email) =>
-          triggerSendEmail(NOTIFICATION_NAME.TEACHER_STUDENT_JOINED, {
-            to: email,
-            courseName: data.name,
-            studentName: $profile.fullname,
-            studentEmail: $profile.email
-          })
-        )
-      );
-
-      // go to lms
-      return goto('/lms');
+    // Send welcome email
+    triggerSendEmail(NOTIFICATION_NAME.STUDENT_COURSE_WELCOME, {
+      to: $profile.email,
+      orgName: data.currentOrg?.name,
+      courseName: data.name
     });
+
+    // Notify teachers
+    Promise.all(
+      teachers.map((email) =>
+        triggerSendEmail(NOTIFICATION_NAME.TEACHER_STUDENT_JOINED, {
+          to: email,
+          courseName: data.name,
+          studentName: $profile.fullname,
+          studentEmail: $profile.email
+        })
+      )
+    );
+
+    return goto('/lms');
   }
 
   function setCurOrg(cOrg: CurrentOrg) {

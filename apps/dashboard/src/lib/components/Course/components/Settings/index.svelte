@@ -5,6 +5,7 @@
     CodeSnippet,
     Column,
     Grid,
+    NumberInput,
     RadioButton,
     RadioButtonGroup,
     Row,
@@ -155,7 +156,8 @@
           lessonDownload: $settings.lesson_download,
           allowNewStudent: $settings.allow_new_students
         },
-        slug: $course.slug
+        slug: $course.slug,
+        max_capacity: $settings.max_capacity || null
       };
       await updateCourse($course.id, avatar, updatedCourse);
 
@@ -191,7 +193,8 @@
       grading: !!course.metadata.grading,
       lesson_download: !!course.metadata.lessonDownload,
       is_published: !!course.is_published,
-      allow_new_students: course.metadata.allowNewStudent
+      allow_new_students: course.metadata.allowNewStudent,
+      max_capacity: course.max_capacity ?? null
     });
   }
   $: setDefault($course);
@@ -401,6 +404,35 @@
         <span slot="labelA" style="color: gray">{$t('course.navItem.settings.disabled')}</span>
         <span slot="labelB" style="color: gray">{$t('course.navItem.settings.enabled')}</span>
       </Toggle>
+    </Column>
+  </Row>
+
+  <!-- Max Students (Capacity) -->
+  <Row class="border-bottom-c flex flex-col py-7 lg:flex-row">
+    <Column sm={8} md={8} lg={8}>
+      <SectionTitle>{$t('course.navItem.settings.max_students')}</SectionTitle>
+      <p>{$t('course.navItem.settings.max_students_desc')}</p>
+      {#if $settings.max_capacity && $course.total_students && $course.total_students > $settings.max_capacity}
+        <p class="mt-2 text-sm text-yellow-600">
+          {$t('course.navItem.settings.max_students_warning')}
+        </p>
+      {/if}
+    </Column>
+    <Column sm={8} md={8} lg={8}>
+      <NumberInput
+        label=""
+        min={1}
+        placeholder={$t('course.navItem.settings.max_students_placeholder')}
+        bind:value={$settings.max_capacity}
+        on:change={() => {
+          hasUnsavedChanges = true;
+        }}
+      />
+      {#if $settings.max_capacity && $course.total_students !== undefined}
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {$course.total_students} / {$settings.max_capacity} {$t('course.navItem.settings.students_enrolled')}
+        </p>
+      {/if}
     </Column>
   </Row>
 

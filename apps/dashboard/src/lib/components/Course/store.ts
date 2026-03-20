@@ -16,6 +16,7 @@ export const defaultCourse: Course = {
   is_certificate_downloadable: false,
   certificate_theme: 'professional',
   is_published: false,
+  max_capacity: null,
   created_at: new Date().toDateString(),
   updated_at: new Date().toDateString(),
   attendance: [],
