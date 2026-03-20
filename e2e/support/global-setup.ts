@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import { deleteTestCourses } from './cleanup';
+import { resetDatabase } from './cleanup';
+import { prepareSeedUser } from './auth';
 
 async function checkService(name: string, url: string) {
   const controller = new AbortController();
@@ -16,6 +17,9 @@ async function checkService(name: string, url: string) {
 export default async function globalSetup() {
   const baseUrl = process.env.BASE_URL || 'http://localhost:5173';
   const supabaseUrl = process.env.SUPABASE_URL || 'http://localhost:54321';
+
+  // 1. Preflight service checks
+  console.log('\n🔍 Preflight: checking services...');
 
   const checks = [
     { name: 'Dashboard', url: baseUrl },
@@ -38,7 +42,16 @@ export default async function globalSetup() {
     process.exit(1);
   }
 
-  console.log('✅ Services reachable — cleaning test data...');
-  await deleteTestCourses();
-  console.log('✅ Test data reset complete');
+  console.log('✅ Services reachable\n');
+
+  // 2. Truncate all public tables + reseed from seed.sql
+  console.log('🗄️  Resetting database (truncate + reseed)...');
+  const resetStart = Date.now();
+  await resetDatabase();
+  console.log(`✅ Database reset in ${Date.now() - resetStart}ms\n`);
+
+  // 3. Set known password on seed user for test authentication
+  console.log('🔑 Preparing seed user for authentication...');
+  await prepareSeedUser();
+  console.log('✅ Seed user ready\n');
 }

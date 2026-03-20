@@ -78,6 +78,7 @@
 
   onMount(() => {
     pageSetup();
+    document.body.dataset.hydrated = '';
 
     if (!hasSession() && !isPublicRoute($page.url?.pathname)) {
       console.log('No auth token and is not a public route, redirect to login', path);

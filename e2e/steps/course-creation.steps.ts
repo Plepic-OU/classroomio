@@ -1,13 +1,12 @@
 import { expect } from '@playwright/test';
-import { Given, When, Then, AfterAll } from './fixtures';
+import { Given, When, Then } from './fixtures';
 import { getTestUserSession, TEST_ORG_SITENAME } from '../support/auth';
-import { deleteTestCourses } from '../support/cleanup';
 
 Given('I am logged in as an instructor', async ({ page }) => {
   const session = await getTestUserSession();
 
   await page.goto('/login');
-  await page.waitForLoadState('domcontentloaded');
+  await page.locator('body[data-hydrated]').waitFor();
 
   await page.evaluate((s) => {
     const key = `sb-localhost-auth-token`;
@@ -25,7 +24,7 @@ Given('I am logged in as an instructor', async ({ page }) => {
 
 Given('I am on the courses page', async ({ page }) => {
   await page.goto(`/org/${TEST_ORG_SITENAME}/courses`);
-  await page.waitForLoadState('domcontentloaded');
+  await page.locator('body[data-hydrated]').waitFor();
 });
 
 When('I click the create course button', async ({ page }) => {
@@ -61,8 +60,4 @@ Then('I should see a validation error', async ({ page }) => {
     (el: HTMLInputElement) => !el.validity.valid
   );
   expect(isInvalid).toBe(true);
-});
-
-AfterAll(async () => {
-  await deleteTestCourses();
 });

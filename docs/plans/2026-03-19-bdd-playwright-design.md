@@ -36,6 +36,7 @@ e2e/
 - `playwright-bdd`
 - `@supabase/supabase-js`
 - `dotenv`
+- `postgres` (direct DB access for fast truncate + reseed)
 
 ---
 
@@ -182,9 +183,10 @@ Feature: Course Creation
 
 ### Programmatic Auth (support/auth.ts)
 
-- `getTestUserSession()` is idempotent — creates user, profile, and org membership on first run, reuses after
-- Test user: `test-e2e@classroomio.com` / `TestPass123!`
-- Test org: `bdd-test-org`
+- Reuses `admin@test.com` from `supabase/seed.sql` — no duplicate user/profile/org creation
+- Global setup sets a known password (`TestPass123!`) on the seed user via Supabase admin API
+- `getTestUserSession()` signs in with the seed user and returns the session
+- Test org: `udemy-test` (from seed.sql)
 
 ### Auth injection
 
@@ -198,11 +200,13 @@ localStorage.setItem('sb-localhost-auth-token', JSON.stringify({
 
 Key: `sb-localhost-auth-token` — matches the Supabase JS client storage key for localhost.
 
-### Cleanup (support/cleanup.ts)
+### Database Reset (support/cleanup.ts)
 
-- Deletes courses with `title LIKE 'BDD Test%'` — avoids touching real data
-- Deletes dependent records first (`course_newsfeed`), then courses
-- Runs both in global setup (before tests) and in AfterAll (after tests)
+- **Future-proof:** truncates ALL public tables CASCADE, except a protected exclusion list (`role`, `submissionstatus`, `question_type` — migration-populated reference data)
+- New tables are automatically truncated — no need to update the list
+- Cleans auth tables, then re-applies `supabase/seed.sql` to restore known state
+- Uses `postgres` npm package for direct DB access (fast TRUNCATE, not row-by-row DELETE)
+- Runs in global setup before all tests
 
 ---
 

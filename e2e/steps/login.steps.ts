@@ -3,8 +3,8 @@ import { Given, When, Then } from './fixtures';
 
 Given('I am on the login page', async ({ page }) => {
   await page.goto('/login');
-  // Wait for Svelte hydration — theme attr is set by JS after hydration
-  await page.locator('html[theme]').waitFor();
+  // Wait for SvelteKit hydration — data-hydrated is set in +layout.svelte onMount
+  await page.locator('body[data-hydrated]').waitFor();
 });
 
 When(
