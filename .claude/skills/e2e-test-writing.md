@@ -1,117 +1,149 @@
-# E2E Test Writing — ClassroomIO BDD Playwright
+---
+name: e2e-test-writing
+description: "Use when adding a new E2E BDD test to apps/e2e. Guides through feature file → page object → step definitions → run & debug cycle."
+---
 
-This skill captures knowledge about writing and debugging E2E tests in this project.
+# Adding a New E2E Test — ClassroomIO
 
-## Stack
+## Process (always follow this order)
 
-- **Framework:** `playwright-bdd` v8 + `@playwright/test`
-- **Pattern:** Gherkin BDD (`.feature` files → generated `.spec.js` → Playwright runs)
-- **Location:** `apps/e2e/`
+1. **Read the feature** — understand what user flow to cover
+2. **Explore the UI** — read the relevant Svelte component(s) to understand selectors
+3. **Write the `.feature` file** — `apps/e2e/features/<area>/<name>.feature`
+4. **Create/update Page Object** — `apps/e2e/pages/<Name>Page.ts`
+5. **Write step definitions** — `apps/e2e/steps/<area>/<name>.steps.ts`
+6. **Run only this test** — `npx bddgen && npx playwright test --grep "Scenario name"`
+7. **Iterate** — one failure at a time, keep 10s timeout
 
-## Workflow
+## Quick Commands
 
 ```bash
-# 1. Services must be running first (tests will fail-fast otherwise)
-supabase start
-pnpm dev:container
+# Run single scenario (fast iteration)
+cd apps/e2e
+npx bddgen && npx playwright test --grep "scenario name here"
 
-# 2. Run all tests
-pnpm e2e
+# Run specific project
+npx bddgen && npx playwright test --project=chromium --grep "..."
 
-# 3. View report (HTML with all videos/screenshots)
-pnpm e2e:report   # serves on :9323
+# View last report
+pnpm e2e:report   # http://localhost:9323
 ```
 
-## File Structure
+## File Layout
 
 ```
 apps/e2e/
-├── features/**/*.feature   # Gherkin scenarios (source of truth)
-├── steps/**/*.ts           # Step definitions
-├── pages/*.ts              # Page Object Models
-├── global-setup.ts         # Service health checks
-├── playwright.config.ts    # Config (10s timeout, always capture video+screenshot)
-└── .features-gen/          # Auto-generated specs (gitignored, don't edit)
+├── features/
+│   ├── auth/login.feature
+│   └── courses/course-creation.feature
+├── steps/
+│   ├── auth/login.steps.ts
+│   └── courses/course-creation.steps.ts
+├── pages/
+│   ├── LoginPage.ts
+│   └── CoursePage.ts
+├── fixtures/index.ts       ← always import Given/When/Then from here
+├── global-setup.ts         ← saves .auth/admin.json on every run
+└── playwright.config.ts    ← two projects: login + chromium
 ```
 
-## Writing Features
+## Two Playwright Projects
 
-```gherkin
-Feature: My Feature
+| Project | Auth | Matches |
+|---------|------|---------|
+| `login` | none (fresh browser) | `features/auth/**` |
+| `chromium` | `.auth/admin.json` (storageState) | everything else |
 
-  Background:
-    Given I am logged in as admin
+New flows that need a different role (e.g. student) → add a new project + global setup step.
 
-  Scenario: Do something
-    When I click the button
-    Then I see the result
-```
-
-## Writing Steps
+## Step Definition Template
 
 ```typescript
-import { createBdd } from 'playwright-bdd';
 import { expect } from '@playwright/test';
+import { Given, When, Then } from '../../fixtures/index';  // ← always from fixtures
 
-const { Given, When, Then } = createBdd();
-
-Given('I am logged in as admin', async ({ page }) => {
-  await page.goto('/login');
-  await page.fill('input[type="email"]', 'admin@test.com');
-  await page.fill('input[type="password"]', '123456');
-  await page.click('button[type="submit"]');
-  await expect(page).not.toHaveURL(/\/login/);
-});
+Given('...', async ({ page }) => { ... });
+When('...', async ({ page }) => { ... });
+Then('...', async ({ page }) => { ... });
 ```
 
-## Key Selectors (Dashboard)
+## Hard-Won Lessons (read before writing selectors)
+
+### 1. SvelteKit hydration — wait before interacting with forms
+SSR delivers HTML immediately but `on:submit|preventDefault` is not attached until JS hydrates.
+Wait for the Supabase INITIAL_SESSION signal before filling login forms:
+```typescript
+await page.waitForRequest(req => req.url().includes('54321'), { timeout: 8000 }).catch(() => {});
+await page.getByLabel('Your email').waitFor();
+```
+
+### 2. `input[type="email"]` doesn't work
+Svelte's `use:typeAction` sets `input.type` via DOM property (not HTML attribute).
+`getAttribute('type')` returns `null` → CSS selector `input[type="email"]` finds nothing.
+**Use `getByLabel('Your email')` instead.**
+
+### 3. Hard `page.goto()` resets Svelte stores
+`page.goto('/org/.../courses')` triggers a full page reload → all Svelte stores reset →
+`currentOrg` becomes empty → `isOrgAdmin` returns `null` → buttons are disabled.
+**Use sidebar link clicks for in-app navigation** (SvelteKit client-side nav preserves stores):
+```typescript
+await page.getByRole('link', { name: 'Courses', exact: true }).click();
+await page.waitForURL(/\/courses/);
+```
+
+### 4. storageState — wait for org redirect, not just "not login"
+After `page.goto('/')` with storageState, wait for:
+```typescript
+await page.waitForURL(url => url.pathname.startsWith('/org/'), { timeout: 8000 });
+```
+Not `!url.startsWith('/login')` — that resolves immediately from `/`.
+
+### 5. TextArea + AI popover — use `getByPlaceholder`
+The `TextArea` Svelte component renders an AI prompt `<textarea>` inside the same `<label>`.
+`getByLabel('Short Description')` matches multiple textareas → wrong one selected.
+**Use `getByPlaceholder(...)` to target the specific textarea:**
+```typescript
+await page.getByPlaceholder('A little description about this course').fill('...');
+```
+Always read the component's `.svelte` file to find the placeholder text.
+
+### 6. `getByLabel` and Svelte form components
+- `TextField`: `<label>` (no `for`) wraps `<p for="text-field">Label</p>` + `<input>` — implicit, works
+- `TextArea`: `<label for="text-field">` wraps `<p>Label</p>` + `<textarea>` — label also wraps AI textarea, use `getByPlaceholder`
+- Always read the component source before choosing a selector
+
+### 7. `import.meta.dirname` — not available in Node 20
+Use `process.cwd()` instead. The project runs Node 20 (`^20.19.3`).
+
+### 8. 10s test timeout is tight — keep steps fast
+Each BDD `Given/When/Then` step shares the global 10s timeout.
+With 5+ steps, each step has ~1-2s budget. Avoid `waitForTimeout()`.
+If a selector takes 8s to fail, the test times out before other steps run.
+
+## Common Selectors (Dashboard)
 
 | Element | Selector |
 |---------|----------|
-| Email input | `input[type="email"]` |
-| Password input | `input[type="password"]` |
-| Submit button | `button[type="submit"]` |
-| Error message | `p.text-red-500` (last one) |
+| Email input | `page.getByLabel('Your email')` |
+| Password input | `page.getByLabel('Your password')` |
+| Submit button | `page.locator('button[type="submit"]')` |
+| Error message | `page.locator('p.text-red-500').last()` |
+| Sidebar link | `page.getByRole('link', { name: 'Courses', exact: true })` |
+| Course title | `page.getByTestId('course-title')` |
 
-## Page Object Pattern
+## Next Test to Add: "Student signs up to a course"
 
-```typescript
-// pages/MyPage.ts
-import type { Page } from '@playwright/test';
+**Flow to implement:**
+1. Admin creates a course and publishes an invite link (or course is publicly listed)
+2. A new student user registers / logs in
+3. Student navigates to the course enrollment page
+4. Student clicks "Sign up" / "Enroll"
+5. Course appears in student's LMS dashboard (`/lms`)
 
-export class MyPage {
-  constructor(private page: Page) {}
+**Before writing:** explore these files:
+- `apps/dashboard/src/routes/lms/` — student dashboard
+- `apps/dashboard/src/routes/org/[slug]/courses/[courseId]/` — course detail
+- Search for "enroll", "join", "signup" in `apps/dashboard/src` to find the enrollment component
+- Check if there's a student test user in Supabase seed data (`supabase/seed.sql`)
 
-  async goto() { await this.page.goto('/my-route'); }
-  async clickButton() { await this.page.click('button.my-class'); }
-}
-```
-
-## Config Notes
-
-- **Timeout:** 10s global, 8s action/navigation
-- **Videos:** always `on` (even for passing tests)
-- **Screenshots:** always `on`
-- **Retries:** 0 (fix the test, don't mask flakiness)
-- **Workers:** 1 (sequential, avoids DB conflicts)
-- **Generated files:** in `.features-gen/` (gitignored)
-
-## After Auth Redirect
-
-- Admin login → `/org/[slug]` (if they have an org)
-- Student login → `/lms`
-- Assert URL changed: `await expect(page).not.toHaveURL(/\/login/)`
-
-## DB Reset
-
-For tests that need clean state, use Supabase:
-```bash
-supabase db reset   # full reset + re-seed (slow, but clean)
-```
-For fast truncation, use Supabase service role key to call SQL directly.
-
-## Debugging Tips
-
-- `PWDEBUG=1 pnpm e2e` — opens Playwright Inspector
-- `pnpm --filter @cio/e2e exec playwright codegen http://localhost:5173` — generate selectors interactively
-- Check `apps/e2e/test-results/` for videos/traces of failures
+**Likely new project needed:** `student` project in `playwright.config.ts` with student storageState saved in `global-setup.ts` (similar to admin auth).
