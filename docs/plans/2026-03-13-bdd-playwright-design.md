@@ -15,6 +15,32 @@ Tests live at `tests/e2e/` in the repo root, independent of any single app.
 
 **Success criteria:** Both login and course creation scenarios pass against a running local dev environment with seeded data.
 
+## Acceptance Criteria
+
+### Test setup
+- All test videos and screenshots are captured for every run (pass and fail)
+- Test result folders (`test-results/`, `playwright-report/`, `blob-report/`, `.features-gen/`) are in `.gitignore`
+- Initial test cases (login + course creation) pass continuously
+- Data reset before tests is fast: truncate tables + re-seed (not `supabase db reset`)
+- No timeout exceeds 10 seconds (test timeout and expect timeout)
+- The Playwright HTML report URL is displayed after test runs
+
+### Running the tests
+- E2E tests run from a single pnpm command (`pnpm test:e2e`)
+- Tests MUST NOT start services automatically (no `webServer` in Playwright config)
+- Global setup performs a quick health check for all dependent services (Supabase, dashboard dev server) and fails fast with a clear error if any are missing
+
+### DevContainer setup
+- Playwright and the Chromium browser are installed during Docker image build
+- Playwright UI port (9323) and report port are forwarded properly via both `appPort` and `forwardPorts`, reachable from the host machine
+- DevContainer rebuild is required after Dockerfile changes (coordinated with user)
+
+### Test authoring
+- When writing and debugging E2E tests, distill learned patterns into the project skill `e2e-test-writing`
+
+### Documentation
+- `CLAUDE.md` includes information about the E2E test flow and commands
+
 ## Dependencies
 
 New dev dependencies at workspace root (install with `pnpm add -Dw`):
@@ -37,7 +63,7 @@ tests/e2e/
     fixtures.ts          # shared Playwright BDD fixtures (Given/When/Then)
   global-setup.ts        # pre-flight check that Supabase is reachable
   playwright.config.ts
-  .gitignore             # ignore test-results/, playwright-report/, blob-report/, .features-gen/
+  .gitignore             # ignore test-results/, playwright-report/, blob-report/, .features-gen/, videos/
 ```
 
 `playwright-bdd` generates intermediate test files into `.features-gen/` (gitignored) which the Playwright runner executes.
@@ -48,20 +74,24 @@ Root `package.json`:
 
 ```json
 "test:e2e": "cd tests/e2e && pnpm exec bddgen && pnpm exec playwright test",
-"test:e2e:ui": "cd tests/e2e && pnpm exec bddgen && pnpm exec playwright test --ui-host=0.0.0.0 --ui-port=9323"
+"test:e2e:ui": "cd tests/e2e && pnpm exec bddgen && pnpm exec playwright test --ui-host=0.0.0.0 --ui-port=9323",
+"test:e2e:report": "cd tests/e2e && pnpm exec playwright show-report --host=0.0.0.0 --port=9324"
 ```
 
-The `--ui-host=0.0.0.0` flag makes the Playwright UI accessible from the host machine. The `--ui-port=9323` explicitly matches the forwarded port.
+- `test:e2e` -- runs all E2E tests. The HTML report is generated at `tests/e2e/playwright-report/`.
+- `test:e2e:ui` -- opens Playwright UI mode for interactive debugging. The `--ui-host=0.0.0.0` flag makes it accessible from the host machine; `--ui-port=9323` matches the forwarded port.
+- `test:e2e:report` -- serves the HTML report on port 9324, accessible from the host machine.
 
 ## Prerequisites
 
-Before running tests, ensure Supabase is running:
+Before running tests, ensure **both** services are running:
 
-```bash
-supabase start
-```
+1. Supabase: `supabase start`
+2. Dashboard dev server: `pnpm dev --filter=@cio/dashboard`
 
-The dashboard dev server is auto-started by Playwright's `webServer` config if not already running. The seed data includes the test user `admin@test.com` / `123456`. Tests must run against the dev server (not a production build), as `@test.com` emails are auto-logged-out in non-dev mode.
+Tests MUST NOT start services automatically. The global setup verifies both are reachable and fails fast with a clear error if either is missing.
+
+The seed data includes the test user `admin@test.com` / `123456`. Tests must run against the dev server (not a production build), as `@test.com` emails are auto-logged-out in non-dev mode.
 
 ## DevContainer Changes
 
@@ -74,10 +104,18 @@ Add port 9323 (Playwright UI) to both `appPort` and `forwardPorts`:
 "forwardPorts": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324, 9323]
 ```
 
-Add a `portsAttributes` entry:
+Add port 9324 (Playwright report) as well:
 
 ```json
-"9323": { "label": "Playwright UI" }
+"appPort": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324, 9323, 9324],
+"forwardPorts": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324, 9323, 9324]
+```
+
+Add `portsAttributes` entries:
+
+```json
+"9323": { "label": "Playwright UI" },
+"9324": { "label": "Playwright Report" }
 ```
 
 ### Dockerfile
@@ -113,13 +151,14 @@ const testDir = defineBddConfig({
 
 export default defineConfig({
   testDir,
-  timeout: 60_000,
-  expect: { timeout: 15_000 },
+  timeout: 10_000,
+  expect: { timeout: 5_000 },
   retries: 0,
   use: {
     baseURL: 'http://localhost:5173',
-    screenshot: 'only-on-failure',
-    trace: 'retain-on-failure',
+    screenshot: 'on',
+    video: 'on',
+    trace: 'on',
   },
   projects: [
     {
@@ -128,22 +167,16 @@ export default defineConfig({
     },
   ],
   reporter: [['html', { open: 'never' }]],
-  webServer: {
-    command: 'pnpm dev --filter=@cio/dashboard',
-    port: 5173,
-    reuseExistingServer: true,
-    cwd: '../..',
-  },
   globalSetup: './global-setup.ts',
 });
 ```
 
 - `baseURL` targets dashboard dev server (port 5173)
-- 60s test timeout, 15s assertion timeout (generous for auth flows hitting Supabase in a container)
-- Traces and screenshots captured on failure
-- HTML reporter generated but not auto-opened (container environment)
-- `webServer` auto-starts the dashboard if not already running (`reuseExistingServer: true` skips if port 5173 is taken). `cwd: '../..'` runs the command from the repo root.
-- `globalSetup` verifies Supabase is reachable before tests run, failing fast with a clear error instead of confusing timeouts
+- 10s test timeout, 5s assertion timeout -- fast failure feedback
+- Screenshots, video, and traces captured for **all** test runs (pass and fail)
+- HTML reporter generated but not auto-opened (container environment); use `pnpm test:e2e:report` to view
+- No `webServer` -- tests must not start services automatically; global setup verifies they are running
+- `globalSetup` checks both Supabase and dashboard are reachable, failing fast with clear errors
 
 ## Feature Files
 
@@ -282,16 +315,30 @@ Selectors use accessible locators (`getByRole`, `getByLabel`) where possible, fa
 
 ### global-setup.ts
 
+Checks all dependent services before any test runs. Fails fast with a clear message.
+
 ```typescript
 async function globalSetup() {
-  const supabaseUrl = 'http://localhost:54321/rest/v1/';
-  try {
-    const res = await fetch(supabaseUrl);
-    if (!res.ok) throw new Error(`Supabase returned ${res.status}`);
-  } catch (e) {
-    throw new Error(
-      `Supabase is not reachable at ${supabaseUrl}. Run "supabase start" first.\n${e}`
-    );
+  const checks = [
+    {
+      name: 'Supabase',
+      url: 'http://localhost:54321/rest/v1/',
+      hint: 'Run "supabase start" first.',
+    },
+    {
+      name: 'Dashboard dev server',
+      url: 'http://localhost:5173/',
+      hint: 'Run "pnpm dev --filter=@cio/dashboard" first.',
+    },
+  ];
+
+  for (const { name, url, hint } of checks) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`${name} returned ${res.status}`);
+    } catch (e) {
+      throw new Error(`${name} is not reachable at ${url}. ${hint}\n${e}`);
+    }
   }
 }
 
@@ -304,16 +351,44 @@ Tests rely on seed data from `supabase/seed.sql`:
 - User: `admin@test.com` / `123456`
 - The user must belong to an organization with a valid `siteName` for routing
 
-**Cleanup:** For this POC, run `supabase db reset` between test runs if accumulated test data (e.g., "BDD Test Course") causes issues. A proper cleanup strategy (afterAll hooks or API-based teardown) should be added when expanding beyond POC scope.
+### Data Reset
+
+Data reset must be fast. Instead of `supabase db reset` (which drops and recreates the entire database), use a truncate-and-reseed approach:
+
+```bash
+# Fast reset: truncate all tables and re-seed
+supabase db reset --fast
+```
+
+If `--fast` is not available in the local Supabase CLI version, use a SQL script:
+
+```sql
+-- truncate all application tables (preserving auth schema)
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+    EXECUTE 'TRUNCATE TABLE public.' || quote_ident(r.tablename) || ' CASCADE';
+  END LOOP;
+END $$;
+```
+
+Then re-run the seed: `psql "$DATABASE_URL" -f supabase/seed.sql`
+
+This keeps reset times low so tests can be re-run quickly without waiting for full migration replay.
 
 ## Implementation Plan
 
 1. Install dependencies: `pnpm add -Dw @playwright/test playwright-bdd`
-2. Create `tests/e2e/` with config, features, steps, and .gitignore
-3. Add port 9323 to `devcontainer.json` `appPort`, `forwardPorts`, and `portsAttributes`
+2. Create `tests/e2e/` with config, features, steps, global-setup, and `.gitignore`
+3. Add ports 9323 and 9324 to `devcontainer.json` `appPort`, `forwardPorts`, and `portsAttributes`
 4. Add `playwright install --with-deps chromium` to Dockerfile; append `pnpm exec playwright install chromium` to `setup.sh`
-5. Add `test:e2e` and `test:e2e:ui` scripts to root `package.json`
-6. Validate: run `pnpm exec bddgen` and execute tests against running dev server
+5. Add `test:e2e`, `test:e2e:ui`, and `test:e2e:report` scripts to root `package.json`
+6. Update `CLAUDE.md` with E2E test commands and workflow
+7. Validate: start services, run `pnpm test:e2e`, confirm both scenarios pass
+8. Coordinate devcontainer rebuild with user (Dockerfile changes require rebuild)
+9. Distill test-writing patterns into the `e2e-test-writing` project skill
 
 ## Out of Scope
 
