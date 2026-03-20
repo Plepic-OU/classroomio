@@ -18,7 +18,7 @@ Given('I am on the courses page', async ({ page }) => {
 });
 
 When('I click the {string} button', async ({ page }, label: string) => {
-  await page.getByRole('button', { name: label }).click();
+  await page.getByRole('button', { name: label }).first().click();
 });
 
 When('the course creation modal opens', async ({ page }) => {
