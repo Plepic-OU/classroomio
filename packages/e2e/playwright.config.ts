@@ -36,9 +36,18 @@ export default defineConfig({
       },
     },
     {
+      name: 'unauth-tests',
+      testDir,
+      testMatch: '**/auth-redirect.feature.spec.js',
+      dependencies: ['setup'],
+      use: {
+        storageState: { cookies: [], origins: [] },
+      },
+    },
+    {
       name: 'tests',
       testDir,
-      testMatch: '**/!(login).feature.spec.js',
+      testMatch: '**/!(login|auth-redirect).feature.spec.js',
       dependencies: ['setup'],
       use: {
         storageState: '.auth/user.json',

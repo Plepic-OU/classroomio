@@ -2,7 +2,7 @@
 name: e2e-test-creator
 description: "Create new BDD Playwright e2e tests. Use when user says 'create e2e test', 'add e2e test', 'new e2e test', 'write e2e test', 'add a test for', or wants to add end-to-end test coverage for a user flow."
 metadata:
-  version: 1.2.0
+  version: 1.3.0
   category: project
 ---
 
@@ -106,7 +106,7 @@ Rules:
 - Only import the aliases you actually use (e.g., if no `When` steps, omit it)
 - Always import `'dotenv/config'` if reading env vars
 - Read credentials from `process.env` with defaults matching `seed/test-users.ts`
-- Use `await page.waitForTimeout(1000)` after `page.goto()` for SvelteKit hydration when the page has interactive forms
+- Use `await page.waitForTimeout(2000)` after `page.goto()` for SvelteKit hydration when the page has interactive forms. **Do NOT use `networkidle`** — SvelteKit dev server keeps an HMR WebSocket open so `networkidle` never resolves. The 2000ms delay is necessary because Svelte replaces SSR inputs during hydration; `fill()` before hydration silently fails
 - Use `waitFor({ state: 'visible' })` or `toBeVisible({ timeout: ... })` for assertions — never bare `expect` without waiting
 - Keep timeout values at or below 10_000ms (the global test timeout)
 - **Check ALL existing step files** before writing new steps — not just `common.steps.ts`. Steps like `I am logged in` and `I am on the org courses page` are defined in `course-creation.steps.ts`. Duplicate step definitions cause `bddgen` errors.
@@ -202,7 +202,7 @@ If tests fail:
 ## Known Issues
 
 - **Test email validation**: `testuser@classroomio.test` fails Zod `z.string().email()` — any form that validates email client-side will reject. Avoid tests that submit profile/email forms until seed uses a valid email domain.
-- **Hydration flakiness**: `waitForTimeout(1000)` for SvelteKit hydration is fragile under parallel load (6+ workers). Tests that fill form fields immediately after navigation may intermittently fail. Prefer waiting for a specific element to be visible instead of a fixed timeout.
+- **SvelteKit hydration**: `waitForTimeout(2000)` is required after `goto()` on pages with forms. `networkidle` does not work (HMR WebSocket keeps it open forever). `toBeEnabled`/`toBeVisible` on buttons is insufficient — the button exists before hydration but Svelte bindings aren't attached yet. If `fill()` runs before hydration, it silently fails (input appears empty).
 - **`importTestFrom` warning**: `bddgen` warns that `importTestFrom` is deprecated. Not a blocker — the option can be removed in a future cleanup.
 
 ## Important
