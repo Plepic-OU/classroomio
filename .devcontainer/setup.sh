@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+echo "==> Fixing volume permissions..."
+sudo chown -R node:node /home/node/.claude
+
 echo "==> Installing dependencies..."
 pnpm install
 
@@ -37,6 +40,10 @@ else
     fi
   done
 fi
+
+# Fix claude code permissions for auto updater
+sudo chmod -R g+w /usr/local/share/npm-global/lib/node_modules/@anthropic-ai/
+sudo chmod -R g+w /usr/local/share/npm-global/bin/
 
 echo "==> Running turbo prepare..."
 pnpm turbo prepare
