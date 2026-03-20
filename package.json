@@ -11,6 +11,8 @@
     "format": "prettier . --write",
     "release": "standard-version",
     "ci": "cypress run",
+    "test:e2e": "node e2e/support/service-check.mjs && npx cucumber-js --config e2e/cucumber.mjs",
+    "test:e2e:report": "npx -y serve e2e/test-results -l tcp://0.0.0.0:9323",
     "dev:container": "turbo prepare --concurrency 13 && concurrently -n dashboard,api,website,docs -c blue,green,magenta,cyan \"cd apps/dashboard && npx vite dev --port 5173 --host\" \"cd apps/api && pnpm dev\" \"cd apps/classroomio-com && npx vite dev --port 5174 --host\" \"cd apps/docs && npx vite dev --host\"",
     "dashboard:start": "pnpm start --filter @cio/dashboard",
     "api:start": "pnpm start --filter @cio/api",
@@ -21,13 +23,20 @@
     "turbo": "^1.10.16"
   },
   "devDependencies": {
+    "@cucumber/cucumber": "^12.7.0",
+    "@playwright/test": "^1.53.0",
+    "@types/node": "^25.5.0",
     "concurrently": "^8.2.2",
     "eslint": "^8.54.0",
+    "playwright": "^1.53.0",
     "prettier": "^3.1.0",
     "prettier-plugin-svelte": "^3.1.2",
     "prettier-plugin-tailwindcss": "^0.5.7",
     "standard-version": "^9.5.0",
+    "ts-morph": "^27.0.2",
+    "ts-node": "^10.9.2",
     "tsconfig": "workspace:*",
+    "tsx": "^4.20.3",
     "typescript": "^5.1.6"
   },
   "engines": {

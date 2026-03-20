@@ -29,6 +29,9 @@ pnpm i
 # Run all apps in dev mode
 pnpm dev
 
+# Run all apps in devcontainer (binds to 0.0.0.0 for host access)
+pnpm dev:container
+
 # Run a specific app
 pnpm dev --filter=@cio/dashboard
 pnpm dev --filter=@cio/api
@@ -57,6 +60,18 @@ supabase start          # Start local Supabase (requires Docker)
 supabase stop           # Stop local Supabase
 supabase db reset       # Reset DB with migrations + seed
 ```
+
+## Dev Container
+
+The project supports devcontainers (VS Code, IntelliJ, GitHub Codespaces, or CLI):
+
+```bash
+npm install -g @devcontainers/cli
+devcontainer up --workspace-folder .
+devcontainer exec --workspace-folder . bash
+```
+
+The `postCreateCommand` in `.devcontainer/setup.sh` automatically installs dependencies, starts Supabase, and configures `.env` files. Use `pnpm dev:container` inside the container (binds to `0.0.0.0` so ports are accessible from the host).
 
 ## Architecture Details
 
@@ -115,6 +130,25 @@ Both `apps/dashboard` and `apps/api` need `.env` files (copy from `.env.example`
 - `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` — from `supabase start` output
 - `PRIVATE_SUPABASE_SERVICE_ROLE` — service role key from `supabase start`
 - API needs Cloudflare credentials for video uploads and SMTP config for email
+
+## Architecture (C4 Model)
+
+- Layer 1 (System Context): @docs/c4/L1-system-context.md
+- Layer 2 (Container): @docs/c4/L2-container.md
+- Layer 3 (API Components): @docs/c4/L3-api-components.md
+- Layer 3 (Dashboard Components): @docs/c4/L3-dashboard-components.md
+- Database Schema: docs/c4/database.md
+
+## E2E Tests (BDD/Playwright)
+
+- **Framework**: Cucumber.js + Playwright (Gherkin `.feature` files + TypeScript step definitions)
+- **Location**: `e2e/` directory
+- **Run**: `pnpm test:e2e` (services must already be running via `pnpm dev:container`)
+- **Results**: `e2e/test-results/` (videos, screenshots, HTML report)
+- **Data reset**: Truncate + re-seed before each scenario
+- **Timeout**: 10s per action
+- **Writing tests**: See `.claude/skills/e2e-test-writing/` for patterns and conventions
+- **Design doc**: `docs/bdd-playwright-setup.md`
 
 ## Dev Login
 

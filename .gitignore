@@ -39,3 +39,9 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+
+# C4 AST extraction output
+.claude/skills/c4-model/ast-output.json
+
+# E2E test results (videos, screenshots, reports)
+e2e/test-results/
