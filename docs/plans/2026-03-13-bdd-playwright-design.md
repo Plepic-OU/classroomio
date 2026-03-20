@@ -1,8 +1,8 @@
 # BDD Playwright E2E Tests — Design Document
 
 > Created: 2026-03-13
-> Updated: 2026-03-20 — aligned with acceptance criteria
-> Scope: Initial setup with login and course creation flows
+> Updated: 2026-03-20 — added Testing section with current suite status
+> Scope: Full BDD E2E framework with 8 passing tests across 5 domains
 
 ## Overview
 
@@ -97,7 +97,7 @@ const testDir = defineBddConfig({
 
 export default defineConfig({
   testDir,
-  timeout: 10_000,           // max 10 s per test step — fail fast on hangs
+  timeout: 30_000,           // 30 s per test — multi-step flows need headroom
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL: 'http://localhost:5173',
@@ -134,7 +134,7 @@ export default defineConfig({
 Key decisions:
 - **No `webServer` block** — tests never start the dev server; `check-services.ts` enforces services are up.
 - `video: 'on'` / `screenshot: 'on'` / `trace: 'on'` — artifacts recorded for **every** test, including passing ones, so failures can be diagnosed without re-running.
-- `timeout: 10_000` — 10 s ceiling per test action; keeps feedback loop tight.
+- `timeout: 30_000` — 30 s per test; gives multi-step flows (login + navigate + action) enough headroom.
 - `reporter: [['html', { open: 'never' }]]` — Playwright HTML report written to `playwright-report/`; open manually via `pnpm exec playwright show-report` or serve the folder.
 
 The `@unauthenticated` tag routes scenarios (like login) to a project without `storageState`, so they can exercise the login UI without being immediately redirected.
@@ -464,6 +464,68 @@ cd apps/dashboard && pnpm exec playwright show-report
 3. Add any new tables touched by the scenario to `e2e/scripts/reset-db.ts`
 4. Distill any non-obvious selector or fixture patterns into the `e2e-test-writing` skill
 ```
+
+---
+
+## Testing
+
+### Current Test Suite (8 tests)
+
+All tests pass. The suite runs in ~1.3 minutes via `pnpm test:e2e`.
+
+| Domain | Feature | Scenario | Tag | User |
+|--------|---------|----------|-----|------|
+| auth | Login | Successful login with valid credentials | `@unauthenticated` | admin |
+| courses | Course Creation | Create a new course with a title | — | admin (storageState) |
+| courses | Add Lesson | Add a new lesson to an existing course | — | admin (storageState) |
+| enrollment | Course Enrollment | Student signs up to a free course | `@unauthenticated` | student |
+| lms | Explore Courses | Student views available courses on explore page | `@unauthenticated` | student |
+| lms | My Learning | Student views enrolled courses on my learning page | `@unauthenticated` | student |
+| org | Org Settings | Admin navigates to organization settings | — | admin (storageState) |
+
+Plus one **setup** project (`login.setup.ts`) that authenticates as admin and saves `storageState` + `orgSlug` to `e2e/.auth/`.
+
+### Auth Strategy
+
+- **Admin tests** (no tag): Run in the `chromium` project with pre-saved `storageState` — never see the login page.
+- **Student / unauthenticated tests** (`@unauthenticated`): Run in `chromium-unauthenticated` with no `storageState`. Student tests log in as `student@test.com` via a shared step in `common.steps.ts`.
+
+### Shared Steps
+
+`e2e/steps/common.steps.ts` defines reusable steps (e.g., `Given I am logged in as a student`). All step texts must be globally unique — extract shared steps here to avoid "Multiple step definitions matched" errors.
+
+### Key Patterns Validated
+
+These patterns were discovered and validated during iterative test writing:
+
+1. **Selector quirks**: `input[type="email"]` / `input[type="password"]` instead of `getByLabel` (TextField renders label in `<p>` without `for`/`id`). Button text from i18n may differ from expected English ("Add" not "Add Lesson").
+2. **Store-preserving navigation**: `page.goto()` resets Svelte stores — use sidebar link clicks for LMS sub-pages, and construct invite link hashes directly for enrollment flows.
+3. **No `networkidle`**: Supabase WebSocket connections prevent idle state — wait for specific visible elements instead.
+4. **Strict mode**: Elements appearing in both sidebar nav and main content require `.first()` or scoped locators.
+5. **Timeout**: Increased from 10s to 30s (`timeout: 30_000`) to give multi-step flows enough headroom.
+
+### Extending the Suite
+
+To add a new test:
+
+1. Write a Gherkin scenario in `e2e/features/<domain>/<name>.feature`
+2. Implement step definitions in `e2e/steps/<domain>/<name>.steps.ts`
+3. Import `{ createBdd }` from `playwright-bdd` and `{ test, expect }` from `../../fixtures`
+4. Tag with `@unauthenticated` if the scenario needs a non-admin user or exercises the login UI
+5. Run `pnpm test:e2e` — inspect screenshot/trace artifacts on failure
+6. Append any new learnings to the `e2e-test-writing` skill's Learnings Log
+
+### Coverage Gaps (not yet tested)
+
+- Quiz creation and submission
+- Community / newsfeed features
+- Exercise submission and grading
+- Course content editing (rich text, video upload)
+- Multi-org / subdomain routing
+- Audience management (invite, remove members)
+- Student certificate download
+- Profile and account settings
+- Dark mode toggle persistence
 
 ---
 

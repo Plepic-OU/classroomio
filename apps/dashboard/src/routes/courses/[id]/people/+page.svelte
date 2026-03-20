@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
+  import { onMount } from 'svelte';
   import Avatar from '$lib/components/Avatar/index.svelte';
   import TextChip from '$lib/components/Chip/Text.svelte';
   import ComingSoon from '$lib/components/ComingSoon/index.svelte';
@@ -8,7 +9,7 @@
   import InvitationModal from '$lib/components/Course/components/People/InvitationModal.svelte';
   import { deleteMemberModal } from '$lib/components/Course/components/People/store';
   import type { ProfileRole } from '$lib/components/Course/components/People/types';
-  import { group } from '$lib/components/Course/store';
+  import { course, group } from '$lib/components/Course/store';
   import Select from '$lib/components/Form/Select.svelte';
   import IconButton from '$lib/components/IconButton/index.svelte';
   import { VARIANTS } from '$lib/components/PrimaryButton/constants';
@@ -16,8 +17,18 @@
   import RoleBasedSecurity from '$lib/components/RoleBasedSecurity/index.svelte';
   import { ROLE_LABEL, ROLES } from '$lib/utils/constants/roles';
   import { t } from '$lib/utils/functions/translations';
-  import { deleteGroupMember } from '$lib/utils/services/courses';
+  import {
+    deleteGroupMember,
+    fetchCourseWaitlist,
+    approveWaitlistMember,
+    removeFromWaitlist
+  } from '$lib/utils/services/courses';
+  import {
+    triggerSendEmail,
+    NOTIFICATION_NAME
+  } from '$lib/utils/services/notification/notification';
   import { profile } from '$lib/utils/store/user';
+  import { snackbar } from '$lib/components/Snackbar/store';
   import type { GroupPerson } from '$lib/utils/types';
   import {
     CopyButton,
@@ -29,11 +40,72 @@
     StructuredListRow
   } from 'carbon-components-svelte';
   import TrashCanIcon from 'carbon-icons-svelte/lib/TrashCan.svelte';
+  import CheckmarkIcon from 'carbon-icons-svelte/lib/Checkmark.svelte';
 
   let people: Array<GroupPerson> = [];
   let member: { id?: string; email?: string; profile?: { email: string } } = {};
   let filterBy: ProfileRole = ROLES[0];
   let searchValue = '';
+
+  // Waitlist state
+  let waitlistMembers: Array<{
+    id: string;
+    created_at: string;
+    profile: { id: string; fullname: string; email: string };
+  }> = [];
+  let approvingId = '';
+  let removingId = '';
+
+  $: studentCount = ($group.people || []).filter((p) => p.role_id === 3).length;
+  $: maxCapacity = $course.max_capacity;
+  $: showCapacity = maxCapacity != null;
+  $: showWaitlist = $course.waitlist_enabled && waitlistMembers.length > 0;
+
+  async function loadWaitlist() {
+    if (!$course.id) return;
+    const { data } = await fetchCourseWaitlist($course.id);
+    waitlistMembers = data || [];
+  }
+
+  async function handleApprove(entry: typeof waitlistMembers[0]) {
+    approvingId = entry.id;
+    const { error } = await approveWaitlistMember(entry.id);
+    if (error) {
+      console.error('Error approving waitlist member', error);
+      snackbar.error('snackbar.course_settings.error.went_wrong');
+      approvingId = '';
+      return;
+    }
+
+    // Send approval email to student
+    triggerSendEmail(NOTIFICATION_NAME.STUDENT_WAITLIST_APPROVED, {
+      to: entry.profile.email,
+      courseName: $course.title,
+      studentName: entry.profile.fullname
+    });
+
+    // Refresh data
+    await loadWaitlist();
+    approvingId = '';
+    snackbar.success();
+  }
+
+  async function handleRemove(entryId: string) {
+    removingId = entryId;
+    const { error } = await removeFromWaitlist(entryId);
+    if (error) {
+      console.error('Error removing from waitlist', error);
+      snackbar.error('snackbar.course_settings.error.went_wrong');
+      removingId = '';
+      return;
+    }
+    await loadWaitlist();
+    removingId = '';
+  }
+
+  onMount(() => {
+    loadWaitlist();
+  });
 
   function filterPeople(_query, people) {
     const query = _query.toLowerCase();
@@ -120,6 +192,85 @@
       <p class="hidden w-20 text-lg lg:block dark:text-white" />
     </RoleBasedSecurity>
   </div>
+
+  {#if showCapacity}
+    <div class="mb-4 flex items-center justify-end">
+      <p class="text-sm font-medium dark:text-white">
+        {studentCount}/{maxCapacity} enrolled
+      </p>
+    </div>
+  {/if}
+
+  {#if showWaitlist}
+    <div class="mb-6">
+      <h3 class="mb-3 text-base font-semibold dark:text-white">
+        Waiting List ({waitlistMembers.length})
+      </h3>
+      <StructuredList class="m-0">
+        <StructuredListHead
+          class="bg-slate-100 dark:border-2 dark:border-neutral-800 dark:bg-neutral-800"
+        >
+          <StructuredListRow head>
+            <StructuredListCell head class="text-primary-700 py-3 dark:text-white"
+              >{$t('course.navItem.people.name')}</StructuredListCell
+            >
+            <StructuredListCell head class="text-primary-700 py-3 dark:text-white"
+              >Date</StructuredListCell
+            >
+            <StructuredListCell head class="text-primary-700 py-3 dark:text-white"
+              >{$t('course.navItem.people.action')}</StructuredListCell
+            >
+          </StructuredListRow>
+        </StructuredListHead>
+        {#each waitlistMembers as entry}
+          <StructuredListBody>
+            <StructuredListRow>
+              <StructuredListCell class="w-3/6">
+                <div class="flex items-center">
+                  <Avatar
+                    name={entry.profile.fullname}
+                    width="w-8"
+                    height="h-8"
+                    className="mr-3"
+                  />
+                  <div>
+                    <p class="text-base font-normal dark:text-white">
+                      {entry.profile.fullname}
+                    </p>
+                    <p class="text-primary-600 text-xs">
+                      {entry.profile.email}
+                    </p>
+                  </div>
+                </div>
+              </StructuredListCell>
+              <StructuredListCell class="w-1/6">
+                <p class="text-sm dark:text-white">
+                  {new Date(entry.created_at).toLocaleDateString()}
+                </p>
+              </StructuredListCell>
+              <StructuredListCell class="w-2/6">
+                <div class="flex space-x-2">
+                  <PrimaryButton
+                    label="Approve"
+                    variant={VARIANTS.OUTLINED}
+                    isLoading={approvingId === entry.id}
+                    isDisabled={approvingId === entry.id || removingId === entry.id}
+                    onClick={() => handleApprove(entry)}
+                  />
+                  <IconButton
+                    onClick={() => handleRemove(entry.id)}
+                    disabled={removingId === entry.id || approvingId === entry.id}
+                  >
+                    <TrashCanIcon size={16} class="carbon-icon dark:text-white" />
+                  </IconButton>
+                </div>
+              </StructuredListCell>
+            </StructuredListRow>
+          </StructuredListBody>
+        {/each}
+      </StructuredList>
+    </div>
+  {/if}
 
   <StructuredList class="m-0">
     <StructuredListHead

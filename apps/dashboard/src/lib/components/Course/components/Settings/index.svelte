@@ -5,6 +5,7 @@
     CodeSnippet,
     Column,
     Grid,
+    NumberInput,
     RadioButton,
     RadioButtonGroup,
     Row,
@@ -148,6 +149,8 @@
         type: $settings.type,
         logo: $settings.logo,
         is_published: $settings.is_published,
+        max_capacity: $settings.max_capacity || null,
+        waitlist_enabled: $settings.waitlist_enabled,
         metadata: {
           ...(isObject($course.metadata) ? $course.metadata : {}),
           lessonTabsOrder: $settings.tabs,
@@ -191,7 +194,9 @@
       grading: !!course.metadata.grading,
       lesson_download: !!course.metadata.lessonDownload,
       is_published: !!course.is_published,
-      allow_new_students: course.metadata.allowNewStudent
+      allow_new_students: course.metadata.allowNewStudent,
+      max_capacity: course.max_capacity ?? null,
+      waitlist_enabled: !!course.waitlist_enabled
     });
   }
   $: setDefault($course);
@@ -400,6 +405,43 @@
       >
         <span slot="labelA" style="color: gray">{$t('course.navItem.settings.disabled')}</span>
         <span slot="labelB" style="color: gray">{$t('course.navItem.settings.enabled')}</span>
+      </Toggle>
+    </Column>
+  </Row>
+
+  <!-- Enrollment Capacity -->
+  <Row class="border-bottom-c flex flex-col py-7 lg:flex-row">
+    <Column sm={8} md={8} lg={8}>
+      <SectionTitle>Max Capacity</SectionTitle>
+      <p>Set a maximum number of students for this course. Leave empty for unlimited.</p>
+    </Column>
+    <Column sm={8} md={8} lg={8}>
+      <NumberInput
+        min={1}
+        allowEmpty
+        bind:value={$settings.max_capacity}
+        on:change={() => {
+          hasUnsavedChanges = true;
+        }}
+      />
+    </Column>
+  </Row>
+
+  <Row class="border-bottom-c flex flex-col py-7 lg:flex-row">
+    <Column sm={8} md={8} lg={8}>
+      <SectionTitle>Waiting List</SectionTitle>
+      <p>When enabled, students can join a waiting list when the course is full.</p>
+    </Column>
+    <Column sm={8} md={8} lg={8}>
+      <Toggle
+        size="sm"
+        bind:toggled={$settings.waitlist_enabled}
+        on:toggle={() => {
+          hasUnsavedChanges = true;
+        }}
+      >
+        <span slot="labelA" style="color: gray">Disabled</span>
+        <span slot="labelB" style="color: gray">Enabled</span>
       </Toggle>
     </Column>
   </Row>

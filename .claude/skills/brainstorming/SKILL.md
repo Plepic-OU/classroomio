@@ -43,9 +43,9 @@ Start by understanding the current project context, then ask questions one at a 
 - After writing the design document, immediately invoke the `/validate-design-document` skill, passing the path of the document just written
 - Do not ask the user — run validation automatically every time a design document is written
 
-~~**Implementation:**
-- Ask user: "Ready to set up for implementation?"
-- Act depending on the answer~~
+**Implementation:**
+- After validation is complete, ask the user: "Ready to implement? I'll use `/implement-design` to work through it systematically."
+- If they say yes, invoke the `/implement-design` skill with the design document path
 
 ## Key Principles
 

@@ -23,4 +23,6 @@ changes.sql
 # Playwright / BDD
 e2e/.auth/
 .features-gen/
+.playwright-bdd/
+playwright-report/
 test-results/

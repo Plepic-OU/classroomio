@@ -500,3 +500,15 @@ SELECT setval('public.organizationmember_id_seq', COALESCE((SELECT MAX(id)+1 FRO
 INSERT INTO "public"."organization_plan" ("id", "org_id", "plan_name", "is_active", "deactivated_at", "payload", "triggered_by", "activated_at", "updated_at", "provider", "subscription_id") VALUES
 	(1, '1a1dcddd-1abc-4f72-b644-0bd18191a289', 'ENTERPRISE', true, NULL, NULL, 12, '2023-11-22 09:29:04.533114+00', '2023-11-22 09:29:04.533114+00', 'lmz', NULL);
 
+--
+-- Waitlist seed data: Make "Modern Web Development with React" full with waitlist enabled
+-- Course id: 16e3bc8d-5d1b-4708-988e-93abae288ccf, group: 04a250f1-bcb9-4e0d-a3d4-a01096e7a105
+-- Already has admin@test.com as tutor. Add test@test.com as student to fill capacity.
+--
+UPDATE "public"."course"
+  SET max_capacity = 1, waitlist_enabled = true
+  WHERE id = '16e3bc8d-5d1b-4708-988e-93abae288ccf';
+
+INSERT INTO "public"."groupmember" ("id", "group_id", "role_id", "profile_id", "email", "created_at", "assigned_student_id") VALUES
+	('a1b2c3d4-e5f6-7890-abcd-ef1234567890', '04a250f1-bcb9-4e0d-a3d4-a01096e7a105', 3, '01676a50-bb56-4c5e-8a61-fb9e9190fb10', 'test@test.com', '2023-12-18 17:10:51.293318+00', NULL);
+

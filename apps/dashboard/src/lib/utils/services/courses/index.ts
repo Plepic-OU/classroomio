@@ -660,3 +660,36 @@ export async function deleteExercise(questions: Array<{ id: string }>, exerciseI
   await supabase.from('submission').delete().match({ exercise_id: exerciseId });
   await supabase.from('exercise').delete().match({ id: exerciseId });
 }
+
+// --- Waitlist ---
+
+export async function getCourseEnrollmentStatus(courseId: string) {
+  const { data, error } = await supabase.rpc('get_course_enrollment_status', {
+    course_id_arg: courseId
+  });
+  return { data, error };
+}
+
+export async function joinCourseWaitlist(courseId: string, profileId: string) {
+  const { data, error } = await supabase
+    .from('course_waitlist')
+    .insert({ course_id: courseId, profile_id: profileId });
+  return { data, error };
+}
+
+export async function fetchCourseWaitlist(courseId: string) {
+  const { data, error } = await supabase
+    .from('course_waitlist')
+    .select('id, created_at, profile:profile_id(id, fullname, email)')
+    .eq('course_id', courseId)
+    .order('created_at', { ascending: true });
+  return { data, error };
+}
+
+export async function approveWaitlistMember(waitlistId: string) {
+  return supabase.rpc('approve_waitlist_member', { waitlist_id_arg: waitlistId });
+}
+
+export async function removeFromWaitlist(waitlistId: string) {
+  return supabase.from('course_waitlist').delete().eq('id', waitlistId);
+}
