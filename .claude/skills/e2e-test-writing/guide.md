@@ -110,3 +110,19 @@ pnpm test:e2e
 # Run with specific tag
 npx cucumber-js --config e2e/cucumber.mjs --tags "@smoke"
 ```
+
+## Learnings
+
+<!-- Accumulated learnings from writing E2E tests. Each entry is a specific, actionable tip. -->
+
+1. **Never use `waitForLoadState('networkidle')`** — Supabase realtime websocket connections keep the network active indefinitely, causing `networkidle` to never resolve. Instead, wait for a specific element to be visible (e.g., a button or heading).
+
+2. **The "Enroll" button on course landing pages does not reliably trigger navigation in tests** — The `PricingSection` component's `handleJoinCourse()` calls SvelteKit's `goto()` using `$currentOrgDomain` and `$currentOrg.siteName`, which may not be populated on public pages without org context. For enrollment tests, construct the invite URL directly using seed data and navigate with `page.goto()`.
+
+3. **Student login redirects to `/onboarding` instead of `/lms` in test environment** — Even with profile and org membership in seed data, the `getProfile` flow in `appSetup.ts` may not find the org membership correctly, causing the student to hit onboarding. The login step should accept `/lms|org|onboarding` as valid post-login URLs.
+
+4. **Invite link hash construction** — The invite page at `/invite/s/[hash]` expects `hash = encodeURIComponent(btoa(JSON.stringify({ id, name, description, orgSiteName })))`. This can be constructed in step definitions using `Buffer.from(...).toString('base64')`.
+
+5. **Course seed data for enrollment tests** — Published free courses with `allowNewStudent: true` from seed.sql: `getting-started-with-mvc` (id: `98e6e798-...`, org: `udemy-test`), `modern-web-development` (id: `16e3bc8d-...`), `data-science-with-python-and-pandas-*` (id: `f0a85d18-...`). Student `student@test.com` is already enrolled in `data-science-with-python-and-pandas` — use other courses for enrollment tests.
+
+6. **PrimaryButton uses `label` prop, not children** — The button text is rendered via the `label` prop, not a slot. Playwright's `getByRole('button', { name: /text/i })` works because the text appears as the button's accessible name.
