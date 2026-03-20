@@ -14,10 +14,11 @@ let createdCourseTitle = '';
 
 Before({ tags: '@course' }, async () => {
   // Clean up any leftover BDD test courses from prior failed runs
-  await adminClient
+  const { error } = await adminClient
     .from('course')
     .delete()
     .like('title', `${COURSE_TITLE_PREFIX}%`);
+  if (error) console.warn('BDD cleanup warning:', error.message);
   createdCourseTitle = '';
 });
 
@@ -96,8 +97,7 @@ Then('I should be on the new course page', async ({ page }) => {
   await expect(page).toHaveURL(/\/courses\//, { timeout: 10_000 });
 });
 
-Then('I should see {string} in the courses list', async ({ page }, title: string) => {
-  // Match against the actual timestamped title stored during this test run
-  const actualTitle = createdCourseTitle || title;
-  await expect(page.getByText(new RegExp(actualTitle))).toBeVisible();
+Then('I should see {string} in the courses list', async ({ page }) => {
+  if (!createdCourseTitle) throw new Error('createdCourseTitle is not set — was "I enter course title" step skipped?');
+  await expect(page.getByText(createdCourseTitle, { exact: true })).toBeVisible();
 });
