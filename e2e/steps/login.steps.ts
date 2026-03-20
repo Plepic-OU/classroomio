@@ -4,7 +4,7 @@ import { Given, When, Then } from './fixtures';
 Given('I am on the login page', async ({ page }) => {
   await page.goto('/login');
   // Wait for Svelte hydration — theme attr is set by JS after hydration
-  await page.locator('html[theme]').waitFor({ timeout: 10000 });
+  await page.locator('html[theme]').waitFor();
 });
 
 When(
@@ -20,7 +20,7 @@ When('I click the login button', async ({ page }) => {
 });
 
 Then('I should be redirected to the dashboard', async ({ page }) => {
-  await page.waitForURL('**/org/**', { timeout: 15000 });
+  await page.waitForURL('**/org/**');
   expect(page.url()).toContain('/org/');
 });
 
@@ -29,7 +29,5 @@ Then('I should see the organization name', async ({ page }) => {
 });
 
 Then('I should see an error message', async ({ page }) => {
-  await expect(page.locator('[data-testid="login-error"]')).toBeVisible({
-    timeout: 10000,
-  });
+  await expect(page.locator('[data-testid="login-error"]')).toBeVisible();
 });

@@ -14,6 +14,9 @@ RUN ARCH=$(dpkg --print-architecture) \
  && dpkg -i /tmp/supabase.deb \
  && rm /tmp/supabase.deb
 
+# Install Playwright browsers + OS deps during build (so tests work immediately)
+RUN npx playwright@1.53.0 install --with-deps chromium
+
 # Install Claude Code globally via npm (avoids native installer's paths outside CLAUDE_CONFIG_DIR)
 # This plays nicer with devcontainer's
 RUN npm install -g @anthropic-ai/claude-code

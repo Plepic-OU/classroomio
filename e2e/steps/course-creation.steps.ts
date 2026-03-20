@@ -51,7 +51,7 @@ When('I submit the course form without a title', async ({ page }) => {
 });
 
 Then('I should be on the new course page', async ({ page }) => {
-  await page.waitForURL('**/courses/**', { timeout: 15000 });
+  await page.waitForURL('**/courses/**');
   expect(page.url()).toMatch(/\/courses\/.+/);
 });
 

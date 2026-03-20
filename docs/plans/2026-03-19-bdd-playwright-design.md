@@ -10,7 +10,7 @@
 
 ```
 e2e/
-├── package.json                # workspace package
+├── package.json                # workspace package (@cio/e2e)
 ├── playwright.config.ts        # Playwright config with playwright-bdd integration
 ├── .features-gen/              # auto-generated spec files (gitignored)
 ├── features/
@@ -22,35 +22,39 @@ e2e/
 │   └── fixtures.ts            # extended Playwright fixtures (auth helpers)
 └── support/
     ├── auth.ts                # programmatic login via Supabase JS client
-    └── cleanup.ts             # test data teardown
+    ├── cleanup.ts             # test data teardown (deletes BDD Test% records)
+    └── global-setup.ts        # preflight service check + data reset before suite
 ```
 
 - Lives at the repo root as `e2e/` — tests span dashboard + API, so they sit above any single app.
 - Added to `pnpm-workspace.yaml`.
-- Root `package.json` gets convenience scripts: `"e2e"`, `"e2e:ui"`.
+- Root `package.json` has convenience scripts: `e2e`, `e2e:ui`, `e2e:report`.
 
 ### Dependencies (e2e/package.json)
 
 - `@playwright/test`
 - `playwright-bdd`
 - `@supabase/supabase-js`
+- `dotenv`
 
 ---
 
-## 2. Playwright Config & playwright-bdd Wiring
+## 2. Playwright Config
 
 ```ts
 // e2e/playwright.config.ts
+import 'dotenv/config';
 import { defineConfig, devices } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
 
 const testDir = defineBddConfig({
   features: './features/**/*.feature',
-  steps: './steps/**/*.steps.ts',
+  steps: ['./steps/**/*.steps.ts', './steps/fixtures.ts'],
 });
 
 export default defineConfig({
   testDir,
+  globalSetup: './support/global-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -63,8 +67,15 @@ export default defineConfig({
 
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:5173',
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    trace: 'on',
+    screenshot: 'on',
+    video: 'on',
+    actionTimeout: 10_000,
+    navigationTimeout: 10_000,
+  },
+
+  expect: {
+    timeout: 10_000,
   },
 
   projects: [
@@ -76,6 +87,14 @@ export default defineConfig({
 });
 ```
 
+### Key config decisions
+
+- **Videos, screenshots, traces:** always `'on'` — even for passing tests, so developers can review any run
+- **Timeouts:** 10s max for actions, navigation, and expect assertions — fast failure feedback
+- **Global setup:** preflight service check + data reset before the suite runs
+- **No `webServer`:** tests MUST NOT start services — they expect services to be running already
+- **Host binding:** `0.0.0.0` for HTML report so it's reachable from the host machine through devcontainer
+
 ### npm scripts (e2e/package.json)
 
 ```json
@@ -84,7 +103,7 @@ export default defineConfig({
     "generate": "bddgen",
     "test": "bddgen && playwright test",
     "test:ui": "bddgen && playwright test --ui --ui-host 0.0.0.0 --ui-port 9323",
-    "report": "playwright show-report --host 0.0.0.0"
+    "report": "playwright show-report --host 0.0.0.0 --port 9400"
   }
 }
 ```
@@ -93,7 +112,24 @@ export default defineConfig({
 
 ---
 
-## 3. Feature Files
+## 3. Global Setup — Preflight + Data Reset
+
+```ts
+// e2e/support/global-setup.ts
+export default async function globalSetup() {
+  // 1. Preflight: check Dashboard + Supabase are reachable (3s timeout each)
+  //    Fails fast with actionable error message if services are down
+  // 2. Data reset: delete all BDD Test% courses (fast — targeted delete, not full truncate)
+}
+```
+
+This ensures:
+- **Fail fast:** if services aren't running, the developer gets a clear error immediately instead of waiting for a browser timeout
+- **Clean state:** test data from previous runs is removed before the suite starts
+
+---
+
+## 4. Feature Files
 
 ### login.feature
 
@@ -109,7 +145,7 @@ Feature: User Login
 
   Scenario: Login with invalid credentials
     Given I am on the login page
-    When I enter email "wrong@example.com" and password "wrong"
+    When I enter email "wrong@example.com" and password "wrongpassword"
     And I click the login button
     Then I should see an error message
 ```
@@ -122,12 +158,13 @@ Feature: Course Creation
   Background:
     Given I am logged in as an instructor
 
-  Scenario: Create a new course with title only
+  Scenario: Create a new course with title and description
     Given I am on the courses page
     When I click the create course button
     And I enter course title "BDD Test Course"
+    And I enter course description "A test course created by BDD tests"
     And I submit the course form
-    Then I should see "BDD Test Course" in the course list
+    Then I should be on the new course page
 
   Scenario: Cannot create a course without a title
     Given I am on the courses page
@@ -137,182 +174,75 @@ Feature: Course Creation
 ```
 
 - Login feature tests the actual UI form (happy path + error).
-- Course creation uses `Background: Given I am logged in as an instructor` which uses programmatic auth (Supabase token injection), not the UI login.
+- Course creation uses `Background: Given I am logged in as an instructor` — programmatic auth (Supabase token injection), not UI login.
 
 ---
 
-## 4. Auth Support & Test Data
+## 5. Auth Support & Test Data
 
 ### Programmatic Auth (support/auth.ts)
 
+- `getTestUserSession()` is idempotent — creates user, profile, and org membership on first run, reuses after
+- Test user: `test-e2e@classroomio.com` / `TestPass123!`
+- Test org: `bdd-test-org`
+
+### Auth injection
+
+For non-login tests, inject the Supabase session into localStorage:
+
 ```ts
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function getTestUserSession() {
-  const email = 'test-e2e@classroomio.com';
-  const password = 'TestPass123!';
-
-  // Ensure test user exists (idempotent)
-  const { data: existing } = await supabase.auth.admin.listUsers();
-  const user = existing?.users?.find(u => u.email === email);
-
-  if (!user) {
-    await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
-  }
-
-  const { data } = await supabase.auth.signInWithPassword({ email, password });
-  return data.session;
-}
+localStorage.setItem('sb-localhost-auth-token', JSON.stringify({
+  access_token, refresh_token, expires_at, expires_in, token_type, user
+}));
 ```
+
+Key: `sb-localhost-auth-token` — matches the Supabase JS client storage key for localhost.
 
 ### Cleanup (support/cleanup.ts)
 
-```ts
-export async function deleteTestCourses(userId: string) {
-  await supabase
-    .from('course')
-    .delete()
-    .eq('created_by', userId)
-    .like('title', 'BDD Test%');
-}
-```
-
-- `getTestUserSession` is idempotent — creates user on first run, reuses after.
-- Cleanup targets only courses with `BDD Test%` prefix to avoid touching real data.
-- Auth storage injection key needs to match how the dashboard app stores Supabase sessions in localStorage.
-
-### Auth Strategy
-
-- **Login feature:** Tests the actual login UI form.
-- **All other features:** Use programmatic auth — inject Supabase session into browser localStorage to skip the login UI.
+- Deletes courses with `title LIKE 'BDD Test%'` — avoids touching real data
+- Deletes dependent records first (`course_newsfeed`), then courses
+- Runs both in global setup (before tests) and in AfterAll (after tests)
 
 ---
 
-## 5. Step Definitions
+## 6. Selectors
 
-### login.steps.ts
+All selectors use `data-testid` attributes:
 
-```ts
-import { expect } from '@playwright/test';
-import { Given, When, Then } from 'playwright-bdd';
+| Element | data-testid |
+|---------|------------|
+| Login email input | `login-email` |
+| Login password input | `login-password` |
+| Login submit button | `login-submit` |
+| Login error message | `login-error` |
+| Create course button | `create-course-btn` |
+| New course next button | `new-course-next` |
+| Course title input | `new-course-title` |
+| Course description input | `new-course-description` |
+| Course finish button | `new-course-finish` |
 
-Given('I am on the login page', async ({ page }) => {
-  await page.goto('/login');
-});
-
-When('I enter email {string} and password {string}', async ({ page }, email, password) => {
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password').fill(password);
-});
-
-When('I click the login button', async ({ page }) => {
-  await page.getByRole('button', { name: /log in/i }).click();
-});
-
-Then('I should be redirected to the dashboard', async ({ page }) => {
-  await page.waitForURL('**/org/*/courses');
-  expect(page.url()).toContain('/courses');
-});
-
-Then('I should see the organization name', async ({ page }) => {
-  await expect(page.locator('[data-testid="org-name"]')).toBeVisible();
-});
-
-Then('I should see an error message', async ({ page }) => {
-  await expect(page.getByText(/invalid|error|incorrect/i)).toBeVisible();
-});
-```
-
-### course-creation.steps.ts
-
-```ts
-import { expect } from '@playwright/test';
-import { Given, When, Then } from 'playwright-bdd';
-import { getTestUserSession } from '../support/auth';
-import { deleteTestCourses } from '../support/cleanup';
-
-Given('I am logged in as an instructor', async ({ page }) => {
-  const session = await getTestUserSession();
-  await page.evaluate((s) => {
-    localStorage.setItem('supabase.auth.token', JSON.stringify(s));
-  }, session);
-});
-
-Given('I am on the courses page', async ({ page }) => {
-  await page.goto('/org/test-org/courses');
-});
-
-When('I click the create course button', async ({ page }) => {
-  await page.getByRole('button', { name: /create|new course/i }).click();
-});
-
-When('I enter course title {string}', async ({ page }, title) => {
-  await page.getByLabel(/title/i).fill(title);
-});
-
-When('I submit the course form', async ({ page }) => {
-  await page.getByRole('button', { name: /submit|create|save/i }).click();
-});
-
-When('I submit the course form without a title', async ({ page }) => {
-  await page.getByRole('button', { name: /submit|create|save/i }).click();
-});
-
-Then('I should see {string} in the course list', async ({ page }, title) => {
-  await expect(page.getByText(title)).toBeVisible();
-});
-
-Then('I should see a validation error', async ({ page }) => {
-  await expect(page.getByText(/required|cannot be empty/i)).toBeVisible();
-});
-```
-
-Selectors use `getByRole`/`getByLabel` (Playwright best practices) — will need adjusting to match actual dashboard markup during implementation.
+If a test needs a new selector, add the `data-testid` to the component first.
 
 ---
 
-## 6. Host Machine Access & Dev Workflow
+## 7. Host Machine Access & Dev Workflow
 
-### Accessing Playwright from the host (devcontainer/WSL2)
+### Ports
 
-Two modes:
+| Port | Service | Host binding |
+|------|---------|-------------|
+| 9323 | Playwright UI mode | `0.0.0.0` |
+| 9400 | Playwright HTML report | `0.0.0.0` |
 
-1. **UI mode (live development):** `pnpm --filter e2e test:ui`
-   - Runs `playwright test --ui --ui-host 0.0.0.0 --ui-port 9323`
-   - VS Code devcontainer auto-forwards port 9323
-   - Open `http://localhost:9323` on the host
-   - Watch mode: re-runs tests as you edit features/steps
-
-2. **HTML report (post-run review):** `pnpm --filter e2e report`
-   - Runs `playwright show-report --host 0.0.0.0`
-   - Open on forwarded port from host browser
-
-### Devcontainer config addition
-
-```json
-{
-  "forwardPorts": [5173, 9323],
-  "portsAttributes": {
-    "9323": { "label": "Playwright UI", "onAutoForward": "notify" }
-  }
-}
-```
+Both ports are in `devcontainer.json` (`appPort` + `forwardPorts`).
 
 ### Typical workflow
 
-1. `pnpm dev` — start the dashboard app
-2. `pnpm --filter e2e test:ui` — Playwright UI mode, write/debug tests from host browser
-3. `pnpm --filter e2e test` — run all tests headless (CI-style)
-4. `pnpm --filter e2e report` — review HTML report from host browser
+1. `pnpm dev:container` — start the dashboard app + API
+2. `pnpm e2e:ui` — Playwright UI mode at `http://localhost:9323`
+3. `pnpm e2e` — headless run (CI-style)
+4. `pnpm e2e:report` — HTML report at `http://localhost:9400`
 
 ### Environment variables (e2e/.env)
 
@@ -324,10 +254,46 @@ SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
 
 ---
 
-## 7. Implementation Notes
+## 8. Devcontainer Setup
 
-- `.features-gen/` must be added to `.gitignore` — these are generated files.
-- The `supabase.auth.token` localStorage key must be verified against the actual dashboard app implementation.
-- Step definition selectors are approximate — they need to be adjusted to match the real dashboard markup during implementation.
-- `e2e/.env` should be added to `.gitignore` (contains service role key).
-- Only Chromium for now — add Firefox/WebKit projects later as needed.
+### Dockerfile additions
+
+```dockerfile
+# Install Playwright browsers + OS deps during build
+RUN npx playwright@1.53.0 install --with-deps chromium
+```
+
+Browsers are installed during docker build so tests work immediately without a separate install step.
+
+### devcontainer.json additions
+
+```json
+{
+  "appPort": [..., 9323, 9400, ...],
+  "forwardPorts": [..., 9323, 9400, ...],
+  "portsAttributes": {
+    "9323": { "label": "Playwright UI", "onAutoForward": "notify" },
+    "9400": { "label": "Playwright Report", "onAutoForward": "notify" }
+  }
+}
+```
+
+---
+
+## 9. Gitignored Paths
+
+```
+e2e/.features-gen/      # auto-generated spec files
+e2e/test-results/       # videos, screenshots, traces
+e2e/playwright-report/  # HTML report
+e2e/.env                # contains service role key
+```
+
+---
+
+## 10. Implementation Notes
+
+- Only Chromium for now — add Firefox/WebKit projects later as needed
+- Step definition selectors use `data-testid` — add attributes to components as needed
+- No explicit timeouts in step definitions — rely on config defaults (10s)
+- Tests must NOT auto-start services — global setup checks and fails fast if missing

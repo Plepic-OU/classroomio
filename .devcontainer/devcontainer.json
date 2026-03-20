@@ -14,14 +14,15 @@
     "source=classroomio-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume",
     "source=classroomio-claude-config,target=/home/node/.claude,type=volume"
   ],
-  "appPort": [5173, 5174, 3000, 3002, 9323, 54321, 54322, 54323, 54324],
-  "forwardPorts": [5173, 5174, 3000, 3002, 9323, 54321, 54322, 54323, 54324],
+  "appPort": [5173, 5174, 3000, 3002, 9323, 9400, 54321, 54322, 54323, 54324],
+  "forwardPorts": [5173, 5174, 3000, 3002, 9323, 9400, 54321, 54322, 54323, 54324],
   "portsAttributes": {
     "5173": { "label": "Dashboard" },
     "5174": { "label": "Website" },
     "3000": { "label": "Docs" },
     "3002": { "label": "API" },
     "9323": { "label": "Playwright UI", "onAutoForward": "notify" },
+    "9400": { "label": "Playwright Report", "onAutoForward": "notify" },
     "54321": { "label": "Supabase API" },
     "54322": { "label": "Supabase DB" },
     "54323": { "label": "Supabase Studio" },

@@ -9,6 +9,7 @@ const testDir = defineBddConfig({
 
 export default defineConfig({
   testDir,
+  globalSetup: './support/global-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -21,8 +22,15 @@ export default defineConfig({
 
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:5173',
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    trace: 'on',
+    screenshot: 'on',
+    video: 'on',
+    actionTimeout: 10_000,
+    navigationTimeout: 10_000,
+  },
+
+  expect: {
+    timeout: 10_000,
   },
 
   projects: [
