@@ -21,6 +21,7 @@ node .claude/skills/c4-model/extract-components.mjs
 ```
 
 This outputs `docs/c4/extracted-components.json` (gitignored) containing:
+
 - Per-app components grouped by directory structure
 - Cross-component relationships (import counts)
 - Svelte file counts per component (metadata only -- ts-morph cannot parse `.svelte` files)
@@ -31,6 +32,7 @@ This outputs `docs/c4/extracted-components.json` (gitignored) containing:
 Edit `APP_CONFIGS` in `extract-components.mjs` to adjust `componentDepth` per app. If any component has >50 files, the script warns and depth should be increased.
 
 Current defaults:
+
 - **Dashboard**: depth 5 (handles deeply nested `src/lib/components/Feature/components/Sub/` structure)
 - **API**: depth 2 (flat `src/routes/`, `src/utils/` structure)
 
@@ -147,16 +149,19 @@ Generate L3 diagrams for Dashboard (split into two sub-diagrams) and API. Derive
 For each app in the JSON:
 
 1. **Group components into logical boundaries** based on top-level directory:
+
    - Dashboard: `lib/components/*`, `lib/utils/*`, `routes/*`, `mail/*`
    - API: `routes/*`, `services/*`, `utils/*`, `middlewares/*`, `config/*`, `constants/*`, `types/*`
 
 2. **Create a Component node** for each entry in the `components` object:
-   - Alias: snake_case of the component key (replace `/` with `_`)
+
+   - Alias: snake*case of the component key (replace `/` with `*`)
    - Label: last segment(s) of the key, human-readable
    - Technology: infer from path (`svelte` for component dirs with svelteFiles > 0, `ts` otherwise)
    - Description: summarize from exports list and file counts
 
 3. **Create Rel edges** from the `relationships` array:
+
    - Only include relationships with `importCount >= 2` to reduce noise (raise to 3+ if still cluttered)
    - Use **directional variants** (`Rel_D`, `Rel_R`, `Rel_L`) instead of plain `Rel()`:
      - `Rel_D`: routes/pages -> components, components -> services/utils, services -> external systems
@@ -173,18 +178,21 @@ For each app in the JSON:
 The Dashboard has 190+ extracted components. To keep diagrams readable, split into two sub-diagrams:
 
 **Sub-diagram A: UI + Routes** (`docs/c4/L3-dashboard-ui.md`)
+
 - Boundaries: Routes, UI Components
 - Include utility/service stubs only as external `Component_Ext` references where needed
 - Aim for ~15-20 components, ~10-15 relationships
 - Flow: Routes (top) -> UI Components (bottom), with lateral `Rel_R` between sibling components
 
 **Sub-diagram B: Services + Data** (`docs/c4/L3-dashboard-services.md`)
+
 - Boundaries: Services, Utilities, Stores, Types, Mail
 - Include route/component stubs only as external references where needed
 - Aim for ~15-20 components, ~10-15 relationships
 - Flow: Services (top) -> Utilities/Stores (middle) -> External Systems (bottom)
 
 Each sub-diagram should start with a comment referencing the other:
+
 ```
 %% See also: L3-dashboard-services.md for the Services + Data layer
 ```

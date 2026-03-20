@@ -28,7 +28,7 @@ const APP_CONFIGS = {
     // Depth of directory path segments that form a component key.
     // e.g. depth=5 on src/lib/components/Course/components/Lesson/x.ts -> lib/components/Course/components/Lesson
     componentDepth: 5,
-    excludeDirs: ['__tests__', '__mocks__', 'mocks', '.svelte-kit'],
+    excludeDirs: ['__tests__', '__mocks__', 'mocks', '.svelte-kit']
   },
   api: {
     name: 'API',
@@ -38,8 +38,8 @@ const APP_CONFIGS = {
     globs: ['**/*.ts', '**/*.js'],
     svelteGlobs: [],
     componentDepth: 2,
-    excludeDirs: ['__tests__', '__mocks__', '.svelte-kit'],
-  },
+    excludeDirs: ['__tests__', '__mocks__', '.svelte-kit']
+  }
 };
 
 /**
@@ -51,9 +51,8 @@ function resolvePathAliases(tsconfigPath) {
   try {
     const raw = readFileSync(resolve(ROOT, tsconfigPath), 'utf-8');
     // Strip comments from JSON (tsconfig allows them), but preserve strings
-    const stripped = raw.replace(
-      /"(?:[^"\\]|\\.)*"|\/\/[^\n]*|\/\*[\s\S]*?\*\//g,
-      (match) => (match.startsWith('"') ? match : '')
+    const stripped = raw.replace(/"(?:[^"\\]|\\.)*"|\/\/[^\n]*|\/\*[\s\S]*?\*\//g, (match) =>
+      match.startsWith('"') ? match : ''
     );
     const tsconfig = JSON.parse(stripped);
     const paths = tsconfig?.compilerOptions?.paths || {};
@@ -123,7 +122,7 @@ function resolveImportToComponentKey(specifier, sourceFileDir, srcRootAbs, alias
   // Skip obvious externals
   if (
     specifier.startsWith('svelte/') ||
-    specifier.startsWith('svelte') && !specifier.includes('/') ||
+    (specifier.startsWith('svelte') && !specifier.includes('/')) ||
     specifier.startsWith('$app/') ||
     specifier.startsWith('$env/') ||
     specifier.startsWith('@sveltejs/') ||
@@ -132,7 +131,10 @@ function resolveImportToComponentKey(specifier, sourceFileDir, srcRootAbs, alias
     specifier.startsWith('hono') ||
     specifier.startsWith('carbon-') ||
     specifier.startsWith('zod') ||
-    !specifier.startsWith('.') && !specifier.startsWith('$') && !specifier.startsWith('@cio/') && !specifier.startsWith('shared/')
+    (!specifier.startsWith('.') &&
+      !specifier.startsWith('$') &&
+      !specifier.startsWith('@cio/') &&
+      !specifier.startsWith('shared/'))
   ) {
     return null;
   }
@@ -179,9 +181,9 @@ function extractApp(appKey, config) {
     compilerOptions: {
       allowJs: true,
       noEmit: true,
-      skipLibCheck: true,
+      skipLibCheck: true
     },
-    skipAddingFilesFromTsConfig: true,
+    skipAddingFilesFromTsConfig: true
   });
 
   // Add source files
@@ -219,7 +221,7 @@ function extractApp(appKey, config) {
         files: [],
         tsFiles: 0,
         svelteFiles: 0,
-        exports: new Set(),
+        exports: new Set()
       };
     }
 
@@ -261,7 +263,7 @@ function extractApp(appKey, config) {
         files: [],
         tsFiles: 0,
         svelteFiles: 0,
-        exports: new Set(),
+        exports: new Set()
       };
     }
     components[componentKey].svelteFiles += count;
@@ -276,7 +278,7 @@ function extractApp(appKey, config) {
       svelteFiles: comp.svelteFiles,
       totalFiles,
       exports: [...comp.exports].sort(),
-      files: comp.files.sort(),
+      files: comp.files.sort()
     };
   }
 
@@ -295,21 +297,19 @@ function extractApp(appKey, config) {
     name: config.name,
     technology: config.technology,
     componentDepth: config.componentDepth,
-    aliases: Object.fromEntries(
-      Object.entries(aliases).map(([k, v]) => [k, relative(ROOT, v)])
-    ),
+    aliases: Object.fromEntries(Object.entries(aliases).map(([k, v]) => [k, relative(ROOT, v)])),
     components: serializedComponents,
     relationships: Object.values(relationships)
       .filter((r) => r.importCount > 0)
       .sort((a, b) => b.importCount - a.importCount),
-    warnings,
+    warnings
   };
 }
 
 // Main
 const output = {
   extractedAt: new Date().toISOString(),
-  apps: {},
+  apps: {}
 };
 
 for (const [appKey, config] of Object.entries(APP_CONFIGS)) {

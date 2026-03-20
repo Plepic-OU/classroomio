@@ -16,11 +16,13 @@
 ## Mermaid C4 Syntax Reference
 
 ### Diagram Types
+
 - `C4Context` - Layer 1
 - `C4Container` - Layer 2
 - `C4Component` - Layer 3
 
 ### Elements
+
 ```
 Person(alias, label, descr)
 Person_Ext(alias, label, descr)
@@ -35,6 +37,7 @@ ComponentDb(alias, label, techn, descr)
 ```
 
 ### Boundaries
+
 ```
 System_Boundary(alias, label) { ... }
 Container_Boundary(alias, label) { ... }
@@ -42,6 +45,7 @@ Enterprise_Boundary(alias, label) { ... }
 ```
 
 ### Relationships
+
 ```
 Rel(from, to, label, techn)        # auto direction
 Rel_D(from, to, label)             # force downward
@@ -54,11 +58,13 @@ BiRel(from, to, label)             # bidirectional
 ### Layout Controls
 
 #### Grid sizing
+
 ```
 UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="2")
 ```
 
 #### Relationship anchor offsets (reduce overlapping labels)
+
 ```
 UpdateRelStyle(from, to, $offsetX="10", $offsetY="-20")
 ```
@@ -94,6 +100,7 @@ Mermaid lays out nodes roughly in declaration order, left-to-right within a row.
 ### 4. Split large diagrams
 
 If a Layer 3 diagram exceeds ~25 components, split it into focused sub-diagrams by domain. Each sub-diagram should:
+
 - Cover one concern (e.g., "UI + Routes" vs "Services + Data")
 - Include relevant external system stubs for context
 - Have no more than ~20 components and ~15 relationships
@@ -108,6 +115,7 @@ If a Layer 3 diagram exceeds ~25 components, split it into focused sub-diagrams 
 ### 6. Use UpdateRelStyle for overlapping labels
 
 When two relationship lines overlap or labels collide, offset them:
+
 ```
 UpdateRelStyle(nodeA, nodeB, $offsetX="10", $offsetY="-10")
 UpdateRelStyle(nodeA, nodeC, $offsetX="-10", $offsetY="10")

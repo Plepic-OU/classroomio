@@ -1,6 +1,6 @@
 ---
 name: validate-design-document
-description: "Validate a design document by spawning project-specific expert subagents in parallel. Use after writing a design document."
+description: 'Validate a design document by spawning project-specific expert subagents in parallel. Use after writing a design document.'
 ---
 
 # Validate Design Document
@@ -19,17 +19,17 @@ Read the design document. Then decide which of the 8 validators below are releva
 
 ### The 8 Validators
 
-| # | Validator | Prompt file | When to include |
-|---|-----------|-------------|-----------------|
-| 1 | Supabase & Database | `validators/supabase-database.md` | Touches data storage, queries, or schema |
-| 2 | Auth & Permissions | `validators/auth-permissions.md` | Access control, roles, or user identity |
-| 3 | SvelteKit Frontend | `validators/sveltekit-frontend.md` | UI, routing, stores, or components |
-| 4 | API Contract | `validators/api-contract.md` | Hono API, type sharing, or server endpoints |
-| 5 | Monorepo & Integration | `validators/monorepo-integration.md` | Multiple packages or build pipeline |
-| 6 | Devcontainer | `validators/devcontainer.md` | Local dev setup, Docker, or dev environment |
-| 7 | E2E Tests | `validators/e2e-tests.md` | E2E/integration tests, Playwright, BDD, test selectors, or test data |
-| 8 | Simplifier | `validators/simplifier.md` | **Always include** (cuts unnecessary complexity) |
-| 9 | General Design Quality | `validators/general-design-quality.md` | **Always include** (catches what specialists miss) |
+| #   | Validator              | Prompt file                            | When to include                                                      |
+| --- | ---------------------- | -------------------------------------- | -------------------------------------------------------------------- |
+| 1   | Supabase & Database    | `validators/supabase-database.md`      | Touches data storage, queries, or schema                             |
+| 2   | Auth & Permissions     | `validators/auth-permissions.md`       | Access control, roles, or user identity                              |
+| 3   | SvelteKit Frontend     | `validators/sveltekit-frontend.md`     | UI, routing, stores, or components                                   |
+| 4   | API Contract           | `validators/api-contract.md`           | Hono API, type sharing, or server endpoints                          |
+| 5   | Monorepo & Integration | `validators/monorepo-integration.md`   | Multiple packages or build pipeline                                  |
+| 6   | Devcontainer           | `validators/devcontainer.md`           | Local dev setup, Docker, or dev environment                          |
+| 7   | E2E Tests              | `validators/e2e-tests.md`              | E2E/integration tests, Playwright, BDD, test selectors, or test data |
+| 8   | Simplifier             | `validators/simplifier.md`             | **Always include** (cuts unnecessary complexity)                     |
+| 9   | General Design Quality | `validators/general-design-quality.md` | **Always include** (catches what specialists miss)                   |
 
 ## Step 2: Spawn Validators in Parallel
 
@@ -52,6 +52,7 @@ After all validators complete, classify every finding into one of three buckets:
 ### Bucket A: Auto-apply (confident, clear, no conflicts)
 
 A finding is auto-apply when ALL of these are true:
+
 - It is unambiguous — there is one obvious fix
 - No other validator contradicts it
 - It does not change the design's scope, architecture, or business requirements
@@ -67,6 +68,7 @@ Two or more validators give contradictory recommendations (e.g., one says add an
 ### Bucket C: Needs user input (uncertain or significant)
 
 A finding that:
+
 - Suggests a scope change or architectural shift
 - Could go either way — reasonable arguments on both sides
 - Is a WARNING/NOTE where the right call depends on context you don't have
