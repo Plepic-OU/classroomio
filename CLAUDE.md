@@ -32,6 +32,28 @@ pnpm test --filter=@cio/api                                    # API (Vitest)
 pnpm test:coverage --filter=@cio/api                           # With coverage
 ```
 
+### E2E Tests (BDD Playwright)
+```bash
+pnpm e2e              # Run all E2E tests (services must be running first)
+pnpm e2e:report       # Open the HTML test report on :9323
+```
+
+**Prerequisites:** Services must be started before running E2E tests. The test runner will fail fast if any required service is not reachable.
+```bash
+supabase start        # Required: local Supabase
+pnpm dev:container    # Required: dashboard on :5173
+```
+
+**Structure:** `apps/e2e/`
+- `features/**/*.feature` — Gherkin BDD scenarios
+- `steps/**/*.ts` — step definitions (use `createBdd()` from `playwright-bdd`)
+- `pages/*.ts` — Page Object Models
+- `global-setup.ts` — service health checks (fail fast)
+- `playwright.config.ts` — config (10s timeout, always capture video/screenshots)
+
+**Test artifacts** (`test-results/`, `playwright-report/`) are gitignored.
+All videos and screenshots are captured for every test run (pass or fail).
+
 ### Database (requires Docker)
 ```bash
 supabase start    # Start local Supabase (PostgreSQL + Auth + Studio)

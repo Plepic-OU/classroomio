@@ -171,7 +171,7 @@
       {/if}
     </div>
 
-    <h3 class="title text-xl dark:text-white">{title}</h3>
+    <h3 class="title text-xl dark:text-white" data-testid="course-title">{title}</h3>
     <p class="description mt-2 text-sm text-gray-500 dark:text-gray-300">
       {description}
     </p>

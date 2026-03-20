@@ -54,3 +54,9 @@ docs/c4/extracted.json
 
 # Windows Alternate Data Streams (created in WSL)
 *:Zone.Identifier
+
+# Playwright E2E test artifacts
+apps/e2e/test-results/
+apps/e2e/playwright-report/
+apps/e2e/.auth/
+apps/e2e/.features-gen/
