@@ -44,6 +44,11 @@ docs/c4/extracted-components.json
 .pnpm-store/*
 tmp-rain/*
 
+# Playwright E2E test artifacts
+test-results/
+playwright-report/
+blob-report/
+
 # Claude Code hook traces
 .claude/tool-traces/
 

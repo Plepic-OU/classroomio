@@ -102,6 +102,26 @@ Dashboard `.env` (copy from `.env.example`):
 - L3 API Components: @../docs/c4/L3-api-components.md
 - Database schema: `docs/c4/database.md`
 
+## E2E Tests (BDD + Playwright)
+
+BDD end-to-end tests live in `tests/e2e/` using Gherkin feature files and Playwright, powered by `playwright-bdd`.
+
+**Prerequisites**: Both Supabase (`supabase start`) and the dashboard dev server (`pnpm dev --filter=@cio/dashboard`) must be running before tests.
+
+```bash
+pnpm test:e2e                           # Run all E2E tests
+pnpm test:e2e:ui                        # Playwright UI mode (port 9323)
+pnpm test:e2e:report                    # Serve HTML report (port 9324)
+```
+
+Test structure:
+- `tests/e2e/features/` — Gherkin `.feature` files
+- `tests/e2e/steps/` — Step definitions + shared fixtures
+- `tests/e2e/playwright.config.ts` — Playwright config (10s timeout, Chromium only)
+- `tests/e2e/global-setup.ts` — Pre-flight health checks for Supabase + dashboard
+
+Test data uses the seed user `admin@test.com` / `123456`.
+
 ## Demo Login
 
 - URL: `http://localhost:5173/login`

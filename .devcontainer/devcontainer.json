@@ -14,8 +14,8 @@
     "source=classroomio-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume",
     "source=classroomio-claude-config,target=/home/node/.claude,type=volume"
   ],
-  "appPort": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324],
-  "forwardPorts": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324],
+  "appPort": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324, 9323, 9324],
+  "forwardPorts": [5173, 5174, 3000, 3002, 54321, 54322, 54323, 54324, 9323, 9324],
   "portsAttributes": {
     "5173": { "label": "Dashboard" },
     "5174": { "label": "Website" },
@@ -24,7 +24,9 @@
     "54321": { "label": "Supabase API" },
     "54322": { "label": "Supabase DB" },
     "54323": { "label": "Supabase Studio" },
-    "54324": { "label": "Supabase Inbucket" }
+    "54324": { "label": "Supabase Inbucket" },
+    "9323": { "label": "Playwright UI" },
+    "9324": { "label": "Playwright Report" }
   },
   "postCreateCommand": "bash .devcontainer/setup.sh",
   "postStartCommand": "bash .devcontainer/gh-auth.sh && echo 'ClassroomIO devcontainer is ready. Run: pnpm dev:container'",

@@ -45,6 +45,9 @@ fi
 sudo chmod -R g+w /usr/local/share/npm-global/lib/node_modules/@anthropic-ai/
 sudo chmod -R g+w /usr/local/share/npm-global/bin/
 
+echo "==> Syncing Playwright browser..."
+pnpm exec playwright install chromium
+
 echo "==> Running turbo prepare..."
 pnpm turbo prepare
 
