@@ -244,6 +244,16 @@ export interface Course {
   lesson_section?: LessonSection[];
   lessons?: Lesson[];
   polls: { status: string }[];
+  max_capacity?: number | null;
+}
+
+export interface CourseWaitlistEntry {
+  id: number /* primary key */;
+  course_id: string /* foreign key to course.id */;
+  profile_id: string /* foreign key to profile.id */;
+  created_at: string;
+  position?: number /* computed at query time via ROW_NUMBER */;
+  profile?: Profile;
 }
 
 export interface Groupmember {

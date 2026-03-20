@@ -31,7 +31,8 @@
       }
     },
     "invite": {
-      "failed_join": "Falha ao ingressar, entre em contato com seu administrador"
+      "failed_join": "Falha ao ingressar, entre em contato com seu administrador",
+      "waitlisted": "You've been added to the waitlist"
     },
     "submissions": {
       "success": {
@@ -278,7 +279,10 @@
         "type": "Tipo de curso",
         "course_type_desc": "Atualize o tipo de curso para uma experiência mais personalizada",
         "live_class": "Aula ao vivo",
-        "self_paced": "Individualizado"
+        "self_paced": "Individualizado",
+        "max_enrollment": "Max Enrollment",
+        "max_enrollment_desc": "Set an enrollment cap. When the course is full, students are placed on a waitlist.",
+        "max_enrollment_placeholder": "Unlimited"
       },
       "landing_page": {
         "start_course": "Iniciar curso",
@@ -447,7 +451,8 @@
           "admin": "Administrador",
           "tutor": "Tutor",
           "student": "Estudante",
-          "filter": "Filtro"
+          "filter": "Filtro",
+          "waitlist": "Waitlist"
         },
         "delete_confirmation": {
           "title": "Excluir",
@@ -483,7 +488,15 @@
           "remove": "Remover"
         },
         "view": "Visualizar",
-        "delete_profile": "Excluir perfil"
+        "delete_profile": "Excluir perfil",
+        "waitlist": {
+          "no_cap": "No enrollment cap is set — students join directly.",
+          "empty": "No students are currently on the waitlist.",
+          "position": "Position",
+          "joined": "Joined",
+          "approve": "Approve"
+        },
+        "capacity_badge": "{enrolled} / {total} enrolled"
       },
       "marks": {
         "title": "Marcas",

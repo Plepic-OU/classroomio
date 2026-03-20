@@ -31,7 +31,8 @@
       }
     },
     "invite": {
-      "failed_join": "Не удалось присоединиться. Обратитесь к администратору."
+      "failed_join": "Не удалось присоединиться. Обратитесь к администратору.",
+      "waitlisted": "You've been added to the waitlist"
     },
     "submissions": {
       "success": {
@@ -278,7 +279,10 @@
         "type": "Тип курса",
         "course_type_desc": "Обновите тип курса для более персонализированного опыта.",
         "live_class": "Живой урок",
-        "self_paced": "Самостоятельный темп"
+        "self_paced": "Самостоятельный темп",
+        "max_enrollment": "Max Enrollment",
+        "max_enrollment_desc": "Set an enrollment cap. When the course is full, students are placed on a waitlist.",
+        "max_enrollment_placeholder": "Unlimited"
       },
       "landing_page": {
         "start_course": "Начать курс",
@@ -447,7 +451,8 @@
           "admin": "Админ",
           "tutor": "Репетитор",
           "student": "Студент",
-          "filter": "Фильтр"
+          "filter": "Фильтр",
+          "waitlist": "Waitlist"
         },
         "delete_confirmation": {
           "title": "Удалить",
@@ -483,7 +488,15 @@
           "remove": "Удалять"
         },
         "view": "Вид",
-        "delete_profile": "Удалить профиль"
+        "delete_profile": "Удалить профиль",
+        "waitlist": {
+          "no_cap": "No enrollment cap is set — students join directly.",
+          "empty": "No students are currently on the waitlist.",
+          "position": "Position",
+          "joined": "Joined",
+          "approve": "Approve"
+        },
+        "capacity_badge": "{enrolled} / {total} enrolled"
       },
       "marks": {
         "title": "Метки",

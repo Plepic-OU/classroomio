@@ -1,4 +1,5 @@
 <script>
+  import { browser } from '$app/environment';
   import Box from '$lib/components/Box/index.svelte';
   import AudienceList from './AudienceList.svelte';
   import AudienceEmptyIcon from '$lib/components/Icons/AudienceEmptyIcon.svelte';
@@ -9,7 +10,7 @@
   let isLoading = false;
 
   async function fetchInitData(orgId) {
-    if (!orgId) return;
+    if (!orgId || !browser) return;
 
     isLoading = true;
     await getOrgAudience(orgId);

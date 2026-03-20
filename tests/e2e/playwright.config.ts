@@ -12,9 +12,9 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:5173',
-    video: 'on',
-    screenshot: 'on',
-    trace: 'on',
+    video: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    trace: 'retain-on-failure',
   },
   projects: [
     {

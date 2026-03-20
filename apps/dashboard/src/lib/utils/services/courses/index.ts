@@ -660,3 +660,11 @@ export async function deleteExercise(questions: Array<{ id: string }>, exerciseI
   await supabase.from('submission').delete().match({ exercise_id: exerciseId });
   await supabase.from('exercise').delete().match({ id: exerciseId });
 }
+
+// ── Waitlist service functions (re-exported from waitlist.ts) ─────────────────
+export {
+  enrollOrWaitlist,
+  fetchWaitlistEntries,
+  fetchStudentWaitlistPosition,
+  approveWaitlistStudent
+} from './waitlist';

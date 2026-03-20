@@ -31,7 +31,8 @@
       }
     },
     "invite": {
-      "failed_join": "Tham gia không thành công, vui lòng liên hệ với quản trị viên của bạn"
+      "failed_join": "Tham gia không thành công, vui lòng liên hệ với quản trị viên của bạn",
+      "waitlisted": "You've been added to the waitlist"
     },
     "submissions": {
       "success": {
@@ -278,7 +279,10 @@
         "type": "Loại khóa học",
         "course_type_desc": "Cập nhật loại khóa học để có trải nghiệm cá nhân hóa hơn",
         "live_class": "Lớp học trực tiếp",
-        "self_paced": "Tự nhịp độ"
+        "self_paced": "Tự nhịp độ",
+        "max_enrollment": "Max Enrollment",
+        "max_enrollment_desc": "Set an enrollment cap. When the course is full, students are placed on a waitlist.",
+        "max_enrollment_placeholder": "Unlimited"
       },
       "landing_page": {
         "start_course": "Bắt đầu khóa học",
@@ -447,7 +451,8 @@
           "admin": "Quản trị viên",
           "tutor": "Gia sư",
           "student": "Học sinh",
-          "filter": "Lọc"
+          "filter": "Lọc",
+          "waitlist": "Waitlist"
         },
         "delete_confirmation": {
           "title": "Xóa bỏ",
@@ -483,7 +488,15 @@
           "remove": "Di dời"
         },
         "view": "Xem",
-        "delete_profile": "Xóa hồ sơ"
+        "delete_profile": "Xóa hồ sơ",
+        "waitlist": {
+          "no_cap": "No enrollment cap is set — students join directly.",
+          "empty": "No students are currently on the waitlist.",
+          "position": "Position",
+          "joined": "Joined",
+          "approve": "Approve"
+        },
+        "capacity_badge": "{enrolled} / {total} enrolled"
       },
       "marks": {
         "title": "Điểm",

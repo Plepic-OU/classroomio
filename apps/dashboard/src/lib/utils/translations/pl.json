@@ -142,7 +142,8 @@
       }
     },
     "invite": {
-      "failed_join": "Dołączenie nie powiodło się, skontaktuj się z administratorem"
+      "failed_join": "Dołączenie nie powiodło się, skontaktuj się z administratorem",
+      "waitlisted": "You've been added to the waitlist"
     },
     "submissions": {
       "success": {
@@ -433,7 +434,10 @@
         "self_paced": "Samo krążył",
         "delete": "Usuń kurs",
         "delete_text": "Usuń ten kurs, tego działania nie można cofnąć",
-        "save": "Zapisz zmiany"
+        "save": "Zapisz zmiany",
+        "max_enrollment": "Max Enrollment",
+        "max_enrollment_desc": "Set an enrollment cap. When the course is full, students are placed on a waitlist.",
+        "max_enrollment_placeholder": "Unlimited"
       },
       "landing_page": {
         "course_content": "Treść kursu",
@@ -616,7 +620,8 @@
           "admin": "Admin",
           "tutor": "Korepetytor",
           "student": "Student",
-          "filter": "Filtr"
+          "filter": "Filtr",
+          "waitlist": "Waitlist"
         },
         "delete_confirmation": {
           "title": "Usuwać",
@@ -638,7 +643,15 @@
           "copy_link": "Kopiuj link",
           "success": "Skopiowane pomyślnie",
           "finish": "Skończyć"
-        }
+        },
+        "waitlist": {
+          "no_cap": "No enrollment cap is set — students join directly.",
+          "empty": "No students are currently on the waitlist.",
+          "position": "Position",
+          "joined": "Joined",
+          "approve": "Approve"
+        },
+        "capacity_badge": "{enrolled} / {total} enrolled"
       },
       "marks": {
         "title": "Znaki",

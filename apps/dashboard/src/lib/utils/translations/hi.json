@@ -31,7 +31,8 @@
       }
     },
     "invite": {
-      "failed_join": "शामिल होना विफल रहा, कृपया अपने व्यवस्थापक से संपर्क करें"
+      "failed_join": "शामिल होना विफल रहा, कृपया अपने व्यवस्थापक से संपर्क करें",
+      "waitlisted": "You've been added to the waitlist"
     },
     "submissions": {
       "success": {
@@ -278,7 +279,10 @@
         "type": "कोर्स का प्रकार",
         "course_type_desc": "अधिक वैयक्तिकृत अनुभव के लिए पाठ्यक्रम प्रकार को अपडेट करें",
         "live_class": "लाइव क्लास",
-        "self_paced": "स्वयं गति"
+        "self_paced": "स्वयं गति",
+        "max_enrollment": "Max Enrollment",
+        "max_enrollment_desc": "Set an enrollment cap. When the course is full, students are placed on a waitlist.",
+        "max_enrollment_placeholder": "Unlimited"
       },
       "landing_page": {
         "start_course": "कोर्स प्रारंभ करें",
@@ -447,7 +451,8 @@
           "admin": "व्यवस्थापक",
           "tutor": "कोई विषय पढ़ाना",
           "student": "विद्यार्थी",
-          "filter": "फ़िल्टर"
+          "filter": "फ़िल्टर",
+          "waitlist": "Waitlist"
         },
         "delete_confirmation": {
           "title": "मिटाना",
@@ -483,7 +488,15 @@
           "remove": "निकालना"
         },
         "view": "देखना",
-        "delete_profile": "प्रोफ़ाइल हटाएं"
+        "delete_profile": "प्रोफ़ाइल हटाएं",
+        "waitlist": {
+          "no_cap": "No enrollment cap is set — students join directly.",
+          "empty": "No students are currently on the waitlist.",
+          "position": "Position",
+          "joined": "Joined",
+          "approve": "Approve"
+        },
+        "capacity_badge": "{enrolled} / {total} enrolled"
       },
       "marks": {
         "title": "निशान",

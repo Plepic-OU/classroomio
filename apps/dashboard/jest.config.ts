@@ -19,6 +19,7 @@ module.exports = {
     '\\.[jt]sx?$': 'babel-jest'
   },
   moduleNameMapper: {
-    '^\\$app/(.*)$': '<rootDir>/src/__mocks__/$app/$1'
+    '^\\$app/(.*)$': '<rootDir>/src/__mocks__/$app/$1',
+    '^\\$lib/(.*)$': '<rootDir>/src/lib/$1'
   }
 };

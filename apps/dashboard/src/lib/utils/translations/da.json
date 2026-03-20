@@ -147,7 +147,8 @@
       }
     },
     "invite": {
-      "failed_join": "Deltagelse mislykkedes, bedes du kontakte din administrator"
+      "failed_join": "Deltagelse mislykkedes, bedes du kontakte din administrator",
+      "waitlisted": "You've been added to the waitlist"
     },
     "submissions": {
       "success": {
@@ -438,7 +439,10 @@
         "self_paced": "Selv tempo",
         "delete": "Slet kursus",
         "delete_text": "Slet dette kursus, denne handling kan ikke fortrydes",
-        "save": "Gem ændringer"
+        "save": "Gem ændringer",
+        "max_enrollment": "Max Enrollment",
+        "max_enrollment_desc": "Set an enrollment cap. When the course is full, students are placed on a waitlist.",
+        "max_enrollment_placeholder": "Unlimited"
       },
       "analytics": {
         "title": "Analytics"
@@ -624,7 +628,8 @@
           "admin": "Admin",
           "tutor": "Vejleder",
           "student": "Studerende",
-          "filter": "Filter"
+          "filter": "Filter",
+          "waitlist": "Waitlist"
         },
         "delete_confirmation": {
           "title": "Slet",
@@ -646,7 +651,15 @@
           "copy_link": "Kopier link",
           "success": "Kopieret med succes",
           "finish": "Slutte"
-        }
+        },
+        "waitlist": {
+          "no_cap": "No enrollment cap is set — students join directly.",
+          "empty": "No students are currently on the waitlist.",
+          "position": "Position",
+          "joined": "Joined",
+          "approve": "Approve"
+        },
+        "capacity_badge": "{enrolled} / {total} enrolled"
       },
       "marks": {
         "title": "Mærker",

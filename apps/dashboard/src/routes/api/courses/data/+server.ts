@@ -6,7 +6,7 @@ import { checkUserCoursePermissions } from '$lib/utils/functions/permissions';
 
 const COURSE_SELECT_QUERY = `
   id, title, type, description, overview, logo, is_published, version, group_id,
-  slug, cost, currency, metadata, is_certificate_downloadable, certificate_theme,
+  slug, cost, currency, metadata, is_certificate_downloadable, certificate_theme, max_capacity,
   lesson_section(id, title, order, created_at),
   lessons:lesson(
     id, title, public, lesson_at, is_unlocked, order, created_at, section_id,

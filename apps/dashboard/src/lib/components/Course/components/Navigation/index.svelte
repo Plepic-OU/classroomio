@@ -9,7 +9,7 @@
   import NavExpandable from './NavExpandable.svelte';
   import { getNavItemRoute, getLessonsRoute, getLectureNo } from '$lib/components/Course/function';
   import { lessons, lessonSections } from '../Lesson/store/lessons';
-  import { course } from '$lib/components/Course/store';
+  import { course, group } from '$lib/components/Course/store';
   import { NavClasses } from '$lib/utils/constants/reusableClass';
   import { isMobile } from '$lib/utils/store/useMobile';
   import { sideBar } from '$lib/components/Org/store';
@@ -395,5 +395,15 @@
         {/if}
       {/each}
     </ul>
+    {#if !isStudent && $course.max_capacity}
+      <div class="mx-4 mb-4 rounded border border-gray-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900">
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          {$t('course.navItem.people.capacity_badge', {
+            enrolled: ($group.students || []).length,
+            total: $course.max_capacity
+          })}
+        </p>
+      </div>
+    {/if}
   </div>
 </aside>

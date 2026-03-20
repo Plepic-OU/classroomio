@@ -34,4 +34,15 @@ export default async function globalSetup() {
   await page.waitForURL(/\/org\//);
   await page.context().storageState({ path: 'auth-state.json' });
   await browser.close();
+
+  // 4. Log in as student and save separate auth state for waitlist tests
+  const studentBrowser = await chromium.launch();
+  const studentPage = await studentBrowser.newPage();
+  await studentPage.goto('http://localhost:5173/login');
+  await studentPage.locator('input[type="email"]').fill('student@test.com');
+  await studentPage.locator('input[type="password"]').fill('123456');
+  await studentPage.getByRole('button', { name: 'Log In' }).click();
+  await studentPage.waitForURL(/\/(lms|org|onboarding)/);
+  await studentPage.context().storageState({ path: 'student-auth-state.json' });
+  await studentBrowser.close();
 }

@@ -4,6 +4,11 @@ export const ROLE = {
   STUDENT: 3
 };
 
+export const FILTER_VALUE = {
+  ALL: 'all',
+  WAITLIST: 'waitlist'
+};
+
 export const ROLE_LABEL = {
   [ROLE.ADMIN]: 'course.navItem.people.roles.admin',
   [ROLE.TUTOR]: 'course.navItem.people.roles.tutor',
@@ -13,7 +18,7 @@ export const ROLE_LABEL = {
 export const ROLES = [
   {
     label: 'course.navItem.people.roles.filter',
-    value: 'all'
+    value: FILTER_VALUE.ALL
   },
   {
     label: ROLE_LABEL[ROLE.ADMIN],
@@ -26,5 +31,9 @@ export const ROLES = [
   {
     label: ROLE_LABEL[ROLE.STUDENT],
     value: ROLE.STUDENT
+  },
+  {
+    label: 'course.navItem.people.roles.waitlist',
+    value: FILTER_VALUE.WAITLIST
   }
 ];

@@ -5,6 +5,7 @@
     CodeSnippet,
     Column,
     Grid,
+    NumberInput,
     RadioButton,
     RadioButtonGroup,
     Row,
@@ -142,12 +143,18 @@
     isSaving = true;
 
     try {
+      const maxCapacityValue =
+        $settings.max_capacity != null && $settings.max_capacity !== ''
+          ? Number($settings.max_capacity)
+          : null;
+
       const updatedCourse = {
         title: $settings.course_title,
         description: $settings.course_description,
         type: $settings.type,
         logo: $settings.logo,
         is_published: $settings.is_published,
+        max_capacity: maxCapacityValue,
         metadata: {
           ...(isObject($course.metadata) ? $course.metadata : {}),
           lessonTabsOrder: $settings.tabs,
@@ -191,7 +198,8 @@
       grading: !!course.metadata.grading,
       lesson_download: !!course.metadata.lessonDownload,
       is_published: !!course.is_published,
-      allow_new_students: course.metadata.allowNewStudent
+      allow_new_students: course.metadata.allowNewStudent,
+      max_capacity: course.max_capacity ?? null
     });
   }
   $: setDefault($course);
@@ -401,6 +409,26 @@
         <span slot="labelA" style="color: gray">{$t('course.navItem.settings.disabled')}</span>
         <span slot="labelB" style="color: gray">{$t('course.navItem.settings.enabled')}</span>
       </Toggle>
+    </Column>
+  </Row>
+
+  <!-- Max Enrollment Capacity -->
+  <Row class="border-bottom-c flex flex-col py-7 lg:flex-row">
+    <Column sm={8} md={8} lg={8}>
+      <SectionTitle>{$t('course.navItem.settings.max_enrollment')}</SectionTitle>
+      <p>{$t('course.navItem.settings.max_enrollment_desc')}</p>
+    </Column>
+    <Column sm={8} md={8} lg={8}>
+      <NumberInput
+        label={$t('course.navItem.settings.max_enrollment')}
+        placeholder={$t('course.navItem.settings.max_enrollment_placeholder')}
+        min={1}
+        value={$settings.max_capacity ?? undefined}
+        on:change={(e) => {
+          $settings.max_capacity = e.detail ?? null;
+          hasUnsavedChanges = true;
+        }}
+      />
     </Column>
   </Row>
 

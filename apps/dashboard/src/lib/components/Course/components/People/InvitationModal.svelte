@@ -1,5 +1,6 @@
 <script lang="ts">
   import copy from 'copy-to-clipboard';
+  import { browser } from '$app/environment';
   import { Popover } from 'carbon-components-svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -179,7 +180,7 @@
     addPeopleParm = query.get('add');
   }
 
-  $: setTutors($currentOrg.id);
+  $: if (browser) setTutors($currentOrg.id);
   $: generateQR(getStudentInviteLink($course, $currentOrg.siteName, $currentOrgDomain));
 </script>
 
