@@ -1,8 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-// Course creation includes login + navigation + modal + multiple Supabase writes,
-// which exceeds the 10s global timeout. Use a per-test budget of 20s.
-test('logged-in user creates a new course', { timeout: 20_000 }, async ({ page }) => {
+// Course creation includes login + navigation + modal + multiple Supabase writes.
+test('logged-in user creates a new course', async ({ page }) => {
   // Login via UI
   await page.goto('/login');
   await page.waitForTimeout(2000);

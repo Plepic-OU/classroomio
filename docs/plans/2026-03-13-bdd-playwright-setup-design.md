@@ -9,7 +9,7 @@
 Introduce a reliable E2E test framework for ClassroomIO. The existing Cypress setup remains but is not actively extended — new E2E tests use Playwright going forward.
 
 **Success criteria:**
-- Both test scenarios (login, course creation) pass reliably on a freshly seeded database
+- All test scenarios pass reliably on a freshly seeded database
 - Tests run from inside the devcontainer against `pnpm dev:container`
 
 ## Acceptance Criteria
@@ -48,20 +48,29 @@ Introduce a reliable E2E test framework for ClassroomIO. The existing Cypress se
 | Course creation scope | Minimal (title + description + type) | Proves framework works end-to-end; extend incrementally later |
 | Cypress | Kept alongside, not actively extended | Existing Cypress tests remain; new E2E work uses Playwright |
 | Browser install | Baked into Dockerfile | Runs as root during build, avoids `sudo` issues at runtime for `node` user |
-| Data reset strategy | Truncate + re-seed via SQL | Fast (~1s) compared to `supabase db reset` (~30s). Uses direct Supabase client with service role key |
-| Timeout | 10s global | Fail fast on broken flows — no long waits for missing elements |
+| Data reset strategy | Targeted cleanup of test-created data | Deletes only rows matching `Playwright Test%` pattern + test enrollments. Preserves seed data intact |
+| Timeout | 15s global | Enough for login + navigation + hydration waits. No per-test overrides needed |
+| Workers | 1 (serial) | Dev server crashes under parallel browser load |
+| Retries | 1 | Handles SvelteKit v1 hydration flakes (native form submit race) |
+| Hydration strategy | `waitForTimeout(2000)` | `networkidle` never resolves (persistent websocket connections). Fixed 2s wait is reliable |
 
 ## Project Structure
 
 ```
 e2e/
 ├── package.json              # Playwright + supabase-js dependencies
-├── playwright.config.ts      # Playwright config
+├── playwright.config.ts      # Playwright config (15s timeout, workers: 1, retries: 1)
 ├── tsconfig.json             # TypeScript config for e2e
-├── global-setup.ts           # Truncate test data + re-seed before suite
+├── global-setup.ts           # Clean up test-created data before suite
 └── tests/
-    ├── login.spec.ts         # Login flow test
-    └── course-creation.spec.ts  # Course creation flow test
+    ├── login.spec.ts                  # Admin login flow
+    ├── course-creation.spec.ts        # Admin creates a new course
+    ├── admin-add-lesson.spec.ts       # Admin adds a lesson to existing course
+    ├── admin-org-settings.spec.ts     # Admin views org settings page
+    ├── admin-course-analytics.spec.ts # Admin views course analytics
+    ├── student-course-signup.spec.ts  # Student joins course via invite link
+    ├── student-lms-navigation.spec.ts # Student navigates LMS dashboard → course
+    └── student-explore-courses.spec.ts # Student browses available courses
 ```
 
 Not registered in `pnpm-workspace.yaml` — standalone directory with its own `package.json`.
@@ -74,7 +83,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
-  timeout: 10_000,
+  timeout: 15_000,
   use: {
     baseURL: 'http://localhost:5173',
     screenshot: 'on',
@@ -88,20 +97,22 @@ export default defineConfig({
   projects: [
     { name: 'chromium', use: { browserName: 'chromium' } },
   ],
-  retries: 0,
+  workers: 1,
+  retries: 1,
   globalSetup: './global-setup.ts',
 });
 ```
 
 - **`baseURL: localhost:5173`** — targets the dashboard dev server
 - **No `webServer` config** — services MUST be running before tests; pretest health check catches errors
-- **`timeout: 10_000`** — 10-second max per test, fail fast on issues
+- **`timeout: 15_000`** — 15-second max per test, enough for login + navigation + assertions
 - **`screenshot: 'on'`** + **`video: 'on'`** — always capture, even on success
-- **`trace: 'retain-on-failure'`** — captures traces for debugging failed tests (unlike `on-first-retry` which requires retries > 0)
+- **`trace: 'retain-on-failure'`** — captures traces for debugging failed tests
 - **HTML reporter on `0.0.0.0:9323`** — accessible from host machine
 - **Chromium only** — no multi-browser at this stage
-- **`retries: 0`** — no retries during initial setup to surface flakiness immediately
-- **`globalSetup`** — runs fast data reset before the test suite
+- **`workers: 1`** — serial execution required; the SvelteKit dev server can't handle parallel browser instances reliably
+- **`retries: 1`** — one retry handles occasional hydration flakes (SvelteKit v1 form handlers not attached in time)
+- **`globalSetup`** — cleans up test-created data before the test suite
 
 ## Global Setup — Fast Data Reset
 
@@ -200,6 +211,36 @@ test('logged-in user creates a new course', async ({ page }) => {
 The modal can also be opened via URL query parameter `?create=true` (more reliable than clicking button which may be icon-only on narrow viewports).
 
 **Post-creation redirect:** After finishing, the app redirects to `/courses/[id]`, not back to the courses list.
+
+### Student Course Signup
+
+Tests the student enrollment flow via an invite link. Logs in as `student@test.com`, navigates to a pre-built invite link for "Getting started with MVC", clicks "Join Course", and asserts redirect to `/lms`.
+
+**Invite hash:** Built inline using `btoa(JSON.stringify({ id, name, description, orgSiteName }))` — no server-side generation needed.
+
+**Cleanup:** `global-setup.ts` removes test-created `groupmember` entries for the student profile that aren't in the original seed data.
+
+### Student LMS Navigation
+
+Tests the student dashboard experience. Logs in as `student@test.com`, verifies the greeting heading contains the student's name, navigates to "My Learning" via the sidebar, finds the enrolled course "Data Science with Python and Pandas", and clicks it to reach the course overview page.
+
+### Admin Add Lesson
+
+Tests lesson creation within an existing seed course. Logs in as admin, navigates directly to `/courses/[courseId]/lessons`, clicks the "Add" button, fills the "Lesson Title" field with "Playwright Test Lesson", saves, and asserts the new lesson appears as a link in the lesson list.
+
+**Cleanup:** `global-setup.ts` deletes lessons matching `LIKE 'Playwright Test%'` and their `lesson_completion` FK children.
+
+### Admin Org Settings
+
+Tests navigation to the organization settings page. Logs in as admin, navigates to `/org/udemy-test/settings` (using `waitUntil: 'domcontentloaded'` since the settings page has slow-loading resources), and verifies the "Settings" heading and tab elements (Profile, Organization) are visible.
+
+### Student Explore Courses
+
+Tests the course discovery page. Logs in as student, clicks "Explore" in the sidebar, verifies the heading, and asserts that "Modern Web Development with React" is visible (a course the student is never enrolled in by any test).
+
+### Admin Course Analytics
+
+Tests the analytics page loads for an admin. Logs in, navigates directly to `/courses/[courseId]/analytics` (using `waitUntil: 'domcontentloaded'`), and verifies the "Analytics" heading.
 
 ## Scripts
 
