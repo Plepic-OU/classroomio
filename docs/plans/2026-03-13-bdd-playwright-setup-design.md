@@ -14,6 +14,12 @@
 | Target URL | `BASE_URL` env var, default `http://localhost:5173` |
 | Auth strategy | `global-setup.ts` saves `storageState` once; injected into all test contexts |
 | TypeScript config | Extends `@cio/tsconfig` (`packages/tsconfig/base.json`) |
+| Screenshots & video | Always captured (`screenshot: 'on'`, `video: 'on'`) — visible even for passing tests |
+| Test timeout | 10 seconds max per test (`timeout: 10_000`) |
+| Data reset | `beforeAll` truncates affected tables and re-seeds via Supabase service role API |
+| Service health check | `global-setup.ts` performs a fast HTTP check before login; fails immediately if dashboard is unreachable |
+| Service start | Tests do **not** start services — caller must start dashboard first |
+| Browser install | During **docker image build** (not `setup.sh`) so the container is always ready |
 
 ---
 
@@ -106,36 +112,66 @@ export default defineConfig({
   globalSetup: './global-setup.ts',
   fullyParallel: true,
   retries: process.env.CI ? 2 : 0,
+  timeout: 10_000,
   reporter: [['html', { open: 'never' }]],
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:5173',
     storageState: '.auth/state.json',
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    trace: 'on',
+    screenshot: 'on',
+    video: 'on',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });
 ```
 
+> `timeout: 10_000` — each test must complete within 10 s. This keeps the feedback loop tight and forces well-scoped scenarios.
+>
+> `screenshot: 'on'` and `video: 'on'` — all test artifacts are captured regardless of pass/fail, making the HTML report fully informative for every run.
+>
 > `storageState` — login runs once in `global-setup.ts` and the session is injected into every test context. This removes the `Background` login step from `course-creation.feature` and allows `fullyParallel: true`.
 >
 > Note: `login.feature` also receives the pre-authenticated session, so its scenario now validates that an authenticated user navigating to `/login` is redirected to the dashboard — a valid regression check. When dedicated auth-flow tests are added (logout, wrong credentials, etc.), introduce a separate Playwright project without `storageState` for those.
 >
 > Note: `reporter` — the `host`/`port` options on the `html` reporter only apply to `playwright show-report`, not during the test run. Port `9323` binding is handled by the `test:report` script.
+>
+> Note: No `webServer` block — tests never start services automatically. The caller (developer or CI) must ensure the dashboard is running before invoking `pnpm test:e2e`.
 
 **`tests/e2e/.env.example`:**
 ```
 BASE_URL=http://localhost:5173
 TEST_EMAIL=admin@test.com
 TEST_PASSWORD=123456
+PUBLIC_SUPABASE_URL=http://localhost:54321
+SUPABASE_SERVICE_ROLE_KEY=<from supabase start output>
 ```
 
 **`tests/e2e/global-setup.ts`:**
 ```typescript
-import { chromium, FullConfig } from '@playwright/test';
+import { chromium, FullConfig, request } from '@playwright/test';
 
 export default async function globalSetup(config: FullConfig) {
   const { baseURL } = config.projects[0].use;
+
+  // --- Fast service health check ---
+  // Fail immediately if the dashboard isn't reachable instead of waiting
+  // for Playwright's default navigation timeout.
+  const ctx = await request.newContext();
+  try {
+    const res = await ctx.get(baseURL!, { timeout: 5_000 });
+    if (!res.ok()) {
+      throw new Error(`Dashboard returned HTTP ${res.status()}`);
+    }
+  } catch (e) {
+    await ctx.dispose();
+    throw new Error(
+      `Dashboard not reachable at ${baseURL}. ` +
+      `Start services first with: pnpm dev --filter=@cio/dashboard\n${e}`
+    );
+  }
+  await ctx.dispose();
+
+  // --- Authenticate once and persist session ---
   const browser = await chromium.launch();
   const page = await browser.newPage();
 
@@ -154,7 +190,9 @@ export default async function globalSetup(config: FullConfig) {
 
 ## devcontainer.json Changes
 
-Add port `9323` to `appPort`, `forwardPorts`, and `portsAttributes`:
+### Port forwarding
+
+Add port `9323` to both `appPort` and `forwardPorts` so the Playwright HTML report is reachable from the host machine via both access paths:
 
 ```json
 "appPort": [..., 9323],
@@ -164,16 +202,73 @@ Add port `9323` to `appPort`, `forwardPorts`, and `portsAttributes`:
 }
 ```
 
-## setup.sh Changes
+> Both `appPort` and `forwardPorts` must include `9323` — `appPort` exposes it at container start, `forwardPorts` ensures VS Code forwards it automatically.
 
-After the existing `pnpm install` step, add:
+### Browser install during docker build
 
-```bash
-# Install Playwright browser binaries + OS-level deps (libnss, libglib, etc.)
-pnpm --filter @cio/e2e exec playwright install --with-deps chromium
+Playwright browsers must be installed during the **docker image build**, not in `setup.sh`, so the container is fully ready without requiring a post-create step.
+
+Add to the `Dockerfile` (or `devcontainer.json` `build.dockerfile`):
+
+```dockerfile
+# Install Playwright browser binaries + OS-level dependencies
+RUN npx playwright install --with-deps chromium
 ```
 
-> `--with-deps` is required on the `javascript-node:20-bookworm` base image — it installs the OS shared libraries that Chromium depends on.
+> Alternatively, if the project uses a Feature-based devcontainer (no explicit Dockerfile), add this to the `postCreateCommand` only as a fallback — but moving it into the image build is strongly preferred for fast container start.
+
+After any devcontainer change, the user must **rebuild the container**:
+- VS Code: `Ctrl/Cmd+Shift+P` → `Dev Containers: Rebuild Container`
+- Or: `devcontainer rebuild` from CLI
+
+---
+
+## Data Reset
+
+Test data must be reset **before** each test suite (`beforeAll`) to guarantee a clean state without relying on the order tests run.
+
+Strategy: truncate affected tables and re-seed via the Supabase REST API using the service role key. This is faster than running full migrations and avoids slow UI teardown.
+
+**`tests/e2e/fixtures.ts`:**
+```typescript
+import { test as base, request as baseRequest } from 'playwright-bdd';
+import { LoginPage } from './pages/LoginPage';
+import { CoursePage } from './pages/CoursePage';
+
+async function resetTestData() {
+  const ctx = await baseRequest.newContext({
+    baseURL: process.env.PUBLIC_SUPABASE_URL,
+    extraHTTPHeaders: {
+      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      Prefer: 'return=minimal',
+    },
+  });
+
+  // Truncate test-owned rows (adjust filter to match your seed data strategy)
+  await ctx.delete('/rest/v1/course?title=like.%5BTEST%5D%25');
+
+  // Re-seed baseline data if needed (e.g. POST seed rows)
+  // await ctx.post('/rest/v1/course', { data: [...seedRows] });
+
+  await ctx.dispose();
+}
+
+export const test = base.extend<{
+  loginPage: LoginPage;
+  coursePage: CoursePage;
+}>({
+  loginPage: async ({ page }, use) => use(new LoginPage(page)),
+  coursePage: async ({ page }, use) => use(new CoursePage(page)),
+});
+
+// Reset before each feature file's suite runs
+test.beforeAll(async () => {
+  await resetTestData();
+});
+```
+
+> Prefix test-created records with `[TEST]` (e.g. `[TEST] My Course`) so the delete filter is safe and surgical. No full-table wipe needed.
 
 ---
 
@@ -235,71 +330,6 @@ export class CoursePage {
 
 ---
 
-## Fixtures
-
-**`tests/e2e/fixtures.ts`:**
-```typescript
-import { test as base, request as baseRequest } from 'playwright-bdd';
-import { LoginPage } from './pages/LoginPage';
-import { CoursePage } from './pages/CoursePage';
-
-// Titles of courses created during the run — deleted in afterAll.
-const createdCourseTitles: string[] = [];
-
-export const test = base.extend<{
-  loginPage: LoginPage;
-  coursePage: CoursePage;
-}>({
-  loginPage: async ({ page }, use) => use(new LoginPage(page)),
-
-  coursePage: async ({ page }, use) => {
-    const cp = new CoursePage(page);
-    await use(cp);
-    // Track any courses created so afterAll can clean them up.
-    if (cp.lastCreatedTitle) createdCourseTitles.push(cp.lastCreatedTitle);
-  },
-});
-
-// Global teardown: delete all courses created during the test run.
-test.afterAll(async () => {
-  if (createdCourseTitles.length === 0) return;
-  const ctx = await baseRequest.newContext({
-    baseURL: process.env.PUBLIC_SUPABASE_URL,
-    extraHTTPHeaders: {
-      apikey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-    },
-  });
-  for (const title of createdCourseTitles) {
-    await ctx.delete(`/rest/v1/course?title=eq.${encodeURIComponent(title)}`);
-  }
-  await ctx.dispose();
-});
-```
-
-**`tests/e2e/.env.example`** — add Supabase keys needed for cleanup:
-```
-BASE_URL=http://localhost:5173
-PUBLIC_SUPABASE_URL=http://localhost:54321
-SUPABASE_SERVICE_ROLE_KEY=<from supabase start output>
-```
-
-**`tests/e2e/pages/CoursePage.ts`** — expose `lastCreatedTitle` so the fixture can track it:
-```typescript
-export class CoursePage {
-  lastCreatedTitle: string | null = null;
-  // ...
-  async fillDetails(title: string, description: string) {
-    this.lastCreatedTitle = title;
-    await this.page.getByLabel('Course name').fill(title);
-    await this.page.getByLabel('Short Description').fill(description);
-  }
-  // ...
-}
-```
-
----
-
 ## Gherkin Features
 
 **`tests/e2e/features/login.feature`:**
@@ -322,10 +352,12 @@ Feature: Course Creation
     Given I am on the courses page
     When I open the create course modal
     And I select the course type "Self Paced"
-    And I fill in the title "My Test Course" and description "A test course description"
+    And I fill in the title "[TEST] My Test Course" and description "A test course description"
     And I submit the form
-    Then the course "My Test Course" should be visible in the list
+    Then the course "[TEST] My Test Course" should be visible in the list
 ```
+
+> Course titles are prefixed with `[TEST]` so the `resetTestData` filter can safely delete them before each run.
 
 ---
 
@@ -424,12 +456,61 @@ test-results/
 .env
 ```
 
+> `playwright-report/` and `test-results/` are gitignored. The report is served locally via `pnpm test:e2e:report` and is not committed.
+
+---
+
+## CLAUDE.md Changes
+
+Add an **E2E Tests** section to `CLAUDE.md` documenting the test flow:
+
+```markdown
+### E2E Tests (`tests/e2e`)
+
+BDD end-to-end tests using Playwright + playwright-bdd (Gherkin syntax).
+
+**Prerequisites:** Dashboard must be running (`pnpm dev --filter=@cio/dashboard`) and Supabase must be started (`supabase start`) before running tests.
+
+**Run tests:**
+\`\`\`bash
+pnpm test:e2e
+\`\`\`
+
+**View HTML report (with screenshots and videos):**
+\`\`\`bash
+pnpm test:e2e:report   # served at http://localhost:9323
+\`\`\`
+
+**How it works:**
+1. `global-setup.ts` — health-checks the dashboard URL, then logs in once and saves session to `tests/e2e/.auth/state.json`
+2. `fixtures.ts` `beforeAll` — resets test data (truncates `[TEST]*` rows, re-seeds if needed)
+3. Feature files in `features/` describe scenarios in Gherkin
+4. Step definitions in `steps/` wire Gherkin steps to Page Object methods
+5. All screenshots and videos are captured for every test run (pass or fail)
+
+**Test data convention:** Test-created records are prefixed with `[TEST]` (e.g. `[TEST] My Course`) so they can be safely truncated before each run without touching real data.
+```
+
+---
+
+## `e2e-test-writing` Skill
+
+During implementation and debugging of E2E tests, distil learnings into a project skill at `.claude/skills/e2e-test-writing/`. The skill should capture:
+
+- Which Playwright locators work reliably for dashboard elements
+- Patterns for waiting on navigation and async UI state
+- The `[TEST]` prefix convention for test data
+- How to add a new feature file + step file pair
+- Common pitfalls (e.g. flaky selectors, timing issues found during debugging)
+
+Invoke with `/e2e-test-writing` when writing or reviewing new BDD scenarios.
+
 ---
 
 ## Local Dev Workflow
 
 ```bash
-# Terminal 1 — start the dashboard
+# Terminal 1 — start the dashboard (must be running before tests)
 pnpm dev --filter=@cio/dashboard
 
 # Terminal 2 — run BDD tests
@@ -445,5 +526,5 @@ pnpm test:e2e:report
 
 - `bddgen` (run by `playwright-bdd`) generates intermediate spec files into `.features-gen/` — these are gitignored and regenerated on every test run.
 - Selectors in POMs use Playwright's accessibility-first locators (`getByLabel`, `getByRole`, `getByText`) — these will need to be validated against actual dashboard markup during implementation.
-- The `Background` in `course-creation.feature` reuses the `Given I am logged in as` step from `login.steps.ts` — no duplication, no separate auth fixture file needed at this scope.
 - Turbo pipeline is unchanged — e2e tests run on demand only, not as part of `build`.
+- Tests never launch services automatically. A missing service surfaces immediately via the health check in `global-setup.ts` with a clear error message.
