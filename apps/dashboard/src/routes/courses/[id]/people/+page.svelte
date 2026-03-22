@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import Avatar from '$lib/components/Avatar/index.svelte';
   import TextChip from '$lib/components/Chip/Text.svelte';
@@ -8,17 +9,26 @@
   import InvitationModal from '$lib/components/Course/components/People/InvitationModal.svelte';
   import { deleteMemberModal } from '$lib/components/Course/components/People/store';
   import type { ProfileRole } from '$lib/components/Course/components/People/types';
-  import { group } from '$lib/components/Course/store';
+  import { course, group } from '$lib/components/Course/store';
   import Select from '$lib/components/Form/Select.svelte';
   import IconButton from '$lib/components/IconButton/index.svelte';
   import { VARIANTS } from '$lib/components/PrimaryButton/constants';
   import PrimaryButton from '$lib/components/PrimaryButton/index.svelte';
   import RoleBasedSecurity from '$lib/components/RoleBasedSecurity/index.svelte';
-  import { ROLE_LABEL, ROLES } from '$lib/utils/constants/roles';
+  import { ROLE, ROLE_LABEL, ROLES } from '$lib/utils/constants/roles';
   import { t } from '$lib/utils/functions/translations';
-  import { deleteGroupMember } from '$lib/utils/services/courses';
+  import {
+    deleteGroupMember,
+    getWaitlist,
+    approveWaitlistedStudent
+  } from '$lib/utils/services/courses';
   import { profile } from '$lib/utils/store/user';
+  import { snackbar } from '$lib/components/Snackbar/store';
   import type { GroupPerson } from '$lib/utils/types';
+  import {
+    triggerSendEmail,
+    NOTIFICATION_NAME
+  } from '$lib/utils/services/notification/notification';
   import {
     CopyButton,
     Search,
@@ -34,6 +44,15 @@
   let member: { id?: string; email?: string; profile?: { email: string } } = {};
   let filterBy: ProfileRole = ROLES[0];
   let searchValue = '';
+
+  // Waitlist state
+  let waitlistPeople: Array<{
+    id: string;
+    created_at: string;
+    profile: { id: string; fullname: string; email: string; avatar_url: string };
+  }> = [];
+  let isWaitlistView = false;
+  let approvingId: string | null = null;
 
   function filterPeople(_query, people) {
     const query = _query.toLowerCase();
@@ -52,6 +71,13 @@
   }
 
   function sortAndFilterPeople(_people: Array<GroupPerson>, filterBy: ProfileRole) {
+    isWaitlistView = filterBy.value === 'waitlist';
+
+    if (isWaitlistView) {
+      fetchWaitlist();
+      return;
+    }
+
     people = (_people || [])
       .filter((person) => {
         if (filterBy.value === 'all') return true;
@@ -63,6 +89,41 @@
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       )
       .sort((a: GroupPerson, b: GroupPerson) => a.role_id - b.role_id);
+  }
+
+  async function fetchWaitlist() {
+    const { data, error } = await getWaitlist($course.id);
+    if (error) {
+      console.error('Error fetching waitlist', error);
+      return;
+    }
+    waitlistPeople = data || [];
+  }
+
+  async function handleApprove(entry: typeof waitlistPeople[0]) {
+    approvingId = entry.id;
+
+    const { error } = await approveWaitlistedStudent(entry.id, $group.id, ROLE.STUDENT);
+    approvingId = null;
+
+    if (error) {
+      snackbar.error('snackbar.waitlist.approve_error');
+      console.error('Error approving student', error);
+      return;
+    }
+
+    // Remove from waitlist UI
+    waitlistPeople = waitlistPeople.filter((p) => p.id !== entry.id);
+
+    snackbar.success('snackbar.waitlist.approved');
+
+    // Send approval email to student (include payment link for paid courses)
+    triggerSendEmail(NOTIFICATION_NAME.STUDENT_WAITLIST_APPROVED, {
+      to: entry.profile.email,
+      courseName: $course.title,
+      studentName: entry.profile.fullname,
+      paymentLink: $course.cost ? $course.metadata?.paymentLink : undefined
+    });
   }
 
   function getEmail(person) {
@@ -83,6 +144,12 @@
     goto(`${$page.url.href}/${person.profile_id}`);
   }
 
+  onMount(() => {
+    // Fetch waitlist count for dropdown label
+    fetchWaitlist();
+  });
+
+  $: waitlistCount = waitlistPeople.length;
   $: sortAndFilterPeople($group.people, filterBy);
 </script>
 
@@ -107,7 +174,12 @@
     <div class="mb-3">
       <Select
         bind:value={filterBy}
-        options={ROLES.map((role) => ({ label: $t(role.label), value: role.value }))}
+        options={ROLES.map((role) => ({
+          label: role.value === 'waitlist' && waitlistCount > 0
+            ? `${$t(role.label)} (${waitlistCount})`
+            : $t(role.label),
+          value: role.value
+        }))}
         className="dark:text-black mt-3 max-w-[80px]"
       />
       <!-- <select bind:value={filterBy} class="mt-3">
@@ -121,128 +193,200 @@
     </RoleBasedSecurity>
   </div>
 
-  <StructuredList class="m-0">
-    <StructuredListHead
-      class="bg-slate-100 dark:border-2 dark:border-neutral-800 dark:bg-neutral-800"
-    >
-      <StructuredListRow head class="mx-7">
-        <StructuredListCell head class="text-primary-700 py-3 dark:text-white"
-          >{$t('course.navItem.people.name')}</StructuredListCell
-        >
-        <StructuredListCell head class="text-primary-700 py-3 dark:text-white"
-          >{$t('course.navItem.people.role')}</StructuredListCell
-        >
-        <StructuredListCell head class="text-primary-700 py-3 dark:text-white"
-          >{$t('course.navItem.people.action')}</StructuredListCell
-        >
-        <RoleBasedSecurity allowedRoles={[1, 2]}>
-          <p class="hidden w-20 text-lg lg:block dark:text-white" />
-        </RoleBasedSecurity>
-      </StructuredListRow>
-    </StructuredListHead>
+  {#if isWaitlistView}
+    <StructuredList class="m-0">
+      <StructuredListHead
+        class="bg-slate-100 dark:border-2 dark:border-neutral-800 dark:bg-neutral-800"
+      >
+        <StructuredListRow head class="mx-7">
+          <StructuredListCell head class="text-primary-700 py-3 dark:text-white"
+            >{$t('course.navItem.people.name')}</StructuredListCell
+          >
+          <StructuredListCell head class="text-primary-700 py-3 dark:text-white"
+            >{$t('course.navItem.people.email')}</StructuredListCell
+          >
+          <StructuredListCell head class="text-primary-700 py-3 dark:text-white"
+            >{$t('course.navItem.people.date_joined')}</StructuredListCell
+          >
+          <StructuredListCell head class="text-primary-700 py-3 dark:text-white"
+            >{$t('course.navItem.people.action')}</StructuredListCell
+          >
+        </StructuredListRow>
+      </StructuredListHead>
 
-    {#each filterPeople(searchValue, people) as person}
-      <StructuredListBody>
-        <StructuredListRow class="relative">
-          <!-- first column -->
-          <StructuredListCell class="w-4/6 md:w-3/6">
-            {#if person.profile}
-              <div class="flex items-start lg:items-center">
+      {#each waitlistPeople as entry}
+        <StructuredListBody>
+          <StructuredListRow class="relative">
+            <StructuredListCell class="w-3/12">
+              <div class="flex items-center">
                 <Avatar
-                  src={person.profile.avatar_url}
-                  name={person.profile.fullname}
+                  src={entry.profile.avatar_url}
+                  name={entry.profile.fullname}
                   width="w-8"
                   height="h-8"
                   className="mr-3"
                 />
-                <div class="flex flex-col items-start lg:flex-row lg:items-center">
-                  <div class="mr-2">
-                    <p class="text-base font-normal dark:text-white">
-                      {person.profile.fullname}
-                    </p>
-                    <p class="text-primary-600 line-clamp-1 text-xs">
-                      {obscureEmail(getEmail(person))}
-                    </p>
-                  </div>
-                  <div class="flex items-center">
-                    <RoleBasedSecurity allowedRoles={[1, 2]}>
-                      <CopyButton text={getEmail(person)} feedback="Copied Email to clipboard" />
-                    </RoleBasedSecurity>
-                    {#if person.profile_id == $profile.id}
-                      <ComingSoon label={$t('course.navItem.people.you')} />
-                    {/if}
-                  </div>
-                </div>
+                <p class="text-base font-normal dark:text-white">
+                  {entry.profile.fullname}
+                </p>
               </div>
-            {:else}
-              <div class="flex w-2/4 items-start lg:items-center">
-                <TextChip
-                  value={person.email.substring(0, 2).toUpperCase()}
-                  className="bg-primary-200 text-black font-semibold text-xs mr-3"
-                  shape="rounded-full"
+            </StructuredListCell>
+
+            <StructuredListCell class="w-3/12">
+              <p class="text-sm dark:text-white">{entry.profile.email}</p>
+            </StructuredListCell>
+
+            <StructuredListCell class="w-3/12">
+              <p class="text-sm dark:text-white">
+                {new Date(entry.created_at).toLocaleDateString()}
+              </p>
+            </StructuredListCell>
+
+            <StructuredListCell class="w-3/12">
+              <RoleBasedSecurity allowedRoles={[1, 2]}>
+                <PrimaryButton
+                  label={$t('course.navItem.people.approve')}
+                  onClick={() => handleApprove(entry)}
+                  isLoading={approvingId === entry.id}
+                  isDisabled={approvingId === entry.id}
                 />
-                <a
-                  href="mailto:{person.email}"
-                  class="text-md text-primary-600 mr-2 dark:text-white"
-                >
-                  {person.email}
-                </a>
-                <div class="flex items-center justify-between">
-                  <RoleBasedSecurity allowedRoles={[1, 2]}>
-                    <CopyButton
-                      text={getEmail(person)}
-                      feedback={$t('course.navItem.people.feedback')}
-                    />
-                  </RoleBasedSecurity>
+              </RoleBasedSecurity>
+            </StructuredListCell>
+          </StructuredListRow>
+        </StructuredListBody>
+      {/each}
 
-                  <TextChip
-                    value={$t('course.navItem.people.pending')}
-                    className="text-xs bg-yellow-200 text-yellow-700 h-fit"
-                    size="sm"
-                  />
-                </div>
-              </div>
-            {/if}
-          </StructuredListCell>
-
-          <!-- second column -->
-          <StructuredListCell class="w-1/4">
-            <p class=" w-1/4 text-center text-base font-normal dark:text-white">
-              {$t(ROLE_LABEL[person.role_id])}
-            </p>
-          </StructuredListCell>
-
-          <!-- third column -->
-          <StructuredListCell class="w-1/4 p-0">
-            <RoleBasedSecurity allowedRoles={[1, 2]}>
-              <div class="hidden space-x-2 sm:flex sm:items-center">
-                {#if person.profile_id !== $profile.id}
-                  <IconButton
-                    onClick={() => {
-                      member = person;
-                      $deleteMemberModal.open = true;
-                    }}
-                  >
-                    <TrashCanIcon size={16} class="carbon-icon dark:text-white" />
-                  </IconButton>
-                  <!-- <IconButton
-                    onClick={() => gotoPerson(person)}
-                  >
-                    <TrashCanIcon size={16} class="carbon-icon dark:text-white" />
-                  </IconButton> -->
-
-                  <PrimaryButton
-                    variant={VARIANTS.OUTLINED}
-                    label={$t('course.navItem.people.view')}
-                    onClick={() => gotoPerson(person)}
-                  />
-                {/if}
-              </div>
-            </RoleBasedSecurity>
-          </StructuredListCell>
+      {#if waitlistPeople.length === 0}
+        <StructuredListBody>
+          <StructuredListRow>
+            <StructuredListCell>
+              <p class="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                {$t('course.navItem.people.no_waitlist')}
+              </p>
+            </StructuredListCell>
+          </StructuredListRow>
+        </StructuredListBody>
+      {/if}
+    </StructuredList>
+  {:else}
+    <StructuredList class="m-0">
+      <StructuredListHead
+        class="bg-slate-100 dark:border-2 dark:border-neutral-800 dark:bg-neutral-800"
+      >
+        <StructuredListRow head class="mx-7">
+          <StructuredListCell head class="text-primary-700 py-3 dark:text-white"
+            >{$t('course.navItem.people.name')}</StructuredListCell
+          >
+          <StructuredListCell head class="text-primary-700 py-3 dark:text-white"
+            >{$t('course.navItem.people.role')}</StructuredListCell
+          >
+          <StructuredListCell head class="text-primary-700 py-3 dark:text-white"
+            >{$t('course.navItem.people.action')}</StructuredListCell
+          >
+          <RoleBasedSecurity allowedRoles={[1, 2]}>
+            <p class="hidden w-20 text-lg lg:block dark:text-white" />
+          </RoleBasedSecurity>
         </StructuredListRow>
-      </StructuredListBody>
-    {/each}
-  </StructuredList>
+      </StructuredListHead>
+
+      {#each filterPeople(searchValue, people) as person}
+        <StructuredListBody>
+          <StructuredListRow class="relative">
+            <!-- first column -->
+            <StructuredListCell class="w-4/6 md:w-3/6">
+              {#if person.profile}
+                <div class="flex items-start lg:items-center">
+                  <Avatar
+                    src={person.profile.avatar_url}
+                    name={person.profile.fullname}
+                    width="w-8"
+                    height="h-8"
+                    className="mr-3"
+                  />
+                  <div class="flex flex-col items-start lg:flex-row lg:items-center">
+                    <div class="mr-2">
+                      <p class="text-base font-normal dark:text-white">
+                        {person.profile.fullname}
+                      </p>
+                      <p class="text-primary-600 line-clamp-1 text-xs">
+                        {obscureEmail(getEmail(person))}
+                      </p>
+                    </div>
+                    <div class="flex items-center">
+                      <RoleBasedSecurity allowedRoles={[1, 2]}>
+                        <CopyButton text={getEmail(person)} feedback="Copied Email to clipboard" />
+                      </RoleBasedSecurity>
+                      {#if person.profile_id == $profile.id}
+                        <ComingSoon label={$t('course.navItem.people.you')} />
+                      {/if}
+                    </div>
+                  </div>
+                </div>
+              {:else}
+                <div class="flex w-2/4 items-start lg:items-center">
+                  <TextChip
+                    value={person.email.substring(0, 2).toUpperCase()}
+                    className="bg-primary-200 text-black font-semibold text-xs mr-3"
+                    shape="rounded-full"
+                  />
+                  <a
+                    href="mailto:{person.email}"
+                    class="text-md text-primary-600 mr-2 dark:text-white"
+                  >
+                    {person.email}
+                  </a>
+                  <div class="flex items-center justify-between">
+                    <RoleBasedSecurity allowedRoles={[1, 2]}>
+                      <CopyButton
+                        text={getEmail(person)}
+                        feedback={$t('course.navItem.people.feedback')}
+                      />
+                    </RoleBasedSecurity>
+
+                    <TextChip
+                      value={$t('course.navItem.people.pending')}
+                      className="text-xs bg-yellow-200 text-yellow-700 h-fit"
+                      size="sm"
+                    />
+                  </div>
+                </div>
+              {/if}
+            </StructuredListCell>
+
+            <!-- second column -->
+            <StructuredListCell class="w-1/4">
+              <p class=" w-1/4 text-center text-base font-normal dark:text-white">
+                {$t(ROLE_LABEL[person.role_id])}
+              </p>
+            </StructuredListCell>
+
+            <!-- third column -->
+            <StructuredListCell class="w-1/4 p-0">
+              <RoleBasedSecurity allowedRoles={[1, 2]}>
+                <div class="hidden space-x-2 sm:flex sm:items-center">
+                  {#if person.profile_id !== $profile.id}
+                    <IconButton
+                      onClick={() => {
+                        member = person;
+                        $deleteMemberModal.open = true;
+                      }}
+                    >
+                      <TrashCanIcon size={16} class="carbon-icon dark:text-white" />
+                    </IconButton>
+
+                    <PrimaryButton
+                      variant={VARIANTS.OUTLINED}
+                      label={$t('course.navItem.people.view')}
+                      onClick={() => gotoPerson(person)}
+                    />
+                  {/if}
+                </div>
+              </RoleBasedSecurity>
+            </StructuredListCell>
+          </StructuredListRow>
+        </StructuredListBody>
+      {/each}
+    </StructuredList>
+  {/if}
   <!-- <Pagination totalItems={10} pageSizes={[10, 15, 20]} /> -->
 </section>

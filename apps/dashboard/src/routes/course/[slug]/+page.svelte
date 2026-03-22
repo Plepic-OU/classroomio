@@ -4,6 +4,8 @@
 
   interface Data {
     course: Course;
+    enrollmentCount: number;
+    isOnWaitlist: boolean;
   }
 
   export let data: Data;
@@ -19,4 +21,4 @@
   $: setCourseData(data.course);
 </script>
 
-<CourseLandingPage {courseData} />
+<CourseLandingPage {courseData} enrollmentCount={data.enrollmentCount} isOnWaitlist={data.isOnWaitlist} />

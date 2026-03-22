@@ -5,6 +5,7 @@
     CodeSnippet,
     Column,
     Grid,
+    NumberInput,
     RadioButton,
     RadioButtonGroup,
     Row,
@@ -153,7 +154,9 @@
           lessonTabsOrder: $settings.tabs,
           grading: $settings.grading,
           lessonDownload: $settings.lesson_download,
-          allowNewStudent: $settings.allow_new_students
+          allowNewStudent: $settings.allow_new_students,
+          max_capacity: $settings.max_capacity,
+          waitlist_enabled: $settings.waitlist_enabled
         },
         slug: $course.slug
       };
@@ -191,7 +194,9 @@
       grading: !!course.metadata.grading,
       lesson_download: !!course.metadata.lessonDownload,
       is_published: !!course.is_published,
-      allow_new_students: course.metadata.allowNewStudent
+      allow_new_students: course.metadata.allowNewStudent,
+      max_capacity: course.metadata.max_capacity ?? null,
+      waitlist_enabled: !!course.metadata.waitlist_enabled
     });
   }
   $: setDefault($course);
@@ -395,6 +400,45 @@
         size="sm"
         bind:toggled={$settings.allow_new_students}
         on:click={() => {
+          hasUnsavedChanges = true;
+        }}
+      >
+        <span slot="labelA" style="color: gray">{$t('course.navItem.settings.disabled')}</span>
+        <span slot="labelB" style="color: gray">{$t('course.navItem.settings.enabled')}</span>
+      </Toggle>
+    </Column>
+  </Row>
+
+  <Row class="border-bottom-c flex flex-col py-7 lg:flex-row">
+    <Column sm={8} md={8} lg={8}>
+      <SectionTitle>{$t('course.navItem.settings.max_capacity')}</SectionTitle>
+      <p>{$t('course.navItem.settings.max_capacity_desc')}</p>
+    </Column>
+    <Column sm={8} md={8} lg={8}>
+      <NumberInput
+        allowEmpty
+        min={1}
+        label={$t('course.navItem.settings.max_capacity')}
+        value={$settings.max_capacity}
+        on:change={(e) => {
+          $settings.max_capacity = e.detail === undefined || e.detail === '' ? null : Number(e.detail);
+
+          hasUnsavedChanges = true;
+        }}
+      />
+    </Column>
+  </Row>
+
+  <Row class="border-bottom-c flex flex-col py-7 lg:flex-row">
+    <Column sm={8} md={8} lg={8}>
+      <SectionTitle>{$t('course.navItem.settings.enable_waitlist')}</SectionTitle>
+      <p>{$t('course.navItem.settings.enable_waitlist_desc')}</p>
+    </Column>
+    <Column sm={8} md={8} lg={8}>
+      <Toggle
+        size="sm"
+        bind:toggled={$settings.waitlist_enabled}
+        on:toggle={() => {
           hasUnsavedChanges = true;
         }}
       >

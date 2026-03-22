@@ -33,6 +33,14 @@
     "invite": {
       "failed_join": "Der Beitritt ist fehlgeschlagen. Bitte wenden Sie sich an Ihren Administrator"
     },
+    "waitlist": {
+      "joined": "You've been added to the waitlist",
+      "left": "You've been removed from the waitlist",
+      "join_error": "Failed to join the waitlist",
+      "leave_error": "Failed to leave the waitlist",
+      "approved": "Student approved successfully",
+      "approve_error": "Failed to approve student"
+    },
     "submissions": {
       "success": {
         "grading": "Bewertung gespeichert und Schüler benachrichtigt"
@@ -268,6 +276,10 @@
         "download": "Herunterladen",
         "allow": "Erlauben Sie neue Studenten",
         "access": "Ermöglichen Sie neuen Studierenden den Zugang zu diesem Kurs",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Set a maximum number of students for this course. Leave empty for unlimited.",
+        "enable_waitlist": "Enable Waitlist",
+        "enable_waitlist_desc": "Allow students to join a waitlist when the course is full",
         "publish": "Kurs veröffentlichen",
         "determines": "Dies bestimmt, ob Ihr Kurs auf Ihrer Zielseite angezeigt wird",
         "published": "Veröffentlicht",
@@ -325,7 +337,11 @@
           "discount": "Rabatt",
           "enroll": "Melden Sie sich jetzt an",
           "buy": "Kaufe jetzt",
-          "bird": "Frühbucherangebot. Kaufen Sie so schnell wie möglich"
+          "bird": "Frühbucherangebot. Kaufen Sie so schnell wie möglich",
+          "join_waitlist": "Join Waitlist",
+          "leave_waitlist": "Leave Waitlist",
+          "course_full": "Course Full",
+          "course_full_waitlist": "This course is full. You can join the waitlist."
         },
         "upload_widget": {
           "title": "Banner-Widget",
@@ -447,7 +463,8 @@
           "admin": "Administrator",
           "tutor": "Tutor",
           "student": "Student",
-          "filter": "Filter"
+          "filter": "Filter",
+          "waitlist": "Waitlist"
         },
         "delete_confirmation": {
           "title": "Löschen",
@@ -483,6 +500,10 @@
           "remove": "Entfernen"
         },
         "view": "Sicht",
+        "approve": "Approve",
+        "email": "Email",
+        "date_joined": "Date Joined",
+        "no_waitlist": "No students on the waitlist",
         "delete_profile": "Profil löschen"
       },
       "marks": {

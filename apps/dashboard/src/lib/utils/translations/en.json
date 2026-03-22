@@ -1017,6 +1017,10 @@
         "action": "Action",
         "feedback": "Copied Email to clipboard",
         "view": "View",
+        "approve": "Approve",
+        "email": "Email",
+        "date_joined": "Date Joined",
+        "no_waitlist": "No students on the waitlist",
         "delete_profile": "Delete profile",
         "invite_modal": {
           "title": "Invite people",
@@ -1043,7 +1047,8 @@
           "admin": "Admin",
           "tutor": "Tutor",
           "student": "Student",
-          "filter": "Filter"
+          "filter": "Filter",
+          "waitlist": "Waitlist"
         },
         "teams": {
           "add": "Add",
@@ -1176,7 +1181,11 @@
           "discount": "Discount",
           "enroll": "Enroll Now",
           "buy": "Buy Now",
-          "bird": "Early bird offer. Buy ASAP"
+          "bird": "Early bird offer. Buy ASAP",
+          "join_waitlist": "Join Waitlist",
+          "leave_waitlist": "Leave Waitlist",
+          "course_full": "Course Full",
+          "course_full_waitlist": "This course is full. You can join the waitlist."
         },
 
         "course_content": "Course content",
@@ -1252,6 +1261,10 @@
         "download": "Download",
         "allow": "Allow New Students",
         "access": "Allow new students to access this course",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Set a maximum number of students for this course. Leave empty for unlimited.",
+        "enable_waitlist": "Enable Waitlist",
+        "enable_waitlist_desc": "Allow students to join a waitlist when the course is full",
         "publish": "Publish Course",
         "determines": "This determines if your course displays on your landing page",
         "published": "Published",
@@ -1551,6 +1564,15 @@
 
     "invite": {
       "failed_join": "Joining failed, please contact your admin"
+    },
+
+    "waitlist": {
+      "joined": "You've been added to the waitlist",
+      "left": "You've been removed from the waitlist",
+      "join_error": "Failed to join the waitlist",
+      "leave_error": "Failed to leave the waitlist",
+      "approved": "Student approved successfully",
+      "approve_error": "Failed to approve student"
     },
 
     "community": {

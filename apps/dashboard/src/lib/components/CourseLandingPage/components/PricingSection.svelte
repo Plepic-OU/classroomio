@@ -15,18 +15,35 @@
   import { ROLE } from '$lib/utils/constants/roles';
   import { capturePosthogEvent } from '$lib/utils/services/posthog';
   import { t } from '$lib/utils/functions/translations';
+  import { addToWaitlist, removeFromWaitlist } from '$lib/utils/services/courses';
+  import { profile } from '$lib/utils/store/user';
+  import { snackbar } from '$lib/components/Snackbar/store';
+  import { page } from '$app/stores';
+  import {
+    triggerSendEmail,
+    NOTIFICATION_NAME
+  } from '$lib/utils/services/notification/notification';
 
   export let className = '';
   export let editMode = false;
   export let courseData: Course;
   export let startCoursePayment = false;
   export let mobile = false;
+  export let enrollmentCount = 0;
+  export let isOnWaitlist = false;
 
   let openModal = false;
   let calculatedCost = 0;
   let discount = 0;
   let formatter: Intl.NumberFormat | undefined;
   let isFree = false;
+  let waitlistLoading = false;
+
+  // 5-state enrollment logic
+  $: maxCapacity = courseData?.metadata?.max_capacity ?? null;
+  $: waitlistEnabled = !!courseData?.metadata?.waitlist_enabled;
+  $: allowNewStudent = !!courseData?.metadata?.allowNewStudent;
+  $: isCapacityReached = maxCapacity !== null && enrollmentCount >= maxCapacity;
 
   function handleJoinCourse() {
     if (editMode) return;
@@ -47,6 +64,65 @@
     }
 
     startCoursePayment = false;
+  }
+
+  async function handleJoinWaitlist() {
+    if (editMode) return;
+
+    if (!$profile.id) {
+      return goto(`/login?redirect=${$page.url?.pathname || ''}&action=join_waitlist&course=${courseData.slug}`);
+    }
+
+    waitlistLoading = true;
+    const { error } = await addToWaitlist(courseData.id, $profile.id);
+    waitlistLoading = false;
+
+    if (error) {
+      snackbar.error('snackbar.waitlist.join_error');
+      return;
+    }
+
+    isOnWaitlist = true;
+    snackbar.success('snackbar.waitlist.joined');
+
+    // Send confirmation email to student
+    triggerSendEmail(NOTIFICATION_NAME.STUDENT_WAITLIST_ADDED, {
+      to: $profile.email,
+      courseName: courseData.title,
+      orgName: $currentOrg.name
+    });
+
+    // Notify teachers
+    const teachers = courseData.group?.members
+      ?.filter((m) => m.role_id === ROLE.TUTOR || m.role_id === ROLE.ADMIN)
+      ?.map((m) => m.profile?.email)
+      .filter(Boolean) || [];
+
+    teachers.forEach((email) => {
+      triggerSendEmail(NOTIFICATION_NAME.TEACHER_WAITLIST_NEW, {
+        to: email,
+        courseName: courseData.title,
+        studentName: $profile.fullname,
+        studentEmail: $profile.email
+      });
+    });
+  }
+
+  async function handleLeaveWaitlist() {
+    if (editMode) return;
+    if (!$profile.id) return;
+
+    waitlistLoading = true;
+    const { error } = await removeFromWaitlist(courseData.id, $profile.id);
+    waitlistLoading = false;
+
+    if (error) {
+      snackbar.error('snackbar.waitlist.leave_error');
+      return;
+    }
+
+    isOnWaitlist = false;
+    snackbar.success('snackbar.waitlist.left');
   }
 
   function setFormatter(currency: string | undefined) {
@@ -92,7 +168,19 @@
       <div class="flex items-center justify-center gap-3 px-3 py-3">
         <!-- Pricing -->
         <div class=" text-center">
-          {#if courseData?.metadata?.allowNewStudent}
+          {#if !allowNewStudent}
+            <p class="text-lg dark:text-white">
+              {$t('course.navItem.landing_page.pricing_section.not_accepting')}
+            </p>
+          {:else if isCapacityReached && waitlistEnabled}
+            <p class="text-sm font-medium dark:text-white">
+              {$t('course.navItem.landing_page.pricing_section.course_full_waitlist')}
+            </p>
+          {:else if isCapacityReached && !waitlistEnabled}
+            <p class="text-lg dark:text-white">
+              {$t('course.navItem.landing_page.pricing_section.course_full')}
+            </p>
+          {:else}
             <p class="flex items-center gap-1 text-sm font-medium dark:text-white">
               {formatter?.format(calculatedCost) || calculatedCost}
               {#if isFree}
@@ -109,23 +197,42 @@
                 </span>
               </p>
             {/if}
-          {:else}
-            <p class="text-lg dark:text-white">
-              {$t('course.navItem.landing_page.pricing_section.not_accepting')}
-            </p>
           {/if}
         </div>
 
         <!-- Call To Action Buttons -->
         <div class="flex h-full w-full flex-col items-center">
-          <PrimaryButton
-            label={isFree
-              ? $t('course.navItem.landing_page.pricing_section.enroll')
-              : $t('course.navItem.landing_page.pricing_section.buy')}
-            className="w-full sm:w-full h-[40px]"
-            onClick={handleJoinCourse}
-            isDisabled={!courseData.metadata.allowNewStudent}
-          />
+          {#if !allowNewStudent || (isCapacityReached && !waitlistEnabled)}
+            <PrimaryButton
+              label={$t('course.navItem.landing_page.pricing_section.course_full')}
+              className="w-full sm:w-full h-[40px]"
+              isDisabled={true}
+            />
+          {:else if isCapacityReached && waitlistEnabled}
+            {#if isOnWaitlist}
+              <PrimaryButton
+                label={$t('course.navItem.landing_page.pricing_section.leave_waitlist')}
+                className="w-full sm:w-full h-[40px]"
+                onClick={handleLeaveWaitlist}
+                isLoading={waitlistLoading}
+              />
+            {:else}
+              <PrimaryButton
+                label={$t('course.navItem.landing_page.pricing_section.join_waitlist')}
+                className="w-full sm:w-full h-[40px]"
+                onClick={handleJoinWaitlist}
+                isLoading={waitlistLoading}
+              />
+            {/if}
+          {:else}
+            <PrimaryButton
+              label={isFree
+                ? $t('course.navItem.landing_page.pricing_section.enroll')
+                : $t('course.navItem.landing_page.pricing_section.buy')}
+              className="w-full sm:w-full h-[40px]"
+              onClick={handleJoinCourse}
+            />
+          {/if}
         </div>
       </div>
     </aside>
@@ -139,7 +246,19 @@
     <div class="p-2 lg:p-10">
       <!-- Pricing -->
       <div class="mb-6">
-        {#if courseData?.metadata?.allowNewStudent}
+        {#if !allowNewStudent}
+          <p class="text-lg dark:text-white">
+            {$t('course.navItem.landing_page.pricing_section.not_accepting')}
+          </p>
+        {:else if isCapacityReached && waitlistEnabled}
+          <p class="text-lg font-medium dark:text-white">
+            {$t('course.navItem.landing_page.pricing_section.course_full_waitlist')}
+          </p>
+        {:else if isCapacityReached && !waitlistEnabled}
+          <p class="text-lg dark:text-white">
+            {$t('course.navItem.landing_page.pricing_section.course_full')}
+          </p>
+        {:else}
           <p class="text-lg font-medium dark:text-white">
             {formatter?.format(calculatedCost) || calculatedCost}
             {#if isFree}
@@ -156,27 +275,46 @@
               </span>
             </p>
           {/if}
-        {:else}
-          <p class="text-lg dark:text-white">
-            {$t('course.navItem.landing_page.pricing_section.not_accepting')}
-          </p>
         {/if}
       </div>
 
       <!-- Call To Action Buttons -->
       <div class="flex w-full flex-col items-center">
-        <PrimaryButton
-          label={isFree
-            ? $t('course.navItem.landing_page.pricing_section.enroll')
-            : $t('course.navItem.landing_page.pricing_section.buy')}
-          className="w-full sm:w-full py-3 mb-3"
-          onClick={handleJoinCourse}
-          isDisabled={!courseData.metadata.allowNewStudent}
-        />
-        {#if courseData?.metadata?.showDiscount && courseData.metadata.allowNewStudent}
-          <p class="text-sm font-light text-gray-500 dark:text-white">
-            {$t('course.navItem.landing_page.pricing_section.bird')}
-          </p>
+        {#if !allowNewStudent || (isCapacityReached && !waitlistEnabled)}
+          <PrimaryButton
+            label={$t('course.navItem.landing_page.pricing_section.course_full')}
+            className="w-full sm:w-full py-3 mb-3"
+            isDisabled={true}
+          />
+        {:else if isCapacityReached && waitlistEnabled}
+          {#if isOnWaitlist}
+            <PrimaryButton
+              label={$t('course.navItem.landing_page.pricing_section.leave_waitlist')}
+              className="w-full sm:w-full py-3 mb-3"
+              onClick={handleLeaveWaitlist}
+              isLoading={waitlistLoading}
+            />
+          {:else}
+            <PrimaryButton
+              label={$t('course.navItem.landing_page.pricing_section.join_waitlist')}
+              className="w-full sm:w-full py-3 mb-3"
+              onClick={handleJoinWaitlist}
+              isLoading={waitlistLoading}
+            />
+          {/if}
+        {:else}
+          <PrimaryButton
+            label={isFree
+              ? $t('course.navItem.landing_page.pricing_section.enroll')
+              : $t('course.navItem.landing_page.pricing_section.buy')}
+            className="w-full sm:w-full py-3 mb-3"
+            onClick={handleJoinCourse}
+          />
+          {#if courseData?.metadata?.showDiscount && allowNewStudent}
+            <p class="text-sm font-light text-gray-500 dark:text-white">
+              {$t('course.navItem.landing_page.pricing_section.bird')}
+            </p>
+          {/if}
         {/if}
       </div>
     </div>

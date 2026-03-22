@@ -1,5 +1,5 @@
 import type { MetaTagsProps } from 'svelte-meta-tags';
-import { fetchCourse } from '$lib/utils/services/courses';
+import { fetchCourse, getEnrollmentCount, getWaitlistEntry } from '$lib/utils/services/courses';
 import { supabase, getSupabase } from '$lib/utils/functions/supabase';
 
 if (!supabase) {
@@ -8,6 +8,31 @@ if (!supabase) {
 
 export const load = async ({ params = { slug: '' } }) => {
   const { data } = await fetchCourse(undefined, params.slug);
+
+  let enrollmentCount = 0;
+  let isOnWaitlist = false;
+
+  const maxCapacity = data?.metadata?.max_capacity;
+
+  if (maxCapacity && data?.group?.id) {
+    // Only fetch enrollment data when course has a capacity limit
+    const sessionPromise = supabase ? supabase.auth.getSession() : null;
+    const countPromise = getEnrollmentCount(data.group.id);
+
+    const [countResult, sessionResult] = await Promise.all([
+      countPromise,
+      sessionPromise
+    ]);
+
+    enrollmentCount = countResult.count;
+
+    // Check if current user is on the waitlist
+    const userId = sessionResult?.data?.session?.user?.id;
+    if (userId && data.id) {
+      const { data: entry } = await getWaitlistEntry(data.id, userId);
+      isOnWaitlist = !!entry;
+    }
+  }
 
   const pageMetaTags = Object.freeze({
     title: data?.title,
@@ -40,6 +65,8 @@ export const load = async ({ params = { slug: '' } }) => {
   return {
     slug: params.slug,
     course: data,
+    enrollmentCount,
+    isOnWaitlist,
     pageMetaTags
   };
 };

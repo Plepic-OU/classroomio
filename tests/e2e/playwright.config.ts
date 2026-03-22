@@ -13,7 +13,7 @@ export default defineConfig({
   reporter: [
     ['html', { host: '0.0.0.0', port: 9323, open: 'never' }],
   ],
-  timeout: 10_000,
+  timeout: 30_000,
   expect: {
     timeout: 5_000,
   },

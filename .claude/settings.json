@@ -15,5 +15,10 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "allow": [
+      "Skill"
+    ]
   }
 }

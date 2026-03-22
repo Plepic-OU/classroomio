@@ -108,6 +108,8 @@ interface CourseMetadata {
   lessonDownload?: boolean;
   allowNewStudent: boolean;
   sectionDisplay?: Record<string, boolean>;
+  max_capacity?: number | null;
+  waitlist_enabled?: boolean;
 }
 
 export interface LessonCommentInsertPayload {

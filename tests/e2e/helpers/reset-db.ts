@@ -1,4 +1,6 @@
 import { execSync } from 'node:child_process';
+import { resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
 
 const CONTAINER = 'supabase_db_classroomio';
 
@@ -34,9 +36,37 @@ BEGIN
 END $$;
 `;
 
-export function resetTestData() {
-  execSync(`docker exec -i ${CONTAINER} psql -U postgres`, {
-    input: RESET_SQL,
+function runSQL(sql: string) {
+  execSync(`docker exec -i ${CONTAINER} psql -U postgres -d postgres`, {
+    input: sql,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
+}
+
+/**
+ * Truncate all test-affected tables (preserving foundation tables).
+ */
+export function resetTestData() {
+  runSQL(RESET_SQL);
+}
+
+/**
+ * Re-run seed.sql to restore courses, groups, lessons, etc.
+ */
+export function reseed() {
+  const seedPath = resolve(__dirname, '../../../supabase/seed.sql');
+  const seedSQL = readFileSync(seedPath, 'utf-8');
+  runSQL(seedSQL);
+}
+
+/**
+ * Full reset: truncate test-affected tables, then re-seed.
+ * Call this before the test suite to guarantee a clean baseline.
+ */
+export function resetAndReseed() {
+  console.log('  Resetting test database...');
+  resetTestData();
+  console.log('  Re-seeding database...');
+  reseed();
+  console.log('  Database ready.');
 }

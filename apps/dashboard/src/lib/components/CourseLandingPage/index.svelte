@@ -33,6 +33,8 @@
 
   export let editMode = false;
   export let courseData: Course;
+  export let enrollmentCount = 0;
+  export let isOnWaitlist = false;
   const ratingsImg = [
     '/images/rating-1.svg',
     '/images/rating-2.svg',
@@ -493,6 +495,8 @@
       <PricingSection
         {courseData}
         {editMode}
+        {enrollmentCount}
+        bind:isOnWaitlist
         bind:startCoursePayment
         className="target-component"
       />
@@ -501,6 +505,8 @@
       <PricingSection
         {courseData}
         {editMode}
+        {enrollmentCount}
+        bind:isOnWaitlist
         bind:startCoursePayment
         mobile={true}
         className="w-full"

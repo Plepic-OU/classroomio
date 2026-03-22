@@ -14,6 +14,7 @@ import type { PostgrestError, PostgrestSingleResponse } from '@supabase/supabase
 import { GenericUploader } from './presign';
 import { QUESTION_TYPE } from '$lib/components/Question/constants';
 import { STATUS } from '$lib/utils/constants/course';
+import { ROLE } from '$lib/utils/constants/roles';
 import { get } from 'svelte/store';
 import { isOrgAdmin } from '$lib/utils/store/org';
 import { isUUID } from '$lib/utils/functions/isUUID';
@@ -88,6 +89,7 @@ const SLUG_QUERY = `
   metadata,
   is_certificate_downloadable,
   certificate_theme,
+  group(id),
   lesson_section(id, title, order),
   lessons:lesson(
     id, title, order, section_id
@@ -278,6 +280,86 @@ export function updatedGroupMember(update: any, match: any) {
 
 export function deleteGroupMember(groupMemberId: Groupmember['id']) {
   return supabase.from('groupmember').delete().match({ id: groupMemberId });
+}
+
+// Waitlist service functions
+
+export async function getWaitlist(courseId: Course['id']) {
+  // Uses SECURITY DEFINER RPC to bypass profile RLS restrictions
+  const { data, error } = await supabase.rpc('get_course_waitlist', {
+    p_course_id: courseId
+  });
+
+  // Transform RPC flat result into the shape expected by the UI
+  const entries = (data || []).map((row: any) => ({
+    id: row.id,
+    created_at: row.created_at,
+    profile: {
+      id: row.profile_id,
+      fullname: row.fullname,
+      email: row.email,
+      avatar_url: row.avatar_url
+    }
+  }));
+
+  return { data: entries, error };
+}
+
+export async function addToWaitlist(courseId: Course['id'], profileId: string) {
+  return supabase.from('course_waitlist').insert({ course_id: courseId, profile_id: profileId });
+}
+
+export async function removeFromWaitlist(courseId: Course['id'], profileId: string) {
+  return supabase
+    .from('course_waitlist')
+    .delete()
+    .match({ course_id: courseId, profile_id: profileId });
+}
+
+export async function getEnrollmentCount(groupId: string) {
+  const { count, error } = await supabase
+    .from('groupmember')
+    .select('*', { count: 'exact', head: true })
+    .eq('group_id', groupId)
+    .eq('role_id', ROLE.STUDENT);
+
+  return { count: count ?? 0, error };
+}
+
+export async function getWaitlistEntry(courseId: Course['id'], profileId: string) {
+  return supabase
+    .from('course_waitlist')
+    .select('id')
+    .match({ course_id: courseId, profile_id: profileId })
+    .maybeSingle();
+}
+
+export async function enrollStudentRpc(
+  groupId: string,
+  profileId: string,
+  email: string,
+  roleId: number,
+  courseId: string
+) {
+  return supabase.rpc('enroll_student', {
+    p_group_id: groupId,
+    p_profile_id: profileId,
+    p_email: email,
+    p_role_id: roleId,
+    p_course_id: courseId
+  });
+}
+
+export async function approveWaitlistedStudent(
+  waitlistId: string,
+  groupId: string,
+  roleId: number
+) {
+  return supabase.rpc('approve_waitlisted_student', {
+    p_waitlist_id: waitlistId,
+    p_group_id: groupId,
+    p_role_id: roleId
+  });
 }
 
 export async function getMarks(courseId) {

@@ -6,7 +6,7 @@
   import AuthUI from '$lib/components/AuthUI/index.svelte';
   import { currentOrg } from '$lib/utils/store/org';
   import { setTheme } from '$lib/utils/functions/theme';
-  import { addGroupMember } from '$lib/utils/services/courses';
+  import { enrollStudentRpc, getEnrollmentCount } from '$lib/utils/services/courses';
   import type { CurrentOrg } from '$lib/utils/types/org.js';
   import { ROLE } from '$lib/utils/constants/roles';
   import { profile } from '$lib/utils/store/user';
@@ -71,44 +71,72 @@
         return teacher.profile?.email || '';
       }) || [];
 
-    addGroupMember(member).then((addedMember) => {
-      if (addedMember.error) {
-        console.error('Error adding student to group', courseData.group_id, addedMember.error);
-        snackbar.error('snackbar.invite.failed_join');
+    const enrollResult = await enrollStudentRpc(
+      courseData.group_id,
+      $profile.id,
+      $profile.email,
+      ROLE.STUDENT,
+      data.id
+    );
 
-        // Full page load to lms if error joining, probably user already joined
-        window.location.href = '/lms';
-        return;
-      }
+    if (enrollResult.error || enrollResult.data === false) {
+      console.error('Error adding student to group', courseData.group_id, enrollResult.error);
+      snackbar.error('snackbar.invite.failed_join');
 
-      capturePosthogEvent('student_joined_course', {
-        course_name: data.name,
-        student_id: $profile.id,
-        student_email: $profile.email
-      });
+      // Full page load to lms if error joining, probably user already joined or course is full
+      window.location.href = '/lms';
+      return;
+    }
 
-      // Send email welcoming student to the course
-      triggerSendEmail(NOTIFICATION_NAME.STUDENT_COURSE_WELCOME, {
-        to: $profile.email,
-        orgName: data.currentOrg?.name,
-        courseName: data.name
-      });
+    capturePosthogEvent('student_joined_course', {
+      course_name: data.name,
+      student_id: $profile.id,
+      student_email: $profile.email
+    });
 
-      // Send notification to all teacher(s) that a student has joined the course.
-      Promise.all(
-        teachers.map((email) =>
-          triggerSendEmail(NOTIFICATION_NAME.TEACHER_STUDENT_JOINED, {
+    // Send email welcoming student to the course
+    triggerSendEmail(NOTIFICATION_NAME.STUDENT_COURSE_WELCOME, {
+      to: $profile.email,
+      orgName: data.currentOrg?.name,
+      courseName: data.name
+    });
+
+    // Send notification to all teacher(s) that a student has joined the course.
+    Promise.all(
+      teachers.map((email) =>
+        triggerSendEmail(NOTIFICATION_NAME.TEACHER_STUDENT_JOINED, {
+          to: email,
+          courseName: data.name,
+          studentName: $profile.fullname,
+          studentEmail: $profile.email
+        })
+      )
+    );
+
+    // Check if course is now full — send "course full" email to teachers
+    const { data: courseMetaData } = await supabase
+      .from('course')
+      .select('metadata')
+      .eq('id', data.id)
+      .single();
+
+    const maxCapacity = courseMetaData?.metadata?.max_capacity;
+    if (maxCapacity) {
+      const { count: newCount } = await getEnrollmentCount(courseData.group_id);
+      if (newCount === maxCapacity) {
+        teachers.forEach((email) => {
+          triggerSendEmail(NOTIFICATION_NAME.TEACHER_COURSE_FULL, {
             to: email,
             courseName: data.name,
-            studentName: $profile.fullname,
-            studentEmail: $profile.email
-          })
-        )
-      );
+            maxCapacity,
+            waitlistEnabled: !!courseMetaData?.metadata?.waitlist_enabled
+          });
+        });
+      }
+    }
 
-      // go to lms
-      return goto('/lms');
-    });
+    // go to lms
+    return goto('/lms');
   }
 
   function setCurOrg(cOrg: CurrentOrg) {

@@ -33,6 +33,14 @@
     "invite": {
       "failed_join": "No se pudo unir, comuníquese con su administrador"
     },
+    "waitlist": {
+      "joined": "You've been added to the waitlist",
+      "left": "You've been removed from the waitlist",
+      "join_error": "Failed to join the waitlist",
+      "leave_error": "Failed to leave the waitlist",
+      "approved": "Student approved successfully",
+      "approve_error": "Failed to approve student"
+    },
     "submissions": {
       "success": {
         "grading": "Calificación guardada y notificación al estudiante"
@@ -268,6 +276,10 @@
         "download": "Descargar",
         "allow": "Permitir nuevos estudiantes",
         "access": "Permitir que nuevos estudiantes accedan a este curso",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Set a maximum number of students for this course. Leave empty for unlimited.",
+        "enable_waitlist": "Enable Waitlist",
+        "enable_waitlist_desc": "Allow students to join a waitlist when the course is full",
         "publish": "Publicar curso",
         "determines": "Esto determina si su curso se muestra en su página de destino.",
         "published": "Publicado",
@@ -325,7 +337,11 @@
           "discount": "Descuento",
           "enroll": "Enlístate ahora",
           "buy": "Comprar ahora",
-          "bird": "Oferta por reserva anticipada. Compre lo antes posible"
+          "bird": "Oferta por reserva anticipada. Compre lo antes posible",
+          "join_waitlist": "Join Waitlist",
+          "leave_waitlist": "Leave Waitlist",
+          "course_full": "Course Full",
+          "course_full_waitlist": "This course is full. You can join the waitlist."
         },
         "upload_widget": {
           "title": "Widget de banner",
@@ -447,7 +463,8 @@
           "admin": "Administración",
           "tutor": "Tutor",
           "student": "Alumno",
-          "filter": "Filtrar"
+          "filter": "Filtrar",
+          "waitlist": "Waitlist"
         },
         "delete_confirmation": {
           "title": "Borrar",
@@ -483,6 +500,10 @@
           "remove": "Eliminar"
         },
         "view": "Vista",
+        "approve": "Approve",
+        "email": "Email",
+        "date_joined": "Date Joined",
+        "no_waitlist": "No students on the waitlist",
         "delete_profile": "Eliminar perfil"
       },
       "marks": {

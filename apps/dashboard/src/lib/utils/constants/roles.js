@@ -26,5 +26,9 @@ export const ROLES = [
   {
     label: ROLE_LABEL[ROLE.STUDENT],
     value: ROLE.STUDENT
+  },
+  {
+    label: 'course.navItem.people.roles.waitlist',
+    value: 'waitlist'
   }
 ];

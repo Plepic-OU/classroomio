@@ -33,6 +33,14 @@
     "invite": {
       "failed_join": "Tham gia không thành công, vui lòng liên hệ với quản trị viên của bạn"
     },
+    "waitlist": {
+      "joined": "You've been added to the waitlist",
+      "left": "You've been removed from the waitlist",
+      "join_error": "Failed to join the waitlist",
+      "leave_error": "Failed to leave the waitlist",
+      "approved": "Student approved successfully",
+      "approve_error": "Failed to approve student"
+    },
     "submissions": {
       "success": {
         "grading": "Đã lưu điểm và thông báo cho học viên"
@@ -268,6 +276,10 @@
         "download": "Tải xuống",
         "allow": "Cho phép sinh viên mới",
         "access": "Cho phép sinh viên mới truy cập khóa học này",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Set a maximum number of students for this course. Leave empty for unlimited.",
+        "enable_waitlist": "Enable Waitlist",
+        "enable_waitlist_desc": "Allow students to join a waitlist when the course is full",
         "publish": "Xuất bản khóa học",
         "determines": "Điều này xác định xem khóa học của bạn có hiển thị trên trang đích hay không",
         "published": "Được phát hành",
@@ -325,7 +337,11 @@
           "discount": "Giảm giá",
           "enroll": "Đăng ký ngay",
           "buy": "Mua ngay",
-          "bird": "Ưu đãi chim sớm. Mua càng sớm càng tốt"
+          "bird": "Ưu đãi chim sớm. Mua càng sớm càng tốt",
+          "join_waitlist": "Join Waitlist",
+          "leave_waitlist": "Leave Waitlist",
+          "course_full": "Course Full",
+          "course_full_waitlist": "This course is full. You can join the waitlist."
         },
         "upload_widget": {
           "title": "Tiện ích biểu ngữ",
@@ -447,7 +463,8 @@
           "admin": "Quản trị viên",
           "tutor": "Gia sư",
           "student": "Học sinh",
-          "filter": "Lọc"
+          "filter": "Lọc",
+          "waitlist": "Waitlist"
         },
         "delete_confirmation": {
           "title": "Xóa bỏ",
@@ -483,6 +500,10 @@
           "remove": "Di dời"
         },
         "view": "Xem",
+        "approve": "Approve",
+        "email": "Email",
+        "date_joined": "Date Joined",
+        "no_waitlist": "No students on the waitlist",
         "delete_profile": "Xóa hồ sơ"
       },
       "marks": {

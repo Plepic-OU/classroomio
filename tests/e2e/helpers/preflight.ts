@@ -1,4 +1,5 @@
 import http from 'node:http';
+import { resetAndReseed } from './reset-db';
 
 const SERVICES = [
   { name: 'Dashboard', url: 'http://localhost:5173/login' },
@@ -62,4 +63,7 @@ export default async function globalSetup() {
   // Wait for all services (including Vite compilation warmup)
   await Promise.all(SERVICES.map((svc) => waitForService(svc, deadline)));
   console.log('Pre-flight: all services ready.');
+
+  // Reset DB to clean state and re-seed before running tests
+  resetAndReseed();
 }

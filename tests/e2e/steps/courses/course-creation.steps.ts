@@ -1,10 +1,15 @@
 import { createBdd } from 'playwright-bdd';
 import { loginAs } from '../../helpers/login';
+import { deleteCourseByTitle } from '../../helpers/course';
 
 const { Given, When, Then } = createBdd();
 
 Given('I am logged in as {string}', async ({ page }, email: string) => {
   await loginAs(page, email);
+});
+
+Given('no course exists with title {string}', async ({}, title: string) => {
+  deleteCourseByTitle(title);
 });
 
 Given('I am on the courses page', async ({ page }) => {
@@ -26,10 +31,14 @@ When('I enter the course title {string}', async ({ page }, title: string) => {
   await page.getByPlaceholder(/course name/i).fill(title);
 });
 
+When('I enter the course description {string}', async ({ page }, description: string) => {
+  await page.getByPlaceholder(/a little description/i).fill(description);
+});
+
 When('I submit the new course form', async ({ page }) => {
   await page.getByRole('button', { name: /finish/i }).click();
 });
 
 Then('I should see {string} in the course list', async ({ page }, title: string) => {
-  await page.getByText(title).waitFor();
+  await page.getByText(title).first().waitFor();
 });

@@ -33,6 +33,14 @@
     "invite": {
       "failed_join": "Falha ao ingressar, entre em contato com seu administrador"
     },
+    "waitlist": {
+      "joined": "You've been added to the waitlist",
+      "left": "You've been removed from the waitlist",
+      "join_error": "Failed to join the waitlist",
+      "leave_error": "Failed to leave the waitlist",
+      "approved": "Student approved successfully",
+      "approve_error": "Failed to approve student"
+    },
     "submissions": {
       "success": {
         "grading": "Nota salva e aluno notificado"
@@ -268,6 +276,10 @@
         "download": "Baixar",
         "allow": "Permitir novos alunos",
         "access": "Permitir que novos alunos acessem este curso",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Set a maximum number of students for this course. Leave empty for unlimited.",
+        "enable_waitlist": "Enable Waitlist",
+        "enable_waitlist_desc": "Allow students to join a waitlist when the course is full",
         "publish": "Publicar curso",
         "determines": "Isso determina se o seu curso será exibido na sua página de destino",
         "published": "Publicados",
@@ -325,7 +337,11 @@
           "discount": "Desconto",
           "enroll": "Inscreva-se agora",
           "buy": "Comprar agora",
-          "bird": "Oferta antecipada. Compre o mais rápido possível"
+          "bird": "Oferta antecipada. Compre o mais rápido possível",
+          "join_waitlist": "Join Waitlist",
+          "leave_waitlist": "Leave Waitlist",
+          "course_full": "Course Full",
+          "course_full_waitlist": "This course is full. You can join the waitlist."
         },
         "upload_widget": {
           "title": "Widget de banner",
@@ -447,7 +463,8 @@
           "admin": "Administrador",
           "tutor": "Tutor",
           "student": "Estudante",
-          "filter": "Filtro"
+          "filter": "Filtro",
+          "waitlist": "Waitlist"
         },
         "delete_confirmation": {
           "title": "Excluir",
@@ -483,6 +500,10 @@
           "remove": "Remover"
         },
         "view": "Visualizar",
+        "approve": "Approve",
+        "email": "Email",
+        "date_joined": "Date Joined",
+        "no_waitlist": "No students on the waitlist",
         "delete_profile": "Excluir perfil"
       },
       "marks": {

@@ -10,5 +10,6 @@ export async function loginAs(page: Page, email: string) {
   await page.getByPlaceholder('you@domain.com').fill(user.email);
   await page.getByPlaceholder('************').fill(user.password);
   await page.getByRole('button', { name: /log\s*in/i }).first().click();
-  await page.waitForURL(/\/org\//);
+  // Students redirect to /lms, admins/teachers redirect to /org/<slug>
+  await page.waitForURL(/\/(org\/|lms)/);
 }
