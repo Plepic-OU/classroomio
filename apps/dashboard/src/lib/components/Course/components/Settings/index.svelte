@@ -153,7 +153,9 @@
           lessonTabsOrder: $settings.tabs,
           grading: $settings.grading,
           lessonDownload: $settings.lesson_download,
-          allowNewStudent: $settings.allow_new_students
+          allowNewStudent: $settings.allow_new_students,
+          waitlistEnabled: $settings.waitlist_enabled,
+          maxCapacity: $settings.max_capacity
         },
         slug: $course.slug
       };
@@ -191,7 +193,9 @@
       grading: !!course.metadata.grading,
       lesson_download: !!course.metadata.lessonDownload,
       is_published: !!course.is_published,
-      allow_new_students: course.metadata.allowNewStudent
+      allow_new_students: course.metadata.allowNewStudent,
+      waitlist_enabled: !!course.metadata.waitlistEnabled,
+      max_capacity: course.metadata.maxCapacity ?? null
     });
   }
   $: setDefault($course);
@@ -401,6 +405,40 @@
         <span slot="labelA" style="color: gray">{$t('course.navItem.settings.disabled')}</span>
         <span slot="labelB" style="color: gray">{$t('course.navItem.settings.enabled')}</span>
       </Toggle>
+    </Column>
+  </Row>
+
+  <!-- Waiting List -->
+  <Row class="border-bottom-c flex flex-col py-7 lg:flex-row">
+    <Column sm={8} md={8} lg={8}>
+      <SectionTitle>Waiting List</SectionTitle>
+      <p>Enable a waiting list when the course reaches max capacity. Students can join the list and you can approve them manually.</p>
+    </Column>
+    <Column sm={8} md={8} lg={8}>
+      <Toggle
+        size="sm"
+        bind:toggled={$settings.waitlist_enabled}
+        on:click={() => {
+          hasUnsavedChanges = true;
+        }}
+      >
+        <span slot="labelA" style="color: gray">{$t('course.navItem.settings.disabled')}</span>
+        <span slot="labelB" style="color: gray">{$t('course.navItem.settings.enabled')}</span>
+      </Toggle>
+      {#if $settings.waitlist_enabled}
+        <div class="mt-4">
+          <TextField
+            label="Max Capacity"
+            type="number"
+            placeholder="e.g. 30"
+            bind:value={$settings.max_capacity}
+            className="max-w-[200px]"
+            onChange={() => {
+              hasUnsavedChanges = true;
+            }}
+          />
+        </div>
+      {/if}
     </Column>
   </Row>
 

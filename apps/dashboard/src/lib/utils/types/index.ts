@@ -107,7 +107,24 @@ interface CourseMetadata {
   grading?: boolean;
   lessonDownload?: boolean;
   allowNewStudent: boolean;
+  waitlistEnabled?: boolean;
+  maxCapacity?: number | null;
   sectionDisplay?: Record<string, boolean>;
+}
+
+export interface CourseWaitlistEntry {
+  id: string;
+  course_id: string;
+  profile_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;
+  updated_at: string;
+  profile?: {
+    id: string;
+    fullname: string;
+    email: string;
+    avatar_url: string;
+  };
 }
 
 export interface LessonCommentInsertPayload {

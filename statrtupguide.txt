@@ -2,3 +2,7 @@ cmd
 devcontainer up --workspace-folder
 devcontainer exec --workspace-folder . bash
 Now you're inside the container — this is where you type cskip and where pnpm works.
+
+- Email: admin@test.com
+- Password: 123456
+- Login URL: http://localhost:5173/login

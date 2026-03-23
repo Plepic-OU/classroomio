@@ -35,14 +35,23 @@ export default ({ mode }) => {
 
 function getServer(params: any) {
   const { VITE_USE_HTTPS_ON_LOCALHOST } = params || {};
-  if (VITE_USE_HTTPS_ON_LOCALHOST === 'true') {
-    return {
-      https: {
-        key: fs.readFileSync(`${__dirname}/cert/key.pem`),
-        cert: fs.readFileSync(`${__dirname}/cert/cert.pem`)
+  const server: any = {
+    proxy: {
+      '/supabase-proxy': {
+        target: 'http://localhost:54321',
+        changeOrigin: true,
+        rewrite: (p: string) => p.replace(/^\/supabase-proxy/, ''),
+        ws: true
       }
+    }
+  };
+  if (VITE_USE_HTTPS_ON_LOCALHOST === 'true') {
+    server.https = {
+      key: fs.readFileSync(`${__dirname}/cert/key.pem`),
+      cert: fs.readFileSync(`${__dirname}/cert/cert.pem`)
     };
   }
+  return server;
 }
 
 // function getSentryConfig(params: any) {

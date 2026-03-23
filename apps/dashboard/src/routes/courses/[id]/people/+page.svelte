@@ -8,7 +8,8 @@
   import InvitationModal from '$lib/components/Course/components/People/InvitationModal.svelte';
   import { deleteMemberModal } from '$lib/components/Course/components/People/store';
   import type { ProfileRole } from '$lib/components/Course/components/People/types';
-  import { group } from '$lib/components/Course/store';
+  import WaitingList from '$lib/components/Course/components/People/WaitingList.svelte';
+  import { group, course } from '$lib/components/Course/store';
   import Select from '$lib/components/Form/Select.svelte';
   import IconButton from '$lib/components/IconButton/index.svelte';
   import { VARIANTS } from '$lib/components/PrimaryButton/constants';
@@ -245,4 +246,11 @@
     {/each}
   </StructuredList>
   <!-- <Pagination totalItems={10} pageSizes={[10, 15, 20]} /> -->
+
+  {#if $course.metadata?.waitlistEnabled}
+    <div class="mt-8 border-t pt-6 dark:border-neutral-700">
+      <h3 class="mb-4 text-lg font-medium dark:text-white">Waiting List</h3>
+      <WaitingList />
+    </div>
+  {/if}
 </section>

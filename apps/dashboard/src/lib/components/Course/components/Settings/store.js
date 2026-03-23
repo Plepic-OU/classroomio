@@ -15,5 +15,7 @@ export const settings = writable({
     { id: 4, name: 'course.navItem.lessons.materials.tabs.document.title' }
   ],
   lesson_download: false,
-  is_published: false
+  is_published: false,
+  waitlist_enabled: false,
+  max_capacity: null
 });

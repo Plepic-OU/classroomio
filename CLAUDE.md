@@ -27,7 +27,7 @@ This is a **pnpm + Turborepo** monorepo. Workspace packages are defined in `pnpm
 pnpm i
 
 # Run all apps in dev mode
-pnpm dev
+pnpm dev:container
 
 # Run all apps in devcontainer (binds to 0.0.0.0 for host access)
 pnpm dev:container

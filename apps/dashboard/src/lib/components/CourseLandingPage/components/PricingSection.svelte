@@ -70,6 +70,14 @@
   );
   $: isFree = isCourseFree(calculatedCost);
   $: startCoursePayment && handleJoinCourse();
+
+  // Waitlist: count enrolled students and check capacity
+  $: studentCount = courseData?.group?.members?.filter(
+    (m: { role_id: number }) => m.role_id === ROLE.STUDENT
+  )?.length ?? 0;
+  $: maxCapacity = courseData?.metadata?.maxCapacity;
+  $: waitlistEnabled = !!courseData?.metadata?.waitlistEnabled;
+  $: isCourseFull = waitlistEnabled && maxCapacity != null && studentCount >= maxCapacity;
 </script>
 
 <PaymentModal
@@ -119,12 +127,14 @@
         <!-- Call To Action Buttons -->
         <div class="flex h-full w-full flex-col items-center">
           <PrimaryButton
-            label={isFree
-              ? $t('course.navItem.landing_page.pricing_section.enroll')
-              : $t('course.navItem.landing_page.pricing_section.buy')}
+            label={isCourseFull
+              ? 'Join Waiting List'
+              : isFree
+                ? $t('course.navItem.landing_page.pricing_section.enroll')
+                : $t('course.navItem.landing_page.pricing_section.buy')}
             className="w-full sm:w-full h-[40px]"
             onClick={handleJoinCourse}
-            isDisabled={!courseData.metadata.allowNewStudent}
+            isDisabled={!courseData.metadata.allowNewStudent && !isCourseFull}
           />
         </div>
       </div>
@@ -165,13 +175,20 @@
 
       <!-- Call To Action Buttons -->
       <div class="flex w-full flex-col items-center">
+        {#if isCourseFull}
+          <p class="mb-2 text-sm text-gray-500 dark:text-white">
+            Course full — {studentCount}/{maxCapacity} students
+          </p>
+        {/if}
         <PrimaryButton
-          label={isFree
-            ? $t('course.navItem.landing_page.pricing_section.enroll')
-            : $t('course.navItem.landing_page.pricing_section.buy')}
+          label={isCourseFull
+            ? 'Join Waiting List'
+            : isFree
+              ? $t('course.navItem.landing_page.pricing_section.enroll')
+              : $t('course.navItem.landing_page.pricing_section.buy')}
           className="w-full sm:w-full py-3 mb-3"
           onClick={handleJoinCourse}
-          isDisabled={!courseData.metadata.allowNewStudent}
+          isDisabled={!courseData.metadata.allowNewStudent && !isCourseFull}
         />
         {#if courseData?.metadata?.showDiscount && courseData.metadata.allowNewStudent}
           <p class="text-sm font-light text-gray-500 dark:text-white">
