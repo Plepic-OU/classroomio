@@ -2,3 +2,5 @@ node_modules/
 .features-gen/
 .env
 .auth/
+playwright-report/
+test-results/

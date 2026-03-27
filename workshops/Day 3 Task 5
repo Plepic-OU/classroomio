@@ -11,6 +11,8 @@ Goals:
 Prompt: https://drive.google.com/file/d/1TILxebPUupZzea_AKorUK0R0ACsnH8wn
 
 
+
+
   2) Use the skill to implement the plan.
 
     This will take a while (15-30 minutes)
@@ -31,3 +33,4 @@ Optional goals - choose which one seems interesting to tackle
 
 
   o3) There's a bug that when logging users out and in from same browser, some cache is not properly cleared. Fix that with claude.
+&
