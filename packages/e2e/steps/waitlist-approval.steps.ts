@@ -50,7 +50,8 @@ given('there is a course with waitlisted students', async () => {
 when('I navigate to the course people page', async ({ page }) => {
   coursePageUrl = `/courses/${courseId}/people`;
   await page.goto(coursePageUrl);
-  await page.waitForTimeout(3000); // SvelteKit hydration + data loading
+  // Wait for course data to load — the people table header appears once the page is ready
+  await expect(page.getByText('Name').first()).toBeVisible({ timeout: 8000 });
 });
 
 then('I should see the waitlist section', async ({ page }) => {

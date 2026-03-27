@@ -5,10 +5,17 @@ const TEST_USER_EMAIL = process.env.TEST_USER_EMAIL ?? 'testuser@classroomio.tes
 const TEST_USER_PASSWORD = process.env.TEST_USER_PASSWORD ?? 'TestPass123!';
 
 setup('authenticate test user', async ({ page }) => {
-  await page.goto('/login');
+  // Wait for SvelteKit hydration before interacting with the form.
+  // The form uses on:submit|preventDefault which only works after hydration.
+  // Detect hydration by listening for the "Welcome to ClassroomIO" console.log
+  // emitted by +layout.svelte's onMount/pageSetup.
+  const hydrationPromise = page.waitForEvent('console', {
+    predicate: (msg) => msg.text().includes('Welcome to ClassroomIO'),
+    timeout: 15000
+  });
 
-  // Wait for SvelteKit hydration — fixed delay because networkidle won't resolve (HMR WebSocket)
-  await page.waitForTimeout(2000);
+  await page.goto('/login');
+  await hydrationPromise;
 
   const emailInput = page.getByPlaceholder('you@domain.com');
   await emailInput.fill(TEST_USER_EMAIL);
