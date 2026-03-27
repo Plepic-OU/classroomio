@@ -244,6 +244,7 @@ export interface Course {
   lesson_section?: LessonSection[];
   lessons?: Lesson[];
   polls: { status: string }[];
+  max_capacity: number | null;
 }
 
 export interface Groupmember {

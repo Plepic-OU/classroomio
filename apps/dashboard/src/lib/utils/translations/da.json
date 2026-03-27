@@ -147,7 +147,8 @@
       }
     },
     "invite": {
-      "failed_join": "Deltagelse mislykkedes, bedes du kontakte din administrator"
+      "failed_join": "Deltagelse mislykkedes, bedes du kontakte din administrator",
+      "course_full": "This course is full. You can join the waitlist from the course page."
     },
     "submissions": {
       "success": {
@@ -271,6 +272,10 @@
         "updating_poll": "Der opstod en fejl under opdatering af afstemningsstatus",
         "submitting_poll": "Der opstod en fejl under indsendelse af afstemning"
       }
+    },
+    "waitlist": {
+      "approved": "Student approved and enrolled",
+      "removed": "Student removed from waitlist"
     }
   },
   "explore": {
@@ -428,6 +433,10 @@
         "download": "Download",
         "allow": "Tillad nye studerende",
         "access": "Tillad nye studerende at få adgang til dette kursus",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Set a maximum number of students. When full, new students join a waitlist.",
+        "max_capacity_label": "Maximum number of students",
+        "max_capacity_placeholder": "No limit",
         "publish": "Udgiv kursus",
         "determines": "Dette bestemmer, om dit kursus vises på din destinationsside",
         "published": "Offentliggjort",
@@ -492,6 +501,9 @@
           "discount": "Rabat",
           "enroll": "Tilmeld dig nu",
           "buy": "Køb nu",
+          "join_waitlist": "Join Waitlist",
+          "on_waitlist": "On Waitlist",
+          "already_on_waitlist": "You're already on the waitlist for this course.",
           "bird": "Tidlig fugl tilbud. Køb ASAP"
         },
         "upload_widget": {
@@ -607,6 +619,14 @@
         "action": "Handling",
         "feedback": "Kopieret e -mail til udklipsholder",
         "view": "Udsigt",
+        "enrolled": "Enrolled",
+        "waitlist": "Waitlist",
+        "enrolled_capacity": "enrolled",
+        "joined_at": "Joined",
+        "approve": "Approve",
+        "loading": "Loading...",
+        "no_waitlist": "No students on the waitlist",
+        "no_waitlist_desc": "Students will appear here when they join the waitlist for this course.",
         "delete_profile": "Slet profil",
         "teams": {
           "add": "Tilføje",

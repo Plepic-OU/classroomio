@@ -12,7 +12,7 @@
     "format": "prettier . --write .",
     "start": "node build",
     "prepare": "svelte-kit sync",
-    "test": "jest",
+    "test": "jest --config=jest.config.cjs",
     "test:watch": "pnpm run test --watch",
     "ci": "cp .env.example .env && vite build && vite preview",
     "script:translate": "node ./scripts/translate.cjs"

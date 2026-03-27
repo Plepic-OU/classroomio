@@ -31,7 +31,8 @@
       }
     },
     "invite": {
-      "failed_join": "Échec de l'adhésion, veuillez contacter votre administrateur"
+      "failed_join": "Échec de l'adhésion, veuillez contacter votre administrateur",
+      "course_full": "This course is full. You can join the waitlist from the course page."
     },
     "submissions": {
       "success": {
@@ -161,7 +162,11 @@
       "success_delete": "Supprimé avec succès",
       "try_again": "Erreur - Veuillez réessayer plus tard"
     },
-    "success_delete": "Supprimé avec succès"
+    "success_delete": "Supprimé avec succès",
+    "waitlist": {
+      "approved": "Student approved and enrolled",
+      "removed": "Student removed from waitlist"
+    }
   },
   "exercises": {
     "heading": "Des exercices",
@@ -268,6 +273,10 @@
         "download": "Télécharger",
         "allow": "Autoriser les nouveaux étudiants",
         "access": "Autoriser les nouveaux étudiants à accéder à ce cours",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Set a maximum number of students. When full, new students join a waitlist.",
+        "max_capacity_label": "Maximum number of students",
+        "max_capacity_placeholder": "No limit",
         "publish": "Publier le cours",
         "determines": "Cela détermine si votre cours s'affiche sur votre page de destination",
         "published": "Publié",
@@ -325,6 +334,9 @@
           "discount": "Rabais",
           "enroll": "Inscrivez-vous maintenant",
           "buy": "Acheter maintenant",
+          "join_waitlist": "Join Waitlist",
+          "on_waitlist": "On Waitlist",
+          "already_on_waitlist": "You're already on the waitlist for this course.",
           "bird": "Offre pour inscription anticipée. Achetez dès que possible"
         },
         "upload_widget": {
@@ -483,6 +495,14 @@
           "remove": "Retirer"
         },
         "view": "Voir",
+        "enrolled": "Enrolled",
+        "waitlist": "Waitlist",
+        "enrolled_capacity": "enrolled",
+        "joined_at": "Joined",
+        "approve": "Approve",
+        "loading": "Loading...",
+        "no_waitlist": "No students on the waitlist",
+        "no_waitlist_desc": "Students will appear here when they join the waitlist for this course.",
         "delete_profile": "Supprimer le profil"
       },
       "marks": {

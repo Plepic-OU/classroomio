@@ -31,7 +31,8 @@
       }
     },
     "invite": {
-      "failed_join": "शामिल होना विफल रहा, कृपया अपने व्यवस्थापक से संपर्क करें"
+      "failed_join": "शामिल होना विफल रहा, कृपया अपने व्यवस्थापक से संपर्क करें",
+      "course_full": "This course is full. You can join the waitlist from the course page."
     },
     "submissions": {
       "success": {
@@ -161,7 +162,11 @@
       "success_delete": "सफलतापूर्वक मिटाया गया",
       "try_again": "त्रुटि - कृपया बाद में पुनः प्रयास करें"
     },
-    "success_delete": "सफलतापूर्वक मिटाया गया"
+    "success_delete": "सफलतापूर्वक मिटाया गया",
+    "waitlist": {
+      "approved": "Student approved and enrolled",
+      "removed": "Student removed from waitlist"
+    }
   },
   "exercises": {
     "heading": "अभ्यास",
@@ -268,6 +273,10 @@
         "download": "डाउनलोड करें",
         "allow": "नए छात्रों को अनुमति दें",
         "access": "नए छात्रों को इस पाठ्यक्रम तक पहुंचने की अनुमति दें",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Set a maximum number of students. When full, new students join a waitlist.",
+        "max_capacity_label": "Maximum number of students",
+        "max_capacity_placeholder": "No limit",
         "publish": "पाठ्यक्रम प्रकाशित करें",
         "determines": "यह निर्धारित करता है कि आपका पाठ्यक्रम आपके लैंडिंग पृष्ठ पर प्रदर्शित होता है या नहीं",
         "published": "प्रकाशित",
@@ -325,6 +334,9 @@
           "discount": "छूट",
           "enroll": "अभी दाखिला लें",
           "buy": "अभी खरीदें",
+          "join_waitlist": "Join Waitlist",
+          "on_waitlist": "On Waitlist",
+          "already_on_waitlist": "You're already on the waitlist for this course.",
           "bird": "प्रारंभिक पक्षी प्रस्ताव. यथाशीघ्र खरीदें"
         },
         "upload_widget": {
@@ -483,6 +495,14 @@
           "remove": "निकालना"
         },
         "view": "देखना",
+        "enrolled": "Enrolled",
+        "waitlist": "Waitlist",
+        "enrolled_capacity": "enrolled",
+        "joined_at": "Joined",
+        "approve": "Approve",
+        "loading": "Loading...",
+        "no_waitlist": "No students on the waitlist",
+        "no_waitlist_desc": "Students will appear here when they join the waitlist for this course.",
         "delete_profile": "प्रोफ़ाइल हटाएं"
       },
       "marks": {

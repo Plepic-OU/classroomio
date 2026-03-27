@@ -31,7 +31,8 @@
       }
     },
     "invite": {
-      "failed_join": "Не удалось присоединиться. Обратитесь к администратору."
+      "failed_join": "Не удалось присоединиться. Обратитесь к администратору.",
+      "course_full": "This course is full. You can join the waitlist from the course page."
     },
     "submissions": {
       "success": {
@@ -161,7 +162,11 @@
       "success_delete": "Удален успешно",
       "try_again": "Ошибка. Повторите попытку позже."
     },
-    "success_delete": "Удален успешно"
+    "success_delete": "Удален успешно",
+    "waitlist": {
+      "approved": "Student approved and enrolled",
+      "removed": "Student removed from waitlist"
+    }
   },
   "exercises": {
     "heading": "Упражнения",
@@ -268,6 +273,10 @@
         "download": "Скачать",
         "allow": "Разрешить новым студентам",
         "access": "Разрешить новым студентам доступ к этому курсу",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Set a maximum number of students. When full, new students join a waitlist.",
+        "max_capacity_label": "Maximum number of students",
+        "max_capacity_placeholder": "No limit",
         "publish": "Опубликовать курс",
         "determines": "Это определяет, будет ли ваш курс отображаться на вашей целевой странице.",
         "published": "Опубликовано",
@@ -325,6 +334,9 @@
           "discount": "Скидка",
           "enroll": "Зарегистрируйтесь сейчас",
           "buy": "Купить сейчас",
+          "join_waitlist": "Join Waitlist",
+          "on_waitlist": "On Waitlist",
+          "already_on_waitlist": "You're already on the waitlist for this course.",
           "bird": "Предложение раннего бронирования. Купить как можно скорее"
         },
         "upload_widget": {
@@ -483,6 +495,14 @@
           "remove": "Удалять"
         },
         "view": "Вид",
+        "enrolled": "Enrolled",
+        "waitlist": "Waitlist",
+        "enrolled_capacity": "enrolled",
+        "joined_at": "Joined",
+        "approve": "Approve",
+        "loading": "Loading...",
+        "no_waitlist": "No students on the waitlist",
+        "no_waitlist_desc": "Students will appear here when they join the waitlist for this course.",
         "delete_profile": "Удалить профиль"
       },
       "marks": {

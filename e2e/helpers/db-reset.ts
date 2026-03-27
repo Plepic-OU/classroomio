@@ -48,6 +48,7 @@ export async function resetDatabase(): Promise<void> {
         public.quiz_play, public.quiz,
         public.organization_contacts, public.organization_emaillist,
         public.organization_plan, public.organizationmember,
+        public.course_waitlist,
         public.groupmember, public.course, public.group, public.organization,
         public.email_verification_tokens, public.profile,
         public.video_transcripts, public.waitinglist,

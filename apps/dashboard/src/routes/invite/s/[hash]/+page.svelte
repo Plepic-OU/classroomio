@@ -7,6 +7,7 @@
   import { currentOrg } from '$lib/utils/store/org';
   import { setTheme } from '$lib/utils/functions/theme';
   import { addGroupMember } from '$lib/utils/services/courses';
+  import { getCourseCapacityStatus } from '$lib/utils/functions/course';
   import type { CurrentOrg } from '$lib/utils/types/org.js';
   import { ROLE } from '$lib/utils/constants/roles';
   import { profile } from '$lib/utils/store/user';
@@ -36,7 +37,7 @@
 
     const { data: courseData, error } = await supabase
       .from('course')
-      .select('group_id')
+      .select('group_id, max_capacity, slug')
       .eq('id', data.id)
       .single();
 
@@ -44,6 +45,22 @@
     if (!courseData?.group_id) {
       console.error('error getting group', error);
       return;
+    }
+
+    // Check capacity before enrolling
+    if (courseData.max_capacity !== null) {
+      const capacity = await getCourseCapacityStatus(
+        data.id,
+        courseData.group_id,
+        courseData.max_capacity,
+        $profile.id
+      );
+
+      if (capacity.isFull) {
+        snackbar.info('snackbar.invite.course_full');
+        loading = false;
+        return goto(`/course/${courseData.slug || data.id}`);
+      }
     }
 
     const member = {

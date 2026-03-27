@@ -1017,6 +1017,14 @@
         "action": "Action",
         "feedback": "Copied Email to clipboard",
         "view": "View",
+        "enrolled": "Enrolled",
+        "waitlist": "Waitlist",
+        "enrolled_capacity": "enrolled",
+        "joined_at": "Joined",
+        "approve": "Approve",
+        "loading": "Loading...",
+        "no_waitlist": "No students on the waitlist",
+        "no_waitlist_desc": "Students will appear here when they join the waitlist for this course.",
         "delete_profile": "Delete profile",
         "invite_modal": {
           "title": "Invite people",
@@ -1176,6 +1184,9 @@
           "discount": "Discount",
           "enroll": "Enroll Now",
           "buy": "Buy Now",
+          "join_waitlist": "Join Waitlist",
+          "on_waitlist": "On Waitlist",
+          "already_on_waitlist": "You're already on the waitlist for this course.",
           "bird": "Early bird offer. Buy ASAP"
         },
 
@@ -1252,6 +1263,10 @@
         "download": "Download",
         "allow": "Allow New Students",
         "access": "Allow new students to access this course",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Set a maximum number of students. When full, new students join a waitlist.",
+        "max_capacity_label": "Maximum number of students",
+        "max_capacity_placeholder": "No limit",
         "publish": "Publish Course",
         "determines": "This determines if your course displays on your landing page",
         "published": "Published",
@@ -1458,6 +1473,11 @@
       }
     },
 
+    "waitlist": {
+      "approved": "Student approved and enrolled",
+      "removed": "Student removed from waitlist"
+    },
+
     "course_settings": {
       "success": {
         "download": "Download Complete",
@@ -1550,7 +1570,8 @@
     },
 
     "invite": {
-      "failed_join": "Joining failed, please contact your admin"
+      "failed_join": "Joining failed, please contact your admin",
+      "course_full": "This course is full. You can join the waitlist from the course page."
     },
 
     "community": {

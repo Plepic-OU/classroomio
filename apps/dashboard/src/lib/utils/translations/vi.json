@@ -31,7 +31,8 @@
       }
     },
     "invite": {
-      "failed_join": "Tham gia không thành công, vui lòng liên hệ với quản trị viên của bạn"
+      "failed_join": "Tham gia không thành công, vui lòng liên hệ với quản trị viên của bạn",
+      "course_full": "This course is full. You can join the waitlist from the course page."
     },
     "submissions": {
       "success": {
@@ -161,7 +162,11 @@
       "success_delete": "Đã xoá thành công",
       "try_again": "Lỗi - Vui lòng thử lại sau"
     },
-    "success_delete": "Đã xóa thành công"
+    "success_delete": "Đã xóa thành công",
+    "waitlist": {
+      "approved": "Student approved and enrolled",
+      "removed": "Student removed from waitlist"
+    }
   },
   "exercises": {
     "heading": "Bài tập",
@@ -268,6 +273,10 @@
         "download": "Tải xuống",
         "allow": "Cho phép sinh viên mới",
         "access": "Cho phép sinh viên mới truy cập khóa học này",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Set a maximum number of students. When full, new students join a waitlist.",
+        "max_capacity_label": "Maximum number of students",
+        "max_capacity_placeholder": "No limit",
         "publish": "Xuất bản khóa học",
         "determines": "Điều này xác định xem khóa học của bạn có hiển thị trên trang đích hay không",
         "published": "Được phát hành",
@@ -325,6 +334,9 @@
           "discount": "Giảm giá",
           "enroll": "Đăng ký ngay",
           "buy": "Mua ngay",
+          "join_waitlist": "Join Waitlist",
+          "on_waitlist": "On Waitlist",
+          "already_on_waitlist": "You're already on the waitlist for this course.",
           "bird": "Ưu đãi chim sớm. Mua càng sớm càng tốt"
         },
         "upload_widget": {
@@ -483,6 +495,14 @@
           "remove": "Di dời"
         },
         "view": "Xem",
+        "enrolled": "Enrolled",
+        "waitlist": "Waitlist",
+        "enrolled_capacity": "enrolled",
+        "joined_at": "Joined",
+        "approve": "Approve",
+        "loading": "Loading...",
+        "no_waitlist": "No students on the waitlist",
+        "no_waitlist_desc": "Students will appear here when they join the waitlist for this course.",
         "delete_profile": "Xóa hồ sơ"
       },
       "marks": {

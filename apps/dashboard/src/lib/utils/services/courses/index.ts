@@ -88,6 +88,8 @@ const SLUG_QUERY = `
   metadata,
   is_certificate_downloadable,
   certificate_theme,
+  group_id,
+  max_capacity,
   lesson_section(id, title, order),
   lessons:lesson(
     id, title, order, section_id
@@ -103,6 +105,7 @@ const ID_QUERY = `
   logo,
   is_published,
   version,
+  max_capacity,
   group(*,
     members:groupmember(*,
       profile(*)

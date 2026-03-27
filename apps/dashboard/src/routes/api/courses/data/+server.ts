@@ -5,7 +5,7 @@ import { STATUS } from '$lib/utils/constants/course';
 import { checkUserCoursePermissions } from '$lib/utils/functions/permissions';
 
 const COURSE_SELECT_QUERY = `
-  id, title, type, description, overview, logo, is_published, version, group_id,
+  id, title, type, description, overview, logo, is_published, version, group_id, max_capacity,
   slug, cost, currency, metadata, is_certificate_downloadable, certificate_theme,
   lesson_section(id, title, order, created_at),
   lessons:lesson(
@@ -15,7 +15,8 @@ const COURSE_SELECT_QUERY = `
     lesson_completion(id, profile_id, is_complete)
   ),
   attendance:group_attendance(*),
-  polls:apps_poll(status)
+  polls:apps_poll(status),
+  waitlist:course_waitlist(id, course_id, profile_id, created_at, profile(id, fullname, email, avatar_url))
 `;
 
 const GROUP_MEMBERS_SELECT = `

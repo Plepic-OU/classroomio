@@ -470,3 +470,16 @@ SELECT setval('public.organizationmember_id_seq', COALESCE((SELECT MAX(id)+1 FRO
 INSERT INTO "public"."organization_plan" ("id", "org_id", "plan_name", "is_active", "deactivated_at", "payload", "triggered_by", "activated_at", "updated_at", "provider", "subscription_id") VALUES
 	(1, '1a1dcddd-1abc-4f72-b644-0bd18191a289', 'ENTERPRISE', true, NULL, NULL, 12, '2023-11-22 09:29:04.533114+00', '2023-11-22 09:29:04.533114+00', 'lmz', NULL);
 
+--
+-- Waitlist test data: Set max_capacity on "Building express apps" course (ID: 2e845a61-...)
+-- and add a waitlist entry for student@test.com (profile: 0c256e75-...)
+--
+-- Set max_capacity on "Getting started with MVC" (published course, ID: 98e6e798-...)
+UPDATE "public"."course"
+SET max_capacity = 2
+WHERE id = '98e6e798-f0bd-4f9d-a6f5-ce0816a4f97e';
+
+-- Add student@test.com to the waitlist for this course
+INSERT INTO "public"."course_waitlist" ("course_id", "profile_id") VALUES
+	('98e6e798-f0bd-4f9d-a6f5-ce0816a4f97e', '0c256e75-aa40-4f62-8d30-0217ca1c60d9');
+

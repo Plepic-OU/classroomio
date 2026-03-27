@@ -155,7 +155,8 @@
           lessonDownload: $settings.lesson_download,
           allowNewStudent: $settings.allow_new_students
         },
-        slug: $course.slug
+        slug: $course.slug,
+        max_capacity: $settings.max_capacity ? Number($settings.max_capacity) : null
       };
       await updateCourse($course.id, avatar, updatedCourse);
 
@@ -191,7 +192,8 @@
       grading: !!course.metadata.grading,
       lesson_download: !!course.metadata.lessonDownload,
       is_published: !!course.is_published,
-      allow_new_students: course.metadata.allowNewStudent
+      allow_new_students: course.metadata.allowNewStudent,
+      max_capacity: course.max_capacity ?? null
     });
   }
   $: setDefault($course);
@@ -401,6 +403,24 @@
         <span slot="labelA" style="color: gray">{$t('course.navItem.settings.disabled')}</span>
         <span slot="labelB" style="color: gray">{$t('course.navItem.settings.enabled')}</span>
       </Toggle>
+    </Column>
+  </Row>
+
+  <Row class="border-bottom-c flex flex-col py-7 lg:flex-row">
+    <Column sm={8} md={8} lg={8}>
+      <SectionTitle>{$t('course.navItem.settings.max_capacity')}</SectionTitle>
+      <p>{$t('course.navItem.settings.max_capacity_desc')}</p>
+    </Column>
+    <Column sm={8} md={8} lg={8}>
+      <TextField
+        type="number"
+        min={1}
+        placeholder={$t('course.navItem.settings.max_capacity_placeholder')}
+        bind:value={$settings.max_capacity}
+        onInputChange={() => {
+          hasUnsavedChanges = true;
+        }}
+      />
     </Column>
   </Row>
 

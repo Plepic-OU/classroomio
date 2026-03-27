@@ -5,15 +5,25 @@
   import {
     isCourseFree,
     getStudentInviteLink,
-    calcCourseDiscount
+    calcCourseDiscount,
+    getCourseCapacityStatus,
+    type CourseCapacityStatus
   } from '$lib/utils/functions/course';
   import { currentOrg, currentOrgDomain } from '$lib/utils/store/org';
   import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
   import HtmlRender from '$lib/components/HTMLRender/HTMLRender.svelte';
   import PaymentModal from './PaymentModal.svelte';
   import type { Course } from '$lib/utils/types';
   import { ROLE } from '$lib/utils/constants/roles';
   import { capturePosthogEvent } from '$lib/utils/services/posthog';
+  import {
+    triggerSendEmail,
+    NOTIFICATION_NAME
+  } from '$lib/utils/services/notification/notification';
+  import { supabase } from '$lib/utils/functions/supabase';
+  import { snackbar } from '$lib/components/Snackbar/store';
+  import { profile } from '$lib/utils/store/user';
   import { t } from '$lib/utils/functions/translations';
 
   export let className = '';
@@ -27,6 +37,87 @@
   let discount = 0;
   let formatter: Intl.NumberFormat | undefined;
   let isFree = false;
+  let joiningWaitlist = false;
+
+  let capacityStatus: CourseCapacityStatus = {
+    isFull: false,
+    hasWaitlist: false,
+    enrolledCount: 0,
+    maxCapacity: null,
+    isOnWaitlist: false
+  };
+
+  async function fetchCapacityStatus(course: Course) {
+    if (!course?.id || !course?.group_id || course.max_capacity === null || course.max_capacity === undefined) {
+      return;
+    }
+    capacityStatus = await getCourseCapacityStatus(
+      course.id,
+      course.group_id,
+      course.max_capacity,
+      $profile.id || undefined
+    );
+  }
+
+  async function handleJoinWaitlist() {
+    if (editMode || !courseData.id || joiningWaitlist) return;
+
+    if (!$profile.id) {
+      goto('/login');
+      return;
+    }
+
+    joiningWaitlist = true;
+    try {
+      const { error } = await supabase
+        .from('course_waitlist')
+        .insert({ course_id: courseData.id, profile_id: $profile.id });
+
+      if (error) {
+        if (error.code === '23505') {
+          // Duplicate key — already on waitlist
+          snackbar.info($t('course.navItem.landing_page.pricing_section.already_on_waitlist'));
+          capacityStatus = { ...capacityStatus, isOnWaitlist: true };
+        } else {
+          throw error;
+        }
+      } else {
+        // Successfully joined — send notification emails
+        triggerSendEmail(NOTIFICATION_NAME.STUDENT_JOINED_WAITLIST, {
+          to: $profile.email,
+          orgName: $currentOrg.name,
+          courseName: courseData.title
+        });
+
+        // Notify teacher(s)
+        const { data: teachers } = await supabase
+          .from('groupmember')
+          .select('profile(email)')
+          .eq('group_id', courseData.group_id)
+          .in('role_id', [ROLE.ADMIN, ROLE.TUTOR]);
+
+        const peoplePageLink = `${$currentOrgDomain}/courses/${courseData.id}/people`;
+        teachers?.forEach((t) => {
+          const email = t.profile?.email;
+          if (email) {
+            triggerSendEmail(NOTIFICATION_NAME.TEACHER_STUDENT_WAITLISTED, {
+              to: email,
+              courseName: courseData.title,
+              studentName: $profile.fullname,
+              studentEmail: $profile.email,
+              link: peoplePageLink
+            });
+          }
+        });
+
+        capacityStatus = { ...capacityStatus, isOnWaitlist: true };
+      }
+    } catch (error) {
+      console.error('Error joining waitlist:', error);
+      snackbar.error();
+    }
+    joiningWaitlist = false;
+  }
 
   function handleJoinCourse() {
     if (editMode) return;
@@ -70,6 +161,24 @@
   );
   $: isFree = isCourseFree(calculatedCost);
   $: startCoursePayment && handleJoinCourse();
+
+  $: $profile.id, fetchCapacityStatus(courseData);
+
+  $: buttonLabel = capacityStatus.isOnWaitlist
+    ? $t('course.navItem.landing_page.pricing_section.on_waitlist')
+    : capacityStatus.isFull && capacityStatus.hasWaitlist
+      ? $t('course.navItem.landing_page.pricing_section.join_waitlist')
+      : isFree
+        ? $t('course.navItem.landing_page.pricing_section.enroll')
+        : $t('course.navItem.landing_page.pricing_section.buy');
+
+  $: buttonDisabled = !courseData.metadata.allowNewStudent
+    || capacityStatus.isOnWaitlist
+    || joiningWaitlist;
+
+  $: buttonAction = capacityStatus.isFull && capacityStatus.hasWaitlist && !capacityStatus.isOnWaitlist
+    ? handleJoinWaitlist
+    : handleJoinCourse;
 </script>
 
 <PaymentModal
@@ -119,12 +228,11 @@
         <!-- Call To Action Buttons -->
         <div class="flex h-full w-full flex-col items-center">
           <PrimaryButton
-            label={isFree
-              ? $t('course.navItem.landing_page.pricing_section.enroll')
-              : $t('course.navItem.landing_page.pricing_section.buy')}
+            label={buttonLabel}
             className="w-full sm:w-full h-[40px]"
-            onClick={handleJoinCourse}
-            isDisabled={!courseData.metadata.allowNewStudent}
+            onClick={buttonAction}
+            isDisabled={buttonDisabled}
+            isLoading={joiningWaitlist}
           />
         </div>
       </div>
@@ -166,12 +274,11 @@
       <!-- Call To Action Buttons -->
       <div class="flex w-full flex-col items-center">
         <PrimaryButton
-          label={isFree
-            ? $t('course.navItem.landing_page.pricing_section.enroll')
-            : $t('course.navItem.landing_page.pricing_section.buy')}
+          label={buttonLabel}
           className="w-full sm:w-full py-3 mb-3"
-          onClick={handleJoinCourse}
-          isDisabled={!courseData.metadata.allowNewStudent}
+          onClick={buttonAction}
+          isDisabled={buttonDisabled}
+          isLoading={joiningWaitlist}
         />
         {#if courseData?.metadata?.showDiscount && courseData.metadata.allowNewStudent}
           <p class="text-sm font-light text-gray-500 dark:text-white">

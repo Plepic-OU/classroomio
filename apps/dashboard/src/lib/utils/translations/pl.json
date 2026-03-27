@@ -142,7 +142,8 @@
       }
     },
     "invite": {
-      "failed_join": "Dołączenie nie powiodło się, skontaktuj się z administratorem"
+      "failed_join": "Dołączenie nie powiodło się, skontaktuj się z administratorem",
+      "course_full": "This course is full. You can join the waitlist from the course page."
     },
     "submissions": {
       "success": {
@@ -266,6 +267,10 @@
         "updating_poll": "Wystąpił błąd podczas aktualizacji statusu ankiety",
         "submitting_poll": "Wystąpił błąd podczas przesyłania ankiety"
       }
+    },
+    "waitlist": {
+      "approved": "Student approved and enrolled",
+      "removed": "Student removed from waitlist"
     }
   },
   "explore": {
@@ -423,6 +428,10 @@
         "download": "Pobierać",
         "allow": "Pozwól nowym uczniom",
         "access": "Pozwól nowym uczniom uzyskać dostęp do tego kursu",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Set a maximum number of students. When full, new students join a waitlist.",
+        "max_capacity_label": "Maximum number of students",
+        "max_capacity_placeholder": "No limit",
         "publish": "Publikuj kurs",
         "determines": "To określa, czy Twój kurs wyświetla się na stronie docelowej",
         "published": "Opublikowany",
@@ -484,6 +493,9 @@
           "discount": "Rabat",
           "enroll": "Zapisz teraz",
           "buy": "Kup teraz",
+          "join_waitlist": "Join Waitlist",
+          "on_waitlist": "On Waitlist",
+          "already_on_waitlist": "You're already on the waitlist for this course.",
           "bird": "Wczesna oferta ptaków. Kup jak najszybciej"
         },
         "upload_widget": {
@@ -599,6 +611,14 @@
         "action": "Działanie",
         "feedback": "Skopiowany e -mail do schowka",
         "view": "Pogląd",
+        "enrolled": "Enrolled",
+        "waitlist": "Waitlist",
+        "enrolled_capacity": "enrolled",
+        "joined_at": "Joined",
+        "approve": "Approve",
+        "loading": "Loading...",
+        "no_waitlist": "No students on the waitlist",
+        "no_waitlist_desc": "Students will appear here when they join the waitlist for this course.",
         "delete_profile": "Usuń profil",
         "teams": {
           "add": "Dodać",
