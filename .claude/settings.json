@@ -13,6 +13,16 @@
           }
         ]
       }
+    ],
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'NAME=$(jq -r .name); DIR=\"/tmp/$NAME\"; git worktree add -b \"$NAME\" \"$DIR\" HEAD >&2 && echo \"$DIR\"'"
+          }
+        ]
+      }
     ]
   }
 }

@@ -367,3 +367,16 @@ The `NewLessonModal` uses `TextField` with `autoFocus`. The input is `input[type
 **Problem**: The Courses card component renders differently based on grid vs list view. In list view (default from localStorage), there's no "Learn More" button. Only the grid view shows it.
 
 **Solution**: Instead of looking for buttons, verify course titles: `page.getByText('Course Title')`. This works regardless of view mode.
+
+### 2026-03-27: TextField in settings pages — use label-filter approach
+
+**Problem**: `getByLabel(/organization name/i)` does not reliably match `TextField` inputs even though the `<input>` is wrapped in a `<label>`. The label text lives inside a `<p>` tag inside the `<label>`, which can confuse accessibility tree resolution.
+
+**Solution**: Filter by the wrapping `<label>` element that contains the target text, then scope to the input inside it:
+```typescript
+const input = page
+  .locator('label')
+  .filter({ has: page.getByText(/organization name/i) })
+  .locator('input');
+```
+This is reliable for any `TextField` on settings pages where the label text is unique on the page.
