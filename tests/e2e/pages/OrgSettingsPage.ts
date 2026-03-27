@@ -3,18 +3,6 @@ import { Page, expect } from '@playwright/test';
 export class OrgSettingsPage {
   constructor(private page: Page) {}
 
-  private async waitForOrgSettled(): Promise<void> {
-    // The layout's getProfileDebounced(1000ms) fires after onMount and calls
-    // getOrganizations(), which does currentOrg.set(orgData). If we type before
-    // this REST call completes, getOrganizations will overwrite our input.
-    // Waiting for the organizationmember response ensures the store is final.
-    await this.page.waitForResponse(
-      (response) =>
-        response.url().includes('/rest/v1/organizationmember') && response.status() === 200,
-      { timeout: 10000 }
-    );
-  }
-
   async gotoOrgTab(orgSiteName: string) {
     // Inject classroomio_org_sitename into localStorage BEFORE the page loads.
     // addInitScript runs before page scripts, ensuring getOrganizations() reads
@@ -24,17 +12,29 @@ export class OrgSettingsPage {
       orgSiteName
     );
 
-    // Set up response watcher BEFORE goto so we don't miss the debounced call.
-    const orgSettled = this.waitForOrgSettled();
+    // Best-effort wait for the debounced getOrganizations REST response.
+    // The layout's getProfileDebounced(1s) fires after onMount and calls
+    // getOrganizations() → currentOrg.set(orgData), potentially overwriting any
+    // typed value. We wait for the response so the store is settled before we type.
+    //
+    // In the full test suite getProfile() may early-return (profile already cached)
+    // meaning no organizationmember request is ever made — in that case the store is
+    // already settled so we safely fall through via .catch(() => null).
+    const orgSettled = this.page
+      .waitForResponse(
+        (r) => r.url().includes('/rest/v1/organizationmember') && r.status() === 200,
+        { timeout: 3000 }
+      )
+      .catch(() => null);
 
     await this.page.goto(`/org/${orgSiteName}/settings?tab=org&org=${orgSiteName}`);
 
-    // Wait for the debounced getOrganizations to complete — $currentOrg is final after this.
+    // Debounce(1s) + REST call (~500ms) = ~1.5s total. If not received by 3s it's not coming.
     await orgSettled;
 
     const field = this.page.getByLabel('Organization Name');
     await field.waitFor();
-    await expect(field).not.toHaveValue('', { timeout: 5000 });
+    await expect(field).not.toHaveValue('', { timeout: 8000 });
   }
 
   async changeOrgName(newName: string) {
