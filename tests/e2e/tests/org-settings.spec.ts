@@ -33,4 +33,18 @@ test.describe('Org settings', () => {
     // Success snackbar appears with the translated message
     await expect(page.getByText('Update successful')).toBeVisible();
   });
+
+  test('updated name persists after reload', async ({ page }) => {
+    await page.goto(`/org/${ORG_SLUG}/settings`);
+    await page.getByRole('tab', { name: 'Organization' }).click();
+
+    const nameInput = page
+      .locator('label')
+      .filter({ hasText: 'Organization Name' })
+      .locator('input');
+
+    // Wait for the org data to load, then verify the updated name persisted
+    await expect(nameInput).not.toHaveValue('');
+    await expect(nameInput).toHaveValue(NEW_NAME);
+  });
 });
