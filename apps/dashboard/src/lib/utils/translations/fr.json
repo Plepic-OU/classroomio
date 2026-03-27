@@ -268,6 +268,10 @@
         "download": "Télécharger",
         "allow": "Autoriser les nouveaux étudiants",
         "access": "Autoriser les nouveaux étudiants à accéder à ce cours",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Maximum students (leave empty for unlimited)",
+        "waitlist_toggle": "Enable Waiting List",
+        "waitlist_toggle_desc": "Allow students to join a waiting list when the course is full",
         "publish": "Publier le cours",
         "determines": "Cela détermine si votre cours s'affiche sur votre page de destination",
         "published": "Publié",
@@ -325,7 +329,11 @@
           "discount": "Rabais",
           "enroll": "Inscrivez-vous maintenant",
           "buy": "Acheter maintenant",
-          "bird": "Offre pour inscription anticipée. Achetez dès que possible"
+          "bird": "Offre pour inscription anticipée. Achetez dès que possible",
+          "join_waitlist": "Join Waiting List",
+          "leave_waitlist": "Leave Waiting List",
+          "full": "Course is full",
+          "on_waitlist": "You're on the waiting list"
         },
         "upload_widget": {
           "title": "Widget de bannière",
@@ -483,7 +491,13 @@
           "remove": "Retirer"
         },
         "view": "Voir",
-        "delete_profile": "Supprimer le profil"
+        "delete_profile": "Supprimer le profil",
+        "waitlist_tab": "Waiting List",
+        "waitlist_empty": "No students on the waiting list",
+        "approve": "Approve",
+        "remove": "Remove",
+        "joined": "Joined",
+        "loading": "Loading..."
       },
       "marks": {
         "title": "Des marques",

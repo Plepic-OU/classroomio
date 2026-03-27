@@ -1018,6 +1018,12 @@
         "feedback": "Copied Email to clipboard",
         "view": "View",
         "delete_profile": "Delete profile",
+        "waitlist_tab": "Waiting List",
+        "waitlist_empty": "No students on the waiting list",
+        "approve": "Approve",
+        "remove": "Remove",
+        "joined": "Joined",
+        "loading": "Loading...",
         "invite_modal": {
           "title": "Invite people",
           "invite": "Invite Tutors",
@@ -1176,7 +1182,11 @@
           "discount": "Discount",
           "enroll": "Enroll Now",
           "buy": "Buy Now",
-          "bird": "Early bird offer. Buy ASAP"
+          "bird": "Early bird offer. Buy ASAP",
+          "join_waitlist": "Join Waiting List",
+          "leave_waitlist": "Leave Waiting List",
+          "full": "Course is full",
+          "on_waitlist": "You're on the waiting list"
         },
 
         "course_content": "Course content",
@@ -1252,6 +1262,10 @@
         "download": "Download",
         "allow": "Allow New Students",
         "access": "Allow new students to access this course",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Maximum students (leave empty for unlimited)",
+        "waitlist_toggle": "Enable Waiting List",
+        "waitlist_toggle_desc": "Allow students to join a waiting list when the course is full",
         "publish": "Publish Course",
         "determines": "This determines if your course displays on your landing page",
         "published": "Published",

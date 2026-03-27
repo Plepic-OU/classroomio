@@ -268,6 +268,10 @@
         "download": "Скачать",
         "allow": "Разрешить новым студентам",
         "access": "Разрешить новым студентам доступ к этому курсу",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Maximum students (leave empty for unlimited)",
+        "waitlist_toggle": "Enable Waiting List",
+        "waitlist_toggle_desc": "Allow students to join a waiting list when the course is full",
         "publish": "Опубликовать курс",
         "determines": "Это определяет, будет ли ваш курс отображаться на вашей целевой странице.",
         "published": "Опубликовано",
@@ -325,7 +329,11 @@
           "discount": "Скидка",
           "enroll": "Зарегистрируйтесь сейчас",
           "buy": "Купить сейчас",
-          "bird": "Предложение раннего бронирования. Купить как можно скорее"
+          "bird": "Предложение раннего бронирования. Купить как можно скорее",
+          "join_waitlist": "Join Waiting List",
+          "leave_waitlist": "Leave Waiting List",
+          "full": "Course is full",
+          "on_waitlist": "You're on the waiting list"
         },
         "upload_widget": {
           "title": "Баннерный виджет",
@@ -483,7 +491,13 @@
           "remove": "Удалять"
         },
         "view": "Вид",
-        "delete_profile": "Удалить профиль"
+        "delete_profile": "Удалить профиль",
+        "waitlist_tab": "Waiting List",
+        "waitlist_empty": "No students on the waiting list",
+        "approve": "Approve",
+        "remove": "Remove",
+        "joined": "Joined",
+        "loading": "Loading..."
       },
       "marks": {
         "title": "Метки",

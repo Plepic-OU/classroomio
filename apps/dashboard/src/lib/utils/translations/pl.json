@@ -423,6 +423,10 @@
         "download": "Pobierać",
         "allow": "Pozwól nowym uczniom",
         "access": "Pozwól nowym uczniom uzyskać dostęp do tego kursu",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Maximum students (leave empty for unlimited)",
+        "waitlist_toggle": "Enable Waiting List",
+        "waitlist_toggle_desc": "Allow students to join a waiting list when the course is full",
         "publish": "Publikuj kurs",
         "determines": "To określa, czy Twój kurs wyświetla się na stronie docelowej",
         "published": "Opublikowany",
@@ -484,7 +488,11 @@
           "discount": "Rabat",
           "enroll": "Zapisz teraz",
           "buy": "Kup teraz",
-          "bird": "Wczesna oferta ptaków. Kup jak najszybciej"
+          "bird": "Wczesna oferta ptaków. Kup jak najszybciej",
+          "join_waitlist": "Join Waiting List",
+          "leave_waitlist": "Leave Waiting List",
+          "full": "Course is full",
+          "on_waitlist": "You're on the waiting list"
         },
         "upload_widget": {
           "title": "Widżet banerowy",
@@ -600,6 +608,12 @@
         "feedback": "Skopiowany e -mail do schowka",
         "view": "Pogląd",
         "delete_profile": "Usuń profil",
+        "waitlist_tab": "Waiting List",
+        "waitlist_empty": "No students on the waiting list",
+        "approve": "Approve",
+        "remove": "Remove",
+        "joined": "Joined",
+        "loading": "Loading...",
         "teams": {
           "add": "Dodać",
           "add_team": "Dodaj kolegów z zespołu lub współpracowników do swojej organizacji. Zacznij współpracować",

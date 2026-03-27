@@ -268,6 +268,10 @@
         "download": "Descargar",
         "allow": "Permitir nuevos estudiantes",
         "access": "Permitir que nuevos estudiantes accedan a este curso",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Maximum students (leave empty for unlimited)",
+        "waitlist_toggle": "Enable Waiting List",
+        "waitlist_toggle_desc": "Allow students to join a waiting list when the course is full",
         "publish": "Publicar curso",
         "determines": "Esto determina si su curso se muestra en su página de destino.",
         "published": "Publicado",
@@ -325,7 +329,11 @@
           "discount": "Descuento",
           "enroll": "Enlístate ahora",
           "buy": "Comprar ahora",
-          "bird": "Oferta por reserva anticipada. Compre lo antes posible"
+          "bird": "Oferta por reserva anticipada. Compre lo antes posible",
+          "join_waitlist": "Join Waiting List",
+          "leave_waitlist": "Leave Waiting List",
+          "full": "Course is full",
+          "on_waitlist": "You're on the waiting list"
         },
         "upload_widget": {
           "title": "Widget de banner",
@@ -483,7 +491,13 @@
           "remove": "Eliminar"
         },
         "view": "Vista",
-        "delete_profile": "Eliminar perfil"
+        "delete_profile": "Eliminar perfil",
+        "waitlist_tab": "Waiting List",
+        "waitlist_empty": "No students on the waiting list",
+        "approve": "Approve",
+        "remove": "Remove",
+        "joined": "Joined",
+        "loading": "Loading..."
       },
       "marks": {
         "title": "Marcas",

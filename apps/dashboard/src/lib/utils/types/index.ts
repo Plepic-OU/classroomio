@@ -232,6 +232,8 @@ export interface Course {
   certificate_theme?: string;
   status: string;
   is_published?: boolean;
+  max_capacity?: number | null;
+  waitlist_enabled?: boolean;
   progress_rate?: number;
   total_lessons?: number;
   total_students?: number;

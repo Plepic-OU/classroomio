@@ -428,6 +428,10 @@
         "download": "Download",
         "allow": "Tillad nye studerende",
         "access": "Tillad nye studerende at få adgang til dette kursus",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Maximum students (leave empty for unlimited)",
+        "waitlist_toggle": "Enable Waiting List",
+        "waitlist_toggle_desc": "Allow students to join a waiting list when the course is full",
         "publish": "Udgiv kursus",
         "determines": "Dette bestemmer, om dit kursus vises på din destinationsside",
         "published": "Offentliggjort",
@@ -492,7 +496,11 @@
           "discount": "Rabat",
           "enroll": "Tilmeld dig nu",
           "buy": "Køb nu",
-          "bird": "Tidlig fugl tilbud. Køb ASAP"
+          "bird": "Tidlig fugl tilbud. Køb ASAP",
+          "join_waitlist": "Join Waiting List",
+          "leave_waitlist": "Leave Waiting List",
+          "full": "Course is full",
+          "on_waitlist": "You're on the waiting list"
         },
         "upload_widget": {
           "title": "Banner -widget",
@@ -608,6 +616,12 @@
         "feedback": "Kopieret e -mail til udklipsholder",
         "view": "Udsigt",
         "delete_profile": "Slet profil",
+        "waitlist_tab": "Waiting List",
+        "waitlist_empty": "No students on the waiting list",
+        "approve": "Approve",
+        "remove": "Remove",
+        "joined": "Joined",
+        "loading": "Loading...",
         "teams": {
           "add": "Tilføje",
           "add_team": "Tilføj dine teamkammerater eller samarbejdspartnere til din organisation. Begynd at arbejde sammen",

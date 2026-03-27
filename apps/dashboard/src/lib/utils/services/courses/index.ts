@@ -86,6 +86,8 @@ const SLUG_QUERY = `
   version,
   currency,
   metadata,
+  max_capacity,
+  waitlist_enabled,
   is_certificate_downloadable,
   certificate_theme,
   lesson_section(id, title, order),
@@ -102,6 +104,8 @@ const ID_QUERY = `
   overview,
   logo,
   is_published,
+  max_capacity,
+  waitlist_enabled,
   version,
   group(*,
     members:groupmember(*,
@@ -659,4 +663,49 @@ export async function deleteExercise(questions: Array<{ id: string }>, exerciseI
 
   await supabase.from('submission').delete().match({ exercise_id: exerciseId });
   await supabase.from('exercise').delete().match({ id: exerciseId });
+}
+
+// Waitlist functions
+
+export async function enrollOrWaitlist(courseId: string, groupId: string, profileId: string) {
+  const { data, error } = await supabase.rpc('enroll_or_waitlist', {
+    p_course_id: courseId,
+    p_group_id: groupId,
+    p_profile_id: profileId
+  });
+
+  return { data, error };
+}
+
+export async function approveWaitlistStudent(waitlistId: string) {
+  const { data, error } = await supabase.rpc('approve_waitlist_student', {
+    p_waitlist_id: waitlistId
+  });
+
+  return { data, error };
+}
+
+export async function fetchCourseWaitlist(courseId: string) {
+  const { data, error } = await supabase
+    .from('course_waitlist')
+    .select('id, course_id, profile_id, created_at, profile:profile_id(id, fullname, email, avatar_url)')
+    .eq('course_id', courseId)
+    .order('created_at', { ascending: true });
+
+  return { data, error };
+}
+
+export async function checkWaitlistStatus(courseId: string, profileId: string) {
+  const { data, error } = await supabase
+    .from('course_waitlist')
+    .select('id')
+    .eq('course_id', courseId)
+    .eq('profile_id', profileId)
+    .maybeSingle();
+
+  return { data, error };
+}
+
+export async function removeFromWaitlist(waitlistId: string) {
+  return supabase.from('course_waitlist').delete().match({ id: waitlistId });
 }

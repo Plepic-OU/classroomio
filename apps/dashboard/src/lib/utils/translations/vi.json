@@ -268,6 +268,10 @@
         "download": "Tải xuống",
         "allow": "Cho phép sinh viên mới",
         "access": "Cho phép sinh viên mới truy cập khóa học này",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Maximum students (leave empty for unlimited)",
+        "waitlist_toggle": "Enable Waiting List",
+        "waitlist_toggle_desc": "Allow students to join a waiting list when the course is full",
         "publish": "Xuất bản khóa học",
         "determines": "Điều này xác định xem khóa học của bạn có hiển thị trên trang đích hay không",
         "published": "Được phát hành",
@@ -325,7 +329,11 @@
           "discount": "Giảm giá",
           "enroll": "Đăng ký ngay",
           "buy": "Mua ngay",
-          "bird": "Ưu đãi chim sớm. Mua càng sớm càng tốt"
+          "bird": "Ưu đãi chim sớm. Mua càng sớm càng tốt",
+          "join_waitlist": "Join Waiting List",
+          "leave_waitlist": "Leave Waiting List",
+          "full": "Course is full",
+          "on_waitlist": "You're on the waiting list"
         },
         "upload_widget": {
           "title": "Tiện ích biểu ngữ",
@@ -483,7 +491,13 @@
           "remove": "Di dời"
         },
         "view": "Xem",
-        "delete_profile": "Xóa hồ sơ"
+        "delete_profile": "Xóa hồ sơ",
+        "waitlist_tab": "Waiting List",
+        "waitlist_empty": "No students on the waiting list",
+        "approve": "Approve",
+        "remove": "Remove",
+        "joined": "Joined",
+        "loading": "Loading..."
       },
       "marks": {
         "title": "Điểm",
