@@ -9,7 +9,7 @@
   import OrgSelector from '$lib/components/OrgSelector/OrgSelector.svelte';
   import PrimaryButton from '$lib/components/PrimaryButton/index.svelte';
   import { currentOrgPath, isFreePlan } from '$lib/utils/store/org';
-  import { ChevronRight, SettingsAdjust } from 'carbon-icons-svelte';
+  import { ChevronRight, List, SettingsAdjust } from 'carbon-icons-svelte';
   import ForumIcon from 'carbon-icons-svelte/lib/Forum.svelte';
   import HelpIcon from 'carbon-icons-svelte/lib/Help.svelte';
 
@@ -78,6 +78,12 @@
       label: $t('org_navigation.setup'),
       isActive: $page.url.pathname.includes(`${$currentOrgPath}/setup`),
       show: $isOrgAdmin
+    },
+    {
+      path: '/waitinglist',
+      label: $t('org_navigation.waitinglist'),
+      isActive: $page.url.pathname.includes(`${$currentOrgPath}/waitinglist`),
+      show: $isOrgAdmin
     }
   ];
 </script>
@@ -121,6 +127,8 @@
                     <AudienceIcon />
                   {:else if menuItem.path === '/setup'}
                     <SettingsAdjust />
+                  {:else if menuItem.path === '/waitinglist'}
+                    <List size={20} class="carbon-icon dark:text-white" />
                   {/if}
                   <p class="text-sm font-medium">{menuItem.label}</p>
                 </li>

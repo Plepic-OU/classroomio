@@ -1,7 +1,7 @@
 # Waiting List — Design Document
 
 **Date:** 2026-03-27
-**Scope:** Allow landing page visitors to join a waitinglist. Admins can view entries in the dashboard.
+**Scope:** Allow landing page visitors to join a waitinglist. Admins can view org-specific entries in the dashboard.
 **Maturity:** MVP
 **Goal:** Capture interest from visitors before they sign up; give admins visibility into demand.
 
@@ -11,17 +11,21 @@
 
 | Topic | Decision |
 |---|---|
-| DB | `waitinglist` table already exists (`id`, `email`, `created_at`). Add RLS policies only. |
-| Landing page API | SvelteKit `+server.ts` route in classroomio-com calls Supabase via anon key |
+| DB | `waitinglist` table exists. Add `org_id` column + drop/replace unique constraint + add RLS policies. |
+| Waitinglist scope | **Per-org** — `org_id uuid REFERENCES organization(id)` (nullable). Landing page submits with null. |
+| Landing page submission | **Direct browser call** to Supabase REST — no `+server.ts` proxy (anon key is public by design) |
+| Dashboard data loading | **Client-side `onMount`** in `+page.svelte` — consistent with rest of dashboard; no `+page.server.ts` |
+| DB email validation | **RLS `WITH CHECK`** validates email format via regex |
 | Supabase access (landing) | Anon key — safe to expose; INSERT-only policy added for `anon` role |
-| Supabase access (dashboard) | Authenticated Supabase client; SELECT policy for `authenticated` role |
+| Supabase access (dashboard) | `getSupabase()` client-side in `onMount`; authenticated SELECT RLS policy scoped by org membership |
 | Form placement | Hero section of classroomio-com, below existing CTA buttons |
-| Success state | Inline message on the page — no redirect |
+| Success state | Inline "You're on the list!" message replaces the form |
 | Dashboard location | New page `/org/[slug]/waitinglist`, linked from org sidebar |
-| Duplicate handling | Unique constraint on `email`; API returns 409 with "Already on the waitinglist" |
+| Duplicate handling | `UNIQUE(email, org_id)` constraint; 23505 Postgres error code maps to "Already signed up" message |
+| Unique constraint on nulls | `UNIQUE(email, org_id)` — null != null in PostgreSQL, so duplicate null-org entries are possible but acceptable for MVP |
 | Pagination | None — simple table for MVP (Supabase default max_rows is 1000; acceptable for MVP) |
 | Email notification | None — out of scope for MVP |
-| Rate limiting | None at DB layer — accepted MVP risk; anon INSERT with no server-side rate limit |
+| Rate limiting | None — accepted MVP risk |
 | DELETE/UPDATE policies | None — read-only admin view for MVP |
 | Supabase instance | `classroomio-com` and `dashboard` MUST point to the same Supabase project |
 
@@ -41,29 +45,52 @@ New file: `supabase/migrations/20260327000000_waitinglist_rls.sql`
 
 ```sql
 -- RLS was already enabled on waitinglist in a prior migration (20240717053936_rls.sql).
--- This migration adds the access policies only.
 
--- Allow anonymous visitors to add themselves to the waitinglist
+-- 1. Add org_id column (nullable — landing page entries have no org context)
+ALTER TABLE public.waitinglist
+  ADD COLUMN org_id uuid REFERENCES public.organization(id) ON DELETE SET NULL;
+
+-- 2. Drop the old email-only unique constraint (poor name, wrong scope)
+ALTER TABLE public.waitinglist
+  DROP CONSTRAINT "constraint_name";
+
+-- 3. New unique constraint: same email can appear once per org (and once as null-org)
+--    Note: NULL != NULL in PostgreSQL, so duplicate null-org entries are theoretically possible;
+--    acceptable for MVP since the landing page is not the primary per-org use case.
+ALTER TABLE public.waitinglist
+  ADD CONSTRAINT waitinglist_email_org_unique UNIQUE (email, org_id);
+
+-- 4. Allow anonymous visitors to insert — with email format validation
 CREATE POLICY "anon can insert waitinglist"
   ON public.waitinglist
   FOR INSERT
   TO anon
-  WITH CHECK (true);
+  WITH CHECK (email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
--- Allow authenticated users to read the waitinglist
--- NOTE: This grants any authenticated user (not just admins) SELECT access.
--- The waitinglist table has no org_id column so org-scoped RLS is not possible.
--- Access is further restricted at the application layer (sidebar guard + load function auth check).
-CREATE POLICY "authenticated can select waitinglist"
+-- 5. Allow authenticated users to read entries for their orgs (or null-org entries)
+CREATE POLICY "authenticated can select own org waitinglist"
   ON public.waitinglist
   FOR SELECT
   TO authenticated
-  USING (true);
+  USING (
+    org_id IS NULL
+    OR EXISTS (
+      SELECT 1 FROM public.organizationmember om
+      JOIN public.profile p ON p.id = om.profile_id
+      WHERE p.auth_user_id = auth.uid()
+        AND om.organization_id = waitinglist.org_id
+    )
+  );
 ```
 
-> The table already has `UNIQUE (email)` — duplicate inserts return a Postgres unique violation, which the API route maps to a 409 response.
->
-> **Rollback:** `DROP POLICY "anon can insert waitinglist" ON public.waitinglist; DROP POLICY "authenticated can select waitinglist" ON public.waitinglist;`
+> **Rollback:**
+> ```sql
+> DROP POLICY "anon can insert waitinglist" ON public.waitinglist;
+> DROP POLICY "authenticated can select own org waitinglist" ON public.waitinglist;
+> ALTER TABLE public.waitinglist DROP CONSTRAINT waitinglist_email_org_unique;
+> ALTER TABLE public.waitinglist ADD CONSTRAINT "constraint_name" UNIQUE (email);
+> ALTER TABLE public.waitinglist DROP COLUMN org_id;
+> ```
 
 ---
 
@@ -76,11 +103,9 @@ supabase/migrations/20260327000000_waitinglist_rls.sql
 
 apps/classroomio-com/src/
   lib/WaitingList/index.svelte
-  routes/api/waitinglist/+server.ts
 
 apps/dashboard/src/routes/org/[slug]/
   waitinglist/+page.svelte
-  waitinglist/+page.server.ts
 
 apps/e2e/
   features/waitinglist.feature
@@ -90,11 +115,13 @@ apps/e2e/
 ### Modified files
 
 ```
-apps/classroomio-com/src/lib/Home/Hero.svelte     ← embed WaitingListForm below CTA buttons
-apps/classroomio-com/.env.example                 ← add PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY
-apps/dashboard/src/lib/components/Org/SideBar.svelte  ← add Waitinglist nav item (admin only)
-apps/e2e/scripts/check-services.ts                ← add port 5174 health check for classroomio-com
-apps/e2e/scripts/reset-db.ts                      ← ensure waitinglist table is included in truncation
+apps/classroomio-com/src/lib/Home/Hero.svelte              ← embed WaitingListForm below CTA buttons
+apps/classroomio-com/.env.example                          ← add PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY
+apps/dashboard/src/lib/components/Org/SideBar.svelte       ← add Waitinglist nav item (admin only)
+apps/dashboard/src/lib/utils/constants/translations/en.json  ← add waitinglist key
+  (+ da, de, es, fr, hi, pl, pt, ru, vi)
+apps/e2e/scripts/check-services.ts                         ← add port 5174 health check
+apps/e2e/scripts/reset-db.ts                               ← no change needed (supabase db reset handles it)
 ```
 
 ---
@@ -105,54 +132,48 @@ apps/e2e/scripts/reset-db.ts                      ← ensure waitinglist table i
 
 Self-contained component with three UI states:
 
-- **Default**: email `<TextField>` + "Join Waitinglist" `<Button>` (reuse `$lib/Input/TextField.svelte` and `$lib/Button/Button.svelte` from classroomio-com)
-- **Success**: inline "You're on the list!" message replaces the form
-- **Error**: inline `<p class="text-red-500">` below the input — message varies by status:
-  - 409 → "You're already signed up!"
+- **Default**: email input (using `$lib/Input/TextField.svelte`) + "Join Waitinglist" button (using `$lib/Button/Button.svelte`)
+- **Success**: inline "You're on the list!" replaces the form
+- **Error**: inline `<p class="text-red-500">` — message by status:
+  - Postgres error code `23505` in response body → "You're already signed up!"
   - other → "Something went wrong, please try again."
 
-Client-side validation: non-empty + basic email format (`/^[^\s@]+@[^\s@]+\.[^\s@]+$/`) before submitting (or reuse `isFormValid` from `$lib/utils/isFormValid`). On invalid input, show "Please enter a valid email." without making a network request.
+Client-side validation: non-empty + regex `/^[^@\s]+@[^@\s]+\.[^@\s]+$/` before submitting. On invalid, show "Please enter a valid email."
 
-POSTs `{ email }` to `/api/waitinglist`. Sets `isLoading = true` during the request to disable the button.
+**Supabase call (direct from browser):**
 
-The form should inherit the Hero section's horizontal centering (`flex items-center justify-center`) to match the CTA button row's visual rhythm.
-
-### `apps/classroomio-com/src/routes/api/waitinglist/+server.ts`
-
-> **Important:** Add `export const prerender = false` at the top of this file. The root `+layout.ts` sets `prerender = true` globally; this opt-out is required to avoid a build error.
-
+```js
+const res = await fetch(`${PUBLIC_SUPABASE_URL}/rest/v1/waitinglist`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'apikey': PUBLIC_SUPABASE_ANON_KEY,
+    'Authorization': `Bearer ${PUBLIC_SUPABASE_ANON_KEY}`,
+    'Prefer': 'return=minimal',
+  },
+  body: JSON.stringify({ email }),
+  signal: AbortSignal.timeout(5000),
+});
 ```
-POST /api/waitinglist
-Body: { email: string }
-```
 
-1. Parse body; return 400 if email is missing or not a valid format.
-2. Call `POST https://{PUBLIC_SUPABASE_URL}/rest/v1/waitinglist` with:
-   - Header `apikey: PUBLIC_SUPABASE_ANON_KEY`
-   - Header `Authorization: Bearer PUBLIC_SUPABASE_ANON_KEY`
-   - Header `Prefer: return=minimal`
-   - Body `{ email }`
-3. Map responses:
+- `org_id` is not included in the body — null by default for landing page entries.
+- On `res.ok` (201): show success state.
+- On 409 OR response body contains `"23505"`: show duplicate message.
+- Other: show generic error.
 
-| Supabase response | API response |
-|---|---|
-| 201 | `201 { message: "Added to waitinglist" }` |
-| 409 (unique violation) | `409 { message: "Already on the waitinglist" }` |
-| other error | `500 { message: "Something went wrong" }` |
+Import `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` from `$env/static/public`.
 
-Uses `PUBLIC_SUPABASE_URL` and `PUBLIC_SUPABASE_ANON_KEY` from `$env/static/public`.
-
-Add a 5-second `AbortController` timeout on the `fetch` call to prevent hanging if Supabase is unreachable.
+The form should match the Hero section's centering (`flex flex-col items-center justify-center`).
 
 ### Hero placement
 
-In `Hero.svelte`, below the existing CTA buttons div (the one containing "Book a demo" and "Sign Up for Free"), add:
+In `Hero.svelte`, below the existing CTA buttons `<div>` (contains "Book a demo" and "Sign Up for Free"), add:
 
 ```svelte
+import WaitingListForm from '$lib/WaitingList/index.svelte';
+...
 <WaitingListForm />
 ```
-
-Import `WaitingListForm` from `$lib/WaitingList/index.svelte`.
 
 ### `.env.example` addition
 
@@ -165,37 +186,47 @@ PUBLIC_SUPABASE_ANON_KEY=<anon key from supabase start output>
 
 ## Dashboard
 
-### `apps/dashboard/src/routes/org/[slug]/waitinglist/+page.server.ts`
-
-> **Auth pattern TBD** — see open decision below. The load function must: (1) confirm the user is authenticated, and (2) confirm the user is an org admin. Do not use `getSupabase().auth.getSession()` — this is the anon-key client and returns `null` server-side. Use `locals` (populated by `hooks.server.ts`) or the service-role client instead.
->
-> Use `throw error(500, 'Failed to load waitinglist')` from `@sveltejs/kit` for Supabase errors — do not `throw` the raw error object.
-
-```ts
-// Pseudocode — exact auth pattern depends on the open decision below
-export const load = async ({ locals, params }) => {
-  // 1. Check authenticated (use locals, not getSession)
-  // 2. Check is org admin for params.slug
-  // 3. Query: supabase.from('waitinglist').select('email, created_at').order('created_at', { ascending: false })
-  // 4. Return { entries }
-};
-```
-
 ### `apps/dashboard/src/routes/org/[slug]/waitinglist/+page.svelte`
 
-Simple page with:
+No `+page.server.ts` — data loaded client-side in `onMount`.
+
+```svelte
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { getSupabase } from '$lib/utils/functions/supabase';
+  import { currentOrg } from '$lib/utils/store/org';
+
+  let entries: { email: string; created_at: string }[] = [];
+  let isLoading = true;
+
+  onMount(async () => {
+    const supabase = getSupabase();
+    const { data } = await supabase
+      .from('waitinglist')
+      .select('email, created_at')
+      .eq('org_id', $currentOrg.id)
+      .order('created_at', { ascending: false });
+    entries = data ?? [];
+    isLoading = false;
+  });
+</script>
+```
+
+Page layout:
 - Heading "Waitinglist"
-- Count: "X people signed up"
-- Table columns: **Email** | **Signed up** (formatted date)
+- Count: "X people signed up" (or loading skeleton)
+- Table: **Email** | **Signed up** (locale date string via `new Date(entry.created_at).toLocaleDateString()`)
 - Empty state: "No one on the waitinglist yet."
 
 ### Sidebar
 
-In `SideBar.svelte`, add a "Waitinglist" item to the admin nav section:
-- Only visible when `$isOrgAdmin` is true (same pattern as existing admin-only items)
+In `SideBar.svelte`, add a "Waitinglist" nav item:
+- Only visible when `$isOrgAdmin` is true
 - Link: `$currentOrgPath + '/waitinglist'`
-- Label: use `$t('org_navigation.waitinglist')` — add `"waitinglist": "Waitinglist"` to **all 10** translation files (`en.json`, `da.json`, `de.json`, `es.json`, `fr.json`, `hi.json`, `pl.json`, `pt.json`, `ru.json`, `vi.json`)
-- Icon: use `List` from `carbon-icons-svelte` (or another appropriate icon); add a `{:else if menuItem.path === '/waitinglist'}` branch to the icon block in `SideBar.svelte`
+- Label: `$t('org_navigation.waitinglist')`
+- Icon: `List` from `carbon-icons-svelte` — add `{:else if menuItem.path === '/waitinglist'}` branch to the icon block
+
+Translation key `"waitinglist": "Waitinglist"` added to **all 10** translation files.
 
 ---
 
@@ -220,20 +251,18 @@ Feature: Waitinglist
 
 ### `apps/e2e/steps/waitinglist.steps.ts`
 
-- "I am on the landing page" → `page.goto(process.env.COM_URL ?? 'http://localhost:5174')`
-- "I fill in the waitinglist email {string}" → fill the email input in the waitinglist form. The locator depends on whether `WaitingList/index.svelte` renders a `<label>` — confirm during implementation and document in SKILL.md.
+- "I am on the landing page" → `page.goto(process.env.COM_URL ?? 'http://localhost:5174')`; wait for page to be interactive before interacting
+- "I fill in the waitinglist email {string}" → fill the email TextField (confirm exact label/placeholder from component and document in SKILL.md)
 - "I submit the waitinglist form" → `page.getByRole('button', { name: /join waitinglist/i }).click()`
 - "I should see a waitinglist success message" → `expect(page.getByText("You're on the list!")).toBeVisible()`
-- "I am on the org waitinglist page" → `page.goto('/org/' + (process.env.E2E_ORG_SLUG ?? 'udemy-test') + '/waitinglist')` then await URL match
-- "I should see the waitinglist table" → assert a `<table>` element is visible
+- "I am on the org waitinglist page" → `page.goto(\`/org/${process.env.E2E_ORG_SLUG ?? 'udemy-test'}/waitinglist\`)` + `expect(page).toHaveURL(/waitinglist/)`
+- "I should see the waitinglist table" → `expect(page.locator('table')).toBeVisible()`
 
-> **Hydration:** The `classroomio-com` app uses SvelteKit SSR. Before interacting with the form, wait for evidence that JS has hydrated (e.g., `page.waitForLoadState('domcontentloaded')` plus waiting for the submit button to be enabled). The `html[theme]` signal used for the dashboard does NOT apply here — classroomio-com does not use Carbon's `<Theme>`. Identify the correct hydration signal during implementation and document it in SKILL.md.
+> **Hydration:** classroomio-com does not use Carbon `<Theme>`, so `html[theme]` does not apply. Determine correct hydration signal during implementation and document in SKILL.md.
 >
-> **Test email uniqueness:** The E2E test uses a fixed email (`test-waitinglist@example.com`). Since `reset-db` is non-fatal, use a timestamped email in the step definition as a fallback (`test-waitinglist-${Date.now()}@example.com`) to avoid 409 collisions on re-run.
+> **Step reuse:** `"I am logged in as an admin"` is globally registered from `course-creation.steps.ts` — do not re-declare.
 >
-> **Step reuse:** `"I am logged in as an admin"` is already defined in `course-creation.steps.ts` and is globally registered. Do not re-declare it in `waitinglist.steps.ts`.
->
-> **`check-services.ts`:** Add a health check for classroomio-com at `http://localhost:5174` (or `process.env.COM_URL`) with a clear error message: `"classroomio-com not running — start with: pnpm dev --filter=@cio/classroomio-com"`.
+> **`check-services.ts`:** Add health check for `process.env.COM_URL ?? 'http://localhost:5174'` with message: `"classroomio-com not running — start with: pnpm dev --filter=@cio/classroomio-com"`.
 
 ---
 
@@ -241,9 +270,9 @@ Feature: Waitinglist
 
 | App | Variable | Description |
 |---|---|---|
-| classroomio-com | `PUBLIC_SUPABASE_URL` | Supabase REST base URL (must match dashboard's Supabase project) |
+| classroomio-com | `PUBLIC_SUPABASE_URL` | Supabase REST base URL (same project as dashboard) |
 | classroomio-com | `PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (safe to expose) |
-| e2e | `COM_URL` | Base URL for classroomio-com (default: `http://localhost:5174`) |
+| e2e | `COM_URL` | classroomio-com base URL (default: `http://localhost:5174`) |
 | e2e | `E2E_ORG_SLUG` | Org slug for admin tests (default: `udemy-test`) |
 
-No new env vars required in `apps/dashboard` — it already has Supabase configured.
+No new env vars required in `apps/dashboard`.

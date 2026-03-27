@@ -3,6 +3,7 @@
   import { fly } from 'svelte/transition';
   import { sineInOut } from 'svelte/easing';
   import { PUBLIC_ENABLE_USERS_COMPANIES } from '$env/static/public';
+  import WaitingListForm from '$lib/WaitingList/index.svelte';
 
   const names = [
     { label: 'Audience', color: '#3ADFEC' },
@@ -193,6 +194,8 @@
       View on Github
     </a> -->
     </div>
+
+    <WaitingListForm />
 
     <!-- <div class="relative my-5 md:my-10">
       <img
