@@ -75,6 +75,7 @@ cskip --worktree task-text-utils
 # Terminal 5 — https://github.com/Plepic-OU/classroomio/issues/17
 cskip --worktree task-plan-permissions
 
+
 In each session, paste the corresponding issue URL and let Claude work. Each worktree gets its own isolated branch — no conflicts between sessions.
 
 ## Step 3: Merge everything

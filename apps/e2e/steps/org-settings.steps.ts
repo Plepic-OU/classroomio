@@ -9,6 +9,9 @@ Given('I am on the org settings page', async ({ page }) => {
   await page.goto(`/org/${orgSlug}/settings`);
   await page.locator('html[theme]').waitFor({ timeout: 10000 });
   await expect(page).toHaveURL(/settings/, { timeout: 10000 });
+  // Default tab is "Profile" — click "Organization" tab to see org settings
+  await page.getByRole('tab', { name: 'Organization' }).click();
+  await page.getByLabel('Organization Name').waitFor({ timeout: 10000 });
 });
 
 When('I update the organization name to {string}', async ({ page }, name: string) => {
