@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# PORT_OFFSET allows multiple devcontainers to coexist.
+# When non-zero, Redis gets a unique container name and
+# the Supabase URL in .env uses the offset port.
+# Inside docker-in-docker the actual service ports stay the same;
+# the offset only matters for the host-side mapping that the
+# launch script configures via appPort overrides.
+PORT_OFFSET="${PORT_OFFSET:-0}"
+REDIS_NAME="classroomio-redis${PORT_OFFSET:+"-$PORT_OFFSET"}"
+
 echo "==> Fixing volume permissions..."
 sudo chown -R node:node /home/node/.claude
 
@@ -15,9 +24,9 @@ for app in apps/dashboard apps/api apps/classroomio-com; do
   fi
 done
 
-echo "==> Starting Redis..."
-docker rm -f classroomio-redis 2>/dev/null || true
-docker run -d --name classroomio-redis -p 6379:6379 redis:7-alpine
+echo "==> Starting Redis (container: $REDIS_NAME)..."
+docker rm -f "$REDIS_NAME" 2>/dev/null || true
+docker run -d --name "$REDIS_NAME" -p 6379:6379 redis:7-alpine
 
 echo "==> Starting Supabase..."
 supabase stop 2>/dev/null || true

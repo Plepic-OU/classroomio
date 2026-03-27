@@ -11,7 +11,7 @@
     "format": "prettier . --write",
     "release": "standard-version",
     "test:e2e": "pnpm --filter=@cio/e2e test",
-    "dev:container": "turbo prepare --concurrency 13 && concurrently -n dashboard,api,website,docs -c blue,green,magenta,cyan \"cd apps/dashboard && npx vite dev --port 5173 --host\" \"cd apps/api && pnpm dev\" \"cd apps/classroomio-com && npx vite dev --port 5174 --host\" \"cd apps/docs && npx vite dev --host\"",
+    "dev:container": "turbo prepare --concurrency 13 && concurrently -n dashboard,api,website,docs -c blue,green,magenta,cyan \"cd apps/dashboard && npx vite dev --port ${DASHBOARD_PORT:-5173} --host\" \"cd apps/api && PORT=${API_PORT:-3002} pnpm dev\" \"cd apps/classroomio-com && npx vite dev --port ${WEBSITE_PORT:-5174} --host\" \"cd apps/docs && DOCS_PORT=${DOCS_PORT:-3000} npx vite dev --host\"",
     "dashboard:start": "pnpm start --filter @cio/dashboard",
     "api:start": "pnpm start --filter @cio/api",
     "supabase:push": "pnpx supabase link --project-ref $PROJECT_ID && pnpx supabase db push --include-all"
