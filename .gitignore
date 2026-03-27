@@ -48,3 +48,6 @@ vite.config.ts*.mjs
 
 # C4 AST extraction output (generated, not committed)
 docs/c4/components-*.json
+
+# Agent channel system file
+.agent-channel
