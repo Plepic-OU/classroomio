@@ -38,6 +38,30 @@ The modal container has class `.dialog` — always scope selectors to it to avoi
   - The final button says "Finish", NOT "Create" or "Submit"
 - After creation, app redirects to `/courses/[id]` (detail page, not the list)
 
+### Signup page
+
+- Email field: `page.getByLabel('Your email')` (same as login)
+- Password field: `page.getByLabel('Your password')` (same as login)
+- Confirm password: `page.getByLabel('Confirm password')`
+- Submit button: `page.getByRole('button', { name: /create account/i })`
+- After signup, new user is redirected to `/onboarding`
+
+### Onboarding (2-step)
+
+Step 1:
+- Full name: `page.getByLabel(/full name/i)`
+- Org name: `page.getByLabel(/name of organization/i)` — NOT "organization name"
+- Site name is auto-generated from org name
+- Continue button: `page.getByRole('button', { name: /continue/i })`
+
+Step 2 — radio buttons use wrapped `<label><input type="radio">text</label>` pattern:
+- Do NOT use `getByLabel()` for radio buttons — it won't find them
+- Use `getByText('Sell courses online').click()` instead
+- Goal options: "Sell courses online", "Teach my current students online", "Train my employees", "Create courses for my customers", "On another platform, expanding here"
+- Source options: "Articles", "Search engine", "Social media", "Friends and family"
+- Submit: same "Continue" button
+- After onboarding, redirects to `/org/[siteName]`
+
 ## Patterns that work
 
 - Always `await expect(page).toHaveURL(...)` after navigation — confirms page load before next action
@@ -67,3 +91,21 @@ The app has a strict CSP that blocks:
 - View trace: `npx playwright show-trace test-results/.../trace.zip`
 - Error context snapshots in YAML are very useful for finding correct selectors
 - Test the login flow with a direct script using `page.on('console', ...)` to see app logs
+
+## Auto-learnings protocol
+
+After each e2e test is added using this skill:
+1. If the test passed on first try — no new learning needed
+2. If debugging was required — append a dated entry to the "Learnings Log" below describing:
+   - What went wrong
+   - What the fix was
+   - The selector/pattern that works
+3. Stop adding tests when **2 consecutive tests pass without new learnings**
+
+## Learnings Log
+
+### 2026-03-27: Student signup test
+- **Problem**: `getByLabel(/organization name/i)` didn't match — actual label is "Name of Organization"
+- **Fix**: Use `getByLabel(/name of organization/i)` — always check actual rendered labels via screenshot
+- **Problem**: `getByLabel(/sell online/i).check()` failed for radio buttons — they use `<label>` wrapping `<input>` without `for` attribute
+- **Fix**: Use `getByText('Sell courses online').click()` for wrapped radio button labels
