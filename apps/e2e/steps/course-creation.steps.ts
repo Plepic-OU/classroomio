@@ -5,11 +5,12 @@ import { test } from '../fixtures/base';
 const { Given, When, Then } = createBdd(test);
 
 Given('I am logged in as an admin', async ({ page }) => {
-  await page.goto('/');
-  await page.getByLabel('Email').fill(process.env.E2E_ADMIN_EMAIL ?? 'admin@test.com');
-  await page.getByLabel('Password').fill(process.env.E2E_ADMIN_PASSWORD ?? '123456');
-  await page.getByRole('button', { name: /log in|sign in/i }).click();
-  await expect(page).toHaveURL(/\/org\//);
+  await page.goto('/login');
+  await page.locator('html[theme]').waitFor({ timeout: 10000 });
+  await page.getByLabel('Your email').fill(process.env.E2E_ADMIN_EMAIL ?? 'admin@test.com');
+  await page.getByLabel('Your password').fill(process.env.E2E_ADMIN_PASSWORD ?? '123456');
+  await page.getByRole('button', { name: 'Log In' }).click();
+  await expect(page).toHaveURL(/\/org\//, { timeout: 15000 });
 });
 
 Given('I am on the org courses page', async ({ page }) => {
@@ -22,7 +23,8 @@ When('I click {string}', async ({ page }, label: string) => {
 });
 
 When('I select course type {string}', async ({ page }, courseType: string) => {
-  await page.getByText(courseType).click();
+  // Scope to the modal to avoid matching existing course type badges on course cards
+  await page.locator('.dialog').getByRole('button', { name: new RegExp(courseType, 'i') }).click();
 });
 
 When('I fill in the course name {string}', async ({ page }, name: string) => {
@@ -30,11 +32,13 @@ When('I fill in the course name {string}', async ({ page }, name: string) => {
 });
 
 When('I fill in the course description {string}', async ({ page }, description: string) => {
-  await page.getByLabel(/description/i).fill(description);
+  // The description label has a button inside it so getByLabel doesn't work; use exact placeholder
+  await page.getByPlaceholder('A little description about this course').fill(description);
 });
 
 When('I submit the form', async ({ page }) => {
-  await page.getByRole('button', { name: /create|submit/i }).last().click();
+  // Step 2 of the modal uses "Finish" as the submit button
+  await page.locator('.dialog').getByRole('button', { name: /finish/i }).click();
 });
 
 Then('I should be on the new course detail page', async ({ page }) => {

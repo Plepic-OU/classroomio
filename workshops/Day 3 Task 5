@@ -1,0 +1,33 @@
+--- Day 3 - task 5 - Implement waiting list
+
+
+Goals:
+
+
+  0) Add testing section to the plan. We didn’t have e2e test setup in place, so could not add it before.
+
+  1) Create a new skill for implementing a design document. We start from simple setup, but this serves as a recipe we can tune as we implement more features in the project.
+
+Prompt: https://drive.google.com/file/d/1TILxebPUupZzea_AKorUK0R0ACsnH8wn
+
+
+  2) Use the skill to implement the plan.
+
+    This will take a while (15-30 minutes)
+
+  2a) Make sure it works as expected. Playwright tests would be a nice automated way to do this. Most probably there are issues and you need to get through them with claude - (which is another 15-30 minutes)
+
+
+  
+
+Optional goals - choose which one seems interesting to tackle
+
+  o1) The dashboard starts up slowly. Analyze this with claude and try to get it faster. Try to create a prompt so claude would iterate on this problem on it's own until it's faster.
+
+
+  o2) Check the learnings in the scratchbook. Probably there is something that would be good to save for the next time. Figure out where to store this and create a new skill to transfer the scratchbook learning to the project general documentation.
+
+  o2a) If did o2, make a system to trigger the learning transfer each time the implementation skill finishes.
+
+
+  o3) There's a bug that when logging users out and in from same browser, some cache is not properly cleared. Fix that with claude.

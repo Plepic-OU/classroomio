@@ -3,13 +3,13 @@ import { defineBddConfig } from 'playwright-bdd';
 
 const testDir = defineBddConfig({
   features: 'features/**/*.feature',
-  steps: 'steps/**/*.steps.ts',
+  steps: ['steps/**/*.steps.ts', 'fixtures/base.ts'],
   outputDir: '.features-gen',
 });
 
 export default defineConfig({
   testDir,
-  timeout: 10000,
+  timeout: 30000,         // 30s total per test (login + redirect can take ~10-15s)
   expect: { timeout: 5000 },
   globalSetup: './scripts/global-setup.ts',
   reporter: [['html', { open: 'never' }], ['list']],

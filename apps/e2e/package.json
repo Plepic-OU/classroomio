@@ -5,7 +5,7 @@
     "pretest": "tsx scripts/check-services.ts",
     "test": "bddgen && playwright test",
     "test:ui": "bddgen && playwright test --ui --ui-port=9323 --ui-host=0.0.0.0",
-    "report": "playwright show-report --host 0.0.0.0 --port 9222"
+    "report": "playwright show-report --host 0.0.0.0 --port 9223"
   },
   "devDependencies": {
     "@playwright/test": "^1.45.0",

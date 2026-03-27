@@ -16,18 +16,18 @@ Goals:
     Optional: create one one yourself (with help of claude code). But match the name "implementation-validator"
 
 
-  - [ ] 3) Implement the BDD framework with initial tests
+  - [x] 3) Implement the BDD framework with initial tests
 
     After adding agent, make a restart to claude code.
 
     Instruct claude:
 
-      Implement the xxx.md plan. Split the task into smaller chunks and handle one by one. After each chunk use the implementation-validator agent verify that part.
+      Implement the 2026-03-13-bdd-e2e-tests-design.md plan. Split the task into smaller chunks and handle one by one. After each chunk use the implementation-validator agent verify that part.
 
       When iterating on e2e tests make sure the timeout is small enough to get fast iteration (e.g. 10s is enough). And debug one test at a time - to keep iteration fast.
 
 
-  - [ ] 4) Use Claude Code official "code-review" plugin.
+  - [x] 4) Use Claude Code official "code-review" plugin.
 
     You need to install this using "/plugin" and browse the "claude-plugins-official"
 

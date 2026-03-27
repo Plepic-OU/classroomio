@@ -1,0 +1,15 @@
+--- Day 3 - task 3 - polishing E2E test writing skill
+Goals:
+  0) Assumption is that BDD framework is working properly and that state is committed.
+
+  1) Claude should have made “e2e-test-writing” skill. If not, then create one. The skill should be used for creating a new E2E test. It's advised to add tests one at a time and tweak the skill from the lessons learned. The test adding should become smoother as you add more tests. Remember skill frontmatter is loaded when claude starts. The body of the skill is loaded each time when the skill is invoked.
+    P.S. Make sure to add this flow: "student signs up to a course"
+
+  2) Change the skill, so when using the skill the learning are automatically added to the skill. Then, instruct claude to add e2e flows until there is nothing else to learn. Let is stop only when two consecutive tests are added without any new learnings. Let it choose flows by itself.
+
+
+Optional goals:
+
+  o1) Claude keeps on forgetting to update the e2e-test-writing skill with learnings. Create a system with hooks to ask claude if it learned anything. Only trigger it when e2e tests were modified during the session. Start and stop hooks are good for this. 
+    NB! There's potential for infinite loop if the stop hook is incorrectly set up.
+    NB! Does your solution work with parallel claude sessions?

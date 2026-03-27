@@ -2,11 +2,11 @@ Day 2 - Task 3 - compare models for validation
 
 Goals:
 
-  - [ ] 0. Commit the progress of previous steps
+  - [x] 0. Commit the progress of previous steps
 
-  - [ ] 1. Create general purpose agents into the project, one with haiku, one with sonnet and one with opus
+  - [x] 1. Create general purpose agents into the project, one with haiku, one with sonnet and one with opus
 
-  - [ ] 2. Validate the original plan with all three agents and compare the findings.
+  - [x] 2. Validate the original plan with all three agents and compare the findings.
 
 
 Optional advanced goals
