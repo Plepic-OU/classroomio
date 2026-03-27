@@ -112,6 +112,7 @@ INSERT INTO "public"."organization" ("id", "name", "siteName", "avatar_url", "se
 
 INSERT INTO "public"."group" ("id", "name", "description", "created_at", "updated_at", "organization_id") VALUES
 	('c0ab7c5b-db2e-46e7-9853-9308c8ccb2cd', 'Building express apps', 'This shows how to build an express app', '2023-11-22 10:16:06.801846+00', '2023-11-22 10:16:06.801846+00', '7a75d8bc-eaef-48fb-8906-850aa458c2a2'),
+	('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'Full Course with Waitlist', 'A course for testing the waitlist feature', '2026-03-20 10:00:00+00', '2026-03-20 10:00:00+00', '1a1dcddd-1abc-4f72-b644-0bd18191a289'),
 	('c6b022fd-fff3-4f09-8960-c9cb06819761', 'Getting started with MVC', 'Embark on a comprehensive journey into the world of Model-View-Controller (MVC) architecture with our course, "Getting Started with MVC." Designed for beginners and aspiring developers, this course provides a solid foundation for understanding the principles and practices behind MVC, a widely adopted design pattern in software development.
 
 Through a carefully crafted curriculum, you''ll learn the core concepts of MVC, exploring how it enhances the organization, scalability, and maintainability of your code', '2023-12-16 14:11:16.648686+00', '2023-12-16 14:11:16.648686+00', '1a1dcddd-1abc-4f72-b644-0bd18191a289'),
@@ -169,6 +170,11 @@ Through a carefully crafted curriculum, you''ll learn the core concepts of MVC, 
 	('Modern Web Development with React', 'By the end of this course, you''ll be equipped to build interactive and responsive web applications, making you a proficient React developer ready for the demands of today''s web development landscape.', 'Welcome to this amazing course 🚀 ', '16e3bc8d-5d1b-4708-988e-93abae288ccf', '2023-12-16 14:40:15.374067+00', '2023-12-16 14:40:15.374067+00', '04a250f1-bcb9-4e0d-a3d4-a01096e7a105', true, 'https://images.unsplash.com/photo-1565843708714-52ecf69ab81f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w1MTE1NTV8MHwxfHNlYXJjaHwxOHx8cmVhY3QlMjBkZXZ8ZW58MHx8fHwxNzA3Nzk5NDMyfDA&ixlib=rb-4.0.3&q=80&w=1080', 'modern-web-development', '{"goals": "", "grading": true, "description": "", "requirements": "", "lessonDownload": false, "allowNewStudent": true, "lessonTabsOrder": [{"id": 1, "name": "Note"}, {"id": 2, "name": "Slide"}, {"id": 3, "name": "Video"}]}', 0, 'NGN', NULL, true, false, NULL, 'ACTIVE');
 
 
+-- Waitlist test course (max_capacity=1, waitlist_enabled=true; alice fills the seat; student@test.com is WAITLISTED)
+-- Invite hash: eyJpZCI6ImIyYzNkNGU1LWY2YTctODkwMS1iY2RlLWYxMjM0NTY3ODkwMSIsIm5hbWUiOiJGdWxsIENvdXJzZSB3aXRoIFdhaXRsaXN0IiwiZGVzY3JpcHRpb24iOiJBIGNvdXJzZSBmb3IgdGVzdGluZyB0aGUgd2FpdGxpc3QgZmVhdHVyZSIsIm9yZ1NpdGVOYW1lIjoidWRlbXktdGVzdCJ9
+INSERT INTO "public"."course" ("id", "title", "description", "overview", "group_id", "is_template", "logo", "slug", "metadata", "cost", "currency", "is_published", "is_certificate_downloadable", "certificate_theme", "status", "max_capacity", "waitlist_enabled", "created_at", "updated_at") VALUES
+	('b2c3d4e5-f6a7-8901-bcde-f12345678901', 'Full Course with Waitlist', 'A course for testing the waitlist feature', 'Welcome to this test course', 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', false, '', 'full-course-with-waitlist', '{"goals": "", "description": "", "requirements": "", "allowNewStudent": true}', 0, 'NGN', true, false, NULL, 'ACTIVE', 1, true, '2026-03-20 10:00:00+00', '2026-03-20 10:00:00+00');
+
 --
 -- Data for Name: profile; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -190,6 +196,12 @@ INSERT INTO "public"."groupmember" ("id", "group_id", "role_id", "profile_id", "
 	('5e021c47-07c3-416d-bb75-d218ee482f82', '04a250f1-bcb9-4e0d-a3d4-a01096e7a105', 2, '7ac00503-8519-43c8-a5ea-b79aeca900b1', 'admin@test.com', '2023-12-16 14:40:15.401711+00', NULL),
 	('f5ef8afa-7652-4615-8217-a9c7c75a8e89', '0789ced2-b8f3-472c-97ff-bdde1e80dddf', 2, '7ac00503-8519-43c8-a5ea-b79aeca900b1', 'admin@test.com', '2023-12-16 14:41:15.316511+00', NULL),
 	('5840085d-0d0b-44ca-b6fb-6a758c9543ce', '0789ced2-b8f3-472c-97ff-bdde1e80dddf', 3, '0c256e75-aa40-4f62-8d30-0217ca1c60d9', NULL, '2023-12-18 17:10:51.293318+00', NULL);
+
+-- Waitlist test course members
+INSERT INTO "public"."groupmember" ("id", "group_id", "role_id", "profile_id", "email", "created_at", "assigned_student_id", "status") VALUES
+	('c1d2e3f4-a5b6-7890-cdef-012345678901', 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', 2, '7ac00503-8519-43c8-a5ea-b79aeca900b1', 'admin@test.com', '2026-03-20 10:00:00+00', NULL, 'ACTIVE'),
+	('d2e3f4a5-b6c7-8901-defa-123456789012', 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', 3, '01676a50-bb56-4c5e-8a61-fb9e9190fb10', 'test@test.com', '2026-03-20 10:01:00+00', NULL, 'ACTIVE'),
+	('e3f4a5b6-c7d8-9012-efab-234567890123', 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', 3, '0c256e75-aa40-4f62-8d30-0217ca1c60d9', NULL, '2026-03-20 10:02:00+00', NULL, 'WAITLISTED');
 
 
 --

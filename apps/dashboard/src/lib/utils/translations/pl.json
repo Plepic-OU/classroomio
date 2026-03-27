@@ -433,7 +433,13 @@
         "self_paced": "Samo krążył",
         "delete": "Usuń kurs",
         "delete_text": "Usuń ten kurs, tego działania nie można cofnąć",
-        "save": "Zapisz zmiany"
+        "save": "Zapisz zmiany",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Limit the number of students who can enroll. Leave empty for unlimited.",
+        "max_capacity_placeholder": "Unlimited",
+        "waitlist_off": "Waiting list off",
+        "waitlist_on": "Waiting list on",
+        "waitlist_desc": "When course is full, allow students to join a waiting list for manual approval."
       },
       "landing_page": {
         "course_content": "Treść kursu",
@@ -599,6 +605,12 @@
         "action": "Działanie",
         "feedback": "Skopiowany e -mail do schowka",
         "view": "Pogląd",
+        "waitlist": "Lista oczekujących",
+        "loading": "Ładowanie...",
+        "waitlist_empty": "Brak studentów na liście oczekujących.",
+        "no_profile": "Brak profilu",
+        "joined_waitlist": "Dołączył do listy oczekujących",
+        "approve": "Zatwierdź",
         "delete_profile": "Usuń profil",
         "teams": {
           "add": "Dodać",

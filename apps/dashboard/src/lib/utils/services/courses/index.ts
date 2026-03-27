@@ -14,6 +14,7 @@ import type { PostgrestError, PostgrestSingleResponse } from '@supabase/supabase
 import { GenericUploader } from './presign';
 import { QUESTION_TYPE } from '$lib/components/Question/constants';
 import { STATUS } from '$lib/utils/constants/course';
+import { ROLE } from '$lib/utils/constants/roles';
 import { get } from 'svelte/store';
 import { isOrgAdmin } from '$lib/utils/store/org';
 import { isUUID } from '$lib/utils/functions/isUUID';
@@ -278,6 +279,15 @@ export function updatedGroupMember(update: any, match: any) {
 
 export function deleteGroupMember(groupMemberId: Groupmember['id']) {
   return supabase.from('groupmember').delete().match({ id: groupMemberId });
+}
+
+export function fetchWaitlistedMembers(groupId: string) {
+  return supabase
+    .from('groupmember')
+    .select('id, profile_id, created_at, profile:profile_id(fullname, email)')
+    .eq('group_id', groupId)
+    .eq('status', 'WAITLISTED')
+    .eq('role_id', ROLE.STUDENT);
 }
 
 export async function getMarks(courseId) {

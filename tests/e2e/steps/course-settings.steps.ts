@@ -3,6 +3,41 @@ import { createBdd } from 'playwright-bdd';
 
 const { Given, When, Then } = createBdd();
 
+Given(
+  'I am on the settings page for course {string} with enrollment reset',
+  async ({ page }, courseTitle: string) => {
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+    const headers = {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json'
+    };
+    const res = await fetch(
+      `http://localhost:54321/rest/v1/course?title=eq.${encodeURIComponent(courseTitle)}&select=id`,
+      { headers }
+    );
+    const [course] = await res.json();
+    await fetch(`http://localhost:54321/rest/v1/course?id=eq.${course.id}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({ max_capacity: null, waitlist_enabled: false })
+    });
+    await page.goto(`/courses/${course.id}`);
+    await page.getByRole('button', { name: 'Settings' }).waitFor();
+    await page.getByRole('button', { name: 'Settings' }).click();
+    await page.waitForURL('**/settings');
+    await expect(
+      page.locator('input[placeholder="Write the course title here"]')
+    ).not.toHaveValue('');
+  }
+);
+
+When('I enter {string} in the max capacity field', async ({ page }, value: string) => {
+  const input = page.locator('input[placeholder="Unlimited"]');
+  await input.waitFor();
+  await input.fill(value);
+});
+
 Given('I am on the settings page for course {string}', async ({ page }, courseTitle: string) => {
   // Look up the course by title. anon key is blocked by RLS — use service role key.
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';

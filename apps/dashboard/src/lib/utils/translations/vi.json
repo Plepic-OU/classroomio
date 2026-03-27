@@ -275,6 +275,12 @@
         "delete": "Xóa khóa học",
         "delete_text": "Xóa khóa học này, hành động này không thể hoàn tác",
         "save": "Lưu thay đổi",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Limit the number of students who can enroll. Leave empty for unlimited.",
+        "max_capacity_placeholder": "Unlimited",
+        "waitlist_off": "Waiting list off",
+        "waitlist_on": "Waiting list on",
+        "waitlist_desc": "When course is full, allow students to join a waiting list for manual approval.",
         "type": "Loại khóa học",
         "course_type_desc": "Cập nhật loại khóa học để có trải nghiệm cá nhân hóa hơn",
         "live_class": "Lớp học trực tiếp",
@@ -483,6 +489,12 @@
           "remove": "Di dời"
         },
         "view": "Xem",
+        "waitlist": "Danh sách chờ",
+        "loading": "Đang tải...",
+        "waitlist_empty": "Không có học sinh nào trong danh sách chờ.",
+        "no_profile": "Không có hồ sơ",
+        "joined_waitlist": "Đã tham gia danh sách chờ",
+        "approve": "Chấp thuận",
         "delete_profile": "Xóa hồ sơ"
       },
       "marks": {

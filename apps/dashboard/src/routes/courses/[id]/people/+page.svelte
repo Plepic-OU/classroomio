@@ -8,7 +8,8 @@
   import InvitationModal from '$lib/components/Course/components/People/InvitationModal.svelte';
   import { deleteMemberModal } from '$lib/components/Course/components/People/store';
   import type { ProfileRole } from '$lib/components/Course/components/People/types';
-  import { group } from '$lib/components/Course/store';
+  import { group, course } from '$lib/components/Course/store';
+  import { currentOrg } from '$lib/utils/store/org';
   import Select from '$lib/components/Form/Select.svelte';
   import IconButton from '$lib/components/IconButton/index.svelte';
   import { VARIANTS } from '$lib/components/PrimaryButton/constants';
@@ -16,7 +17,12 @@
   import RoleBasedSecurity from '$lib/components/RoleBasedSecurity/index.svelte';
   import { ROLE_LABEL, ROLES } from '$lib/utils/constants/roles';
   import { t } from '$lib/utils/functions/translations';
-  import { deleteGroupMember } from '$lib/utils/services/courses';
+  import { deleteGroupMember, fetchWaitlistedMembers, updatedGroupMember } from '$lib/utils/services/courses';
+  import {
+    triggerSendEmail,
+    NOTIFICATION_NAME
+  } from '$lib/utils/services/notification/notification';
+  import { snackbar } from '$lib/components/Snackbar/store.js';
   import { profile } from '$lib/utils/store/user';
   import type { GroupPerson } from '$lib/utils/types';
   import {
@@ -34,6 +40,37 @@
   let member: { id?: string; email?: string; profile?: { email: string } } = {};
   let filterBy: ProfileRole = ROLES[0];
   let searchValue = '';
+
+  type WaitlistMember = {
+    id: string;
+    profile_id: string;
+    created_at: string;
+    profile: { fullname: string; email: string } | null;
+  };
+  let waitlistMembers: WaitlistMember[] = [];
+  let loadingWaitlist = false;
+
+  async function loadWaitlist(groupId: string) {
+    if (!groupId) return;
+    loadingWaitlist = true;
+    const { data } = await fetchWaitlistedMembers(groupId);
+    waitlistMembers = (data as WaitlistMember[]) || [];
+    loadingWaitlist = false;
+  }
+
+  async function approveWaitlistMember(memberId: string, memberEmail: string, memberName: string) {
+    await updatedGroupMember({ status: 'ACTIVE' }, { id: memberId });
+    triggerSendEmail(NOTIFICATION_NAME.STUDENT_WAITLIST_APPROVED, {
+      to: memberEmail,
+      courseName: $course.title || '',
+      orgName: $currentOrg?.name || '',
+      courseUrl: `${$page.url.origin}/lms`
+    }).catch(() => snackbar.error());
+    // Refetch waitlist
+    await loadWaitlist($group.id);
+  }
+
+  $: loadWaitlist($group.id);
 
   function filterPeople(_query, people) {
     const query = _query.toLowerCase();
@@ -246,3 +283,67 @@
   </StructuredList>
   <!-- <Pagination totalItems={10} pageSizes={[10, 15, 20]} /> -->
 </section>
+
+<!-- Waitlist section — tutors and admins only -->
+<RoleBasedSecurity allowedRoles={[1, 2]}>
+  <section class="mx-2 my-5 md:mx-9">
+    <h3 class="mb-4 text-base font-semibold dark:text-white">
+      {$t('course.navItem.people.waitlist')} ({waitlistMembers.length})
+    </h3>
+
+    {#if loadingWaitlist}
+      <p class="text-sm text-gray-500">{$t('course.navItem.people.loading')}</p>
+    {:else if waitlistMembers.length === 0}
+      <p class="text-sm text-gray-500">{$t('course.navItem.people.waitlist_empty')}</p>
+    {:else}
+      <StructuredList class="m-0">
+        <StructuredListHead
+          class="bg-slate-100 dark:border-2 dark:border-neutral-800 dark:bg-neutral-800"
+        >
+          <StructuredListRow head>
+            <StructuredListCell head class="text-primary-700 py-3 dark:text-white">
+              {$t('course.navItem.people.name')}
+            </StructuredListCell>
+            <StructuredListCell head class="text-primary-700 py-3 dark:text-white">
+              {$t('course.navItem.people.joined_waitlist')}
+            </StructuredListCell>
+            <StructuredListCell head class="text-primary-700 py-3 dark:text-white">
+              {$t('course.navItem.people.action')}
+            </StructuredListCell>
+          </StructuredListRow>
+        </StructuredListHead>
+        {#each waitlistMembers as wm}
+          <StructuredListBody>
+            <StructuredListRow>
+              <StructuredListCell class="w-4/6">
+                {#if wm.profile}
+                  <p class="text-base font-normal dark:text-white">{wm.profile.fullname}</p>
+                  <p class="text-primary-600 text-xs">{wm.profile.email}</p>
+                {:else}
+                  <p class="text-sm text-gray-400">{$t('course.navItem.people.no_profile')}</p>
+                {/if}
+              </StructuredListCell>
+              <StructuredListCell class="w-1/4">
+                <p class="text-sm dark:text-white">
+                  {new Date(wm.created_at).toLocaleDateString()}
+                </p>
+              </StructuredListCell>
+              <StructuredListCell class="w-1/4">
+                <PrimaryButton
+                  variant={VARIANTS.OUTLINED}
+                  label={$t('course.navItem.people.approve')}
+                  onClick={() =>
+                    approveWaitlistMember(
+                      wm.id,
+                      wm.profile?.email || '',
+                      wm.profile?.fullname || ''
+                    )}
+                />
+              </StructuredListCell>
+            </StructuredListRow>
+          </StructuredListBody>
+        {/each}
+      </StructuredList>
+    {/if}
+  </section>
+</RoleBasedSecurity>

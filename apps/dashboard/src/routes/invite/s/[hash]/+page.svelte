@@ -2,11 +2,10 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import PrimaryButton from '$lib/components/PrimaryButton/index.svelte';
-  import { getSupabase } from '$lib/utils/functions/supabase';
+  import { getSupabase, getAccessToken } from '$lib/utils/functions/supabase';
   import AuthUI from '$lib/components/AuthUI/index.svelte';
   import { currentOrg } from '$lib/utils/store/org';
   import { setTheme } from '$lib/utils/functions/theme';
-  import { addGroupMember } from '$lib/utils/services/courses';
   import type { CurrentOrg } from '$lib/utils/types/org.js';
   import { ROLE } from '$lib/utils/constants/roles';
   import { profile } from '$lib/utils/store/user';
@@ -22,6 +21,7 @@
 
   let supabase = getSupabase();
   let loading = false;
+  let enrolledStatus: 'ACTIVE' | 'WAITLISTED' | null = null;
 
   let disableSubmit = false;
   let formRef: HTMLFormElement;
@@ -34,81 +34,109 @@
       return goto(`/signup?redirect=${$page.url?.pathname || ''}`);
     }
 
-    const { data: courseData, error } = await supabase
-      .from('course')
-      .select('group_id')
-      .eq('id', data.id)
-      .single();
+    try {
+      const accessToken = await getAccessToken();
+      const response = await fetch('/api/courses/enroll', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: accessToken
+        },
+        body: JSON.stringify({ courseId: data.id })
+      });
 
-    console.log({ courseData });
-    if (!courseData?.group_id) {
-      console.error('error getting group', error);
-      return;
-    }
+      const result = await response.json();
 
-    const member = {
-      profile_id: $profile.id,
-      group_id: courseData.group_id,
-      role_id: ROLE.STUDENT
-    };
-
-    const teacherMembers = await supabase
-      .from('groupmember')
-      .select('id, profile(email)')
-      .eq('group_id', courseData.group_id)
-      .eq('role_id', ROLE.TUTOR)
-      .returns<
-        {
-          id: string;
-          profile: {
-            email: string;
-          };
-        }[]
-      >();
-
-    const teachers: Array<string> =
-      teacherMembers.data?.map((teacher) => {
-        return teacher.profile?.email || '';
-      }) || [];
-
-    addGroupMember(member).then((addedMember) => {
-      if (addedMember.error) {
-        console.error('Error adding student to group', courseData.group_id, addedMember.error);
+      if (!response.ok) {
+        console.error('Error enrolling', result);
         snackbar.error('snackbar.invite.failed_join');
-
-        // Full page load to lms if error joining, probably user already joined
-        window.location.href = '/lms';
         return;
       }
+
+      if (result.alreadyMember) {
+        if (result.status === 'WAITLISTED') {
+          enrolledStatus = 'WAITLISTED';
+        } else {
+          goto('/lms');
+        }
+        return;
+      }
+
+      const status: 'ACTIVE' | 'WAITLISTED' = result.status;
+      enrolledStatus = status;
 
       capturePosthogEvent('student_joined_course', {
         course_name: data.name,
         student_id: $profile.id,
-        student_email: $profile.email
+        student_email: $profile.email,
+        status
       });
 
-      // Send email welcoming student to the course
-      triggerSendEmail(NOTIFICATION_NAME.STUDENT_COURSE_WELCOME, {
-        to: $profile.email,
-        orgName: data.currentOrg?.name,
-        courseName: data.name
-      });
+      if (status === 'WAITLISTED') {
+        // Send waitlist confirmation emails
+        triggerSendEmail(NOTIFICATION_NAME.STUDENT_WAITLISTED, {
+          to: $profile.email,
+          orgName: data.currentOrg?.name,
+          courseName: data.name
+        }).catch(() => snackbar.error());
 
-      // Send notification to all teacher(s) that a student has joined the course.
-      Promise.all(
-        teachers.map((email) =>
-          triggerSendEmail(NOTIFICATION_NAME.TEACHER_STUDENT_JOINED, {
-            to: email,
-            courseName: data.name,
-            studentName: $profile.fullname,
-            studentEmail: $profile.email
-          })
-        )
-      );
+        // Notify tutors
+        const teacherMembers = await supabase
+          .from('groupmember')
+          .select('id, profile(email)')
+          .eq('group_id', result.groupId || '')
+          .eq('role_id', ROLE.TUTOR)
+          .returns<{ id: string; profile: { email: string } }[]>();
 
-      // go to lms
-      return goto('/lms');
-    });
+        // Tutor notification is best-effort
+        (teacherMembers.data || []).forEach((t) => {
+          if (t.profile?.email) {
+            triggerSendEmail(NOTIFICATION_NAME.STUDENT_WAITLISTED, {
+              to: t.profile.email,
+              orgName: data.currentOrg?.name,
+              courseName: data.name,
+              studentName: $profile.fullname,
+              studentEmail: $profile.email,
+              isTeacher: true
+            }).catch(() => {});
+          }
+        });
+      } else {
+        // Fetch tutors for welcome emails
+        const teacherMembers = await supabase
+          .from('groupmember')
+          .select('id, profile(email)')
+          .eq('role_id', ROLE.TUTOR)
+          .returns<{ id: string; profile: { email: string } }[]>();
+
+        const teachers: string[] =
+          teacherMembers.data?.map((t) => t.profile?.email || '').filter(Boolean) || [];
+
+        triggerSendEmail(NOTIFICATION_NAME.STUDENT_COURSE_WELCOME, {
+          to: $profile.email,
+          orgName: data.currentOrg?.name,
+          courseName: data.name
+        }).catch(() => snackbar.error());
+
+        Promise.all(
+          teachers.map((email) =>
+            triggerSendEmail(NOTIFICATION_NAME.TEACHER_STUDENT_JOINED, {
+              to: email,
+              courseName: data.name,
+              studentName: $profile.fullname,
+              studentEmail: $profile.email
+            })
+          )
+        );
+
+        goto('/lms');
+      }
+    } catch (err) {
+      console.error('Enroll error', err);
+      snackbar.error('snackbar.invite.failed_join');
+    } finally {
+      loading = false;
+    }
   }
 
   function setCurOrg(cOrg: CurrentOrg) {
@@ -149,12 +177,31 @@
     <p class="text-center text-sm font-light dark:text-white">{data.description}</p>
   </div>
 
-  <div class="my-4 flex w-full items-center justify-center">
-    <PrimaryButton
-      label="Join Course"
-      type="submit"
-      isDisabled={disableSubmit || loading}
-      isLoading={loading || !$profile.id}
-    />
-  </div>
+  {#if enrolledStatus === 'WAITLISTED'}
+    <div class="my-4 w-full text-center" data-testid="waitlist-confirmation">
+      <p class="text-sm text-gray-600 dark:text-gray-300">
+        You've been added to the waitlist. You'll receive an email when you're approved.
+      </p>
+    </div>
+  {:else}
+    <div class="my-4 flex w-full items-center justify-center">
+      {#if data.isFull && !data.waitlistEnabled}
+        <PrimaryButton label="Course is Full" isDisabled={true} />
+      {:else if data.isFull && data.waitlistEnabled}
+        <PrimaryButton
+          label="Join Waitlist"
+          type="submit"
+          isDisabled={disableSubmit || loading}
+          isLoading={loading || !$profile.id}
+        />
+      {:else}
+        <PrimaryButton
+          label="Join Course"
+          type="submit"
+          isDisabled={disableSubmit || loading}
+          isLoading={loading || !$profile.id}
+        />
+      {/if}
+    </div>
+  {/if}
 </AuthUI>

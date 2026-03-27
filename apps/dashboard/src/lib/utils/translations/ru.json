@@ -275,6 +275,12 @@
         "delete": "Удалить курс",
         "delete_text": "Удалите этот курс, это действие нельзя отменить.",
         "save": "Сохранить изменения",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Limit the number of students who can enroll. Leave empty for unlimited.",
+        "max_capacity_placeholder": "Unlimited",
+        "waitlist_off": "Waiting list off",
+        "waitlist_on": "Waiting list on",
+        "waitlist_desc": "When course is full, allow students to join a waiting list for manual approval.",
         "type": "Тип курса",
         "course_type_desc": "Обновите тип курса для более персонализированного опыта.",
         "live_class": "Живой урок",
@@ -483,6 +489,12 @@
           "remove": "Удалять"
         },
         "view": "Вид",
+        "waitlist": "Список ожидания",
+        "loading": "Загрузка...",
+        "waitlist_empty": "В списке ожидания нет студентов.",
+        "no_profile": "Нет профиля",
+        "joined_waitlist": "Вступил в список ожидания",
+        "approve": "Одобрить",
         "delete_profile": "Удалить профиль"
       },
       "marks": {

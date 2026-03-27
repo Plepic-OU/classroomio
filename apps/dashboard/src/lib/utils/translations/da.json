@@ -438,7 +438,13 @@
         "self_paced": "Selv tempo",
         "delete": "Slet kursus",
         "delete_text": "Slet dette kursus, denne handling kan ikke fortrydes",
-        "save": "Gem ændringer"
+        "save": "Gem ændringer",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Limit the number of students who can enroll. Leave empty for unlimited.",
+        "max_capacity_placeholder": "Unlimited",
+        "waitlist_off": "Waiting list off",
+        "waitlist_on": "Waiting list on",
+        "waitlist_desc": "When course is full, allow students to join a waiting list for manual approval."
       },
       "analytics": {
         "title": "Analytics"
@@ -607,6 +613,12 @@
         "action": "Handling",
         "feedback": "Kopieret e -mail til udklipsholder",
         "view": "Udsigt",
+        "waitlist": "Venteliste",
+        "loading": "Indlæser...",
+        "waitlist_empty": "Ingen studerende på ventelisten.",
+        "no_profile": "Ingen profil",
+        "joined_waitlist": "Tilmeldt ventelisten",
+        "approve": "Godkend",
         "delete_profile": "Slet profil",
         "teams": {
           "add": "Tilføje",

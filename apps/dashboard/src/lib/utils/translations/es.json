@@ -275,6 +275,12 @@
         "delete": "Eliminar curso",
         "delete_text": "Eliminar este curso, esta acción no se puede deshacer",
         "save": "Guardar cambios",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Limit the number of students who can enroll. Leave empty for unlimited.",
+        "max_capacity_placeholder": "Unlimited",
+        "waitlist_off": "Waiting list off",
+        "waitlist_on": "Waiting list on",
+        "waitlist_desc": "When course is full, allow students to join a waiting list for manual approval.",
         "type": "Tipo de curso",
         "course_type_desc": "Actualiza el tipo de curso para una experiencia más personalizada",
         "live_class": "clase en vivo",
@@ -483,6 +489,12 @@
           "remove": "Eliminar"
         },
         "view": "Vista",
+        "waitlist": "Lista de espera",
+        "loading": "Cargando...",
+        "waitlist_empty": "No hay estudiantes en la lista de espera.",
+        "no_profile": "Sin perfil",
+        "joined_waitlist": "Se unió a la lista de espera",
+        "approve": "Aprobar",
         "delete_profile": "Eliminar perfil"
       },
       "marks": {

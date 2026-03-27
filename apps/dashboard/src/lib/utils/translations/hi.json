@@ -275,6 +275,12 @@
         "delete": "पाठ्यक्रम हटाएँ",
         "delete_text": "इस कोर्स को हटा दें, इस कार्रवाई को पूर्ववत नहीं किया जा सकता",
         "save": "परिवर्तनों को सुरक्षित करें",
+        "max_capacity": "Max Capacity",
+        "max_capacity_desc": "Limit the number of students who can enroll. Leave empty for unlimited.",
+        "max_capacity_placeholder": "Unlimited",
+        "waitlist_off": "Waiting list off",
+        "waitlist_on": "Waiting list on",
+        "waitlist_desc": "When course is full, allow students to join a waiting list for manual approval.",
         "type": "कोर्स का प्रकार",
         "course_type_desc": "अधिक वैयक्तिकृत अनुभव के लिए पाठ्यक्रम प्रकार को अपडेट करें",
         "live_class": "लाइव क्लास",
@@ -483,6 +489,12 @@
           "remove": "निकालना"
         },
         "view": "देखना",
+        "waitlist": "प्रतीक्षा सूची",
+        "loading": "लोड हो रहा है...",
+        "waitlist_empty": "प्रतीक्षा सूची में कोई छात्र नहीं है।",
+        "no_profile": "कोई प्रोफ़ाइल नहीं",
+        "joined_waitlist": "प्रतीक्षा सूची में शामिल हुए",
+        "approve": "स्वीकृत करें",
         "delete_profile": "प्रोफ़ाइल हटाएं"
       },
       "marks": {

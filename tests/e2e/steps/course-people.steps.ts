@@ -23,3 +23,11 @@ Then('I should see student {string} in the list', async ({ page }, studentName: 
   // places, and allow up to 20s for data to load under full-suite load.
   await expect(page.getByText(studentName).first()).toBeVisible({ timeout: 20_000 });
 });
+
+Then('I should see {string} in the waitlist section', async ({ page }, studentName: string) => {
+  // The waitlist section renders below the main people list and loads via
+  // fetchWaitlistedMembers() after $group.id is available. Wait for the
+  // section heading ("Waitlist (N)") to appear first, then check the name.
+  await expect(page.getByText(/^Waitlist \(\d+\)/).first()).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(studentName).first()).toBeVisible({ timeout: 10_000 });
+});

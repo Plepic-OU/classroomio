@@ -148,6 +148,8 @@
         type: $settings.type,
         logo: $settings.logo,
         is_published: $settings.is_published,
+        max_capacity: $settings.max_capacity ? Number($settings.max_capacity) : null,
+        waitlist_enabled: $settings.waitlist_enabled,
         metadata: {
           ...(isObject($course.metadata) ? $course.metadata : {}),
           lessonTabsOrder: $settings.tabs,
@@ -191,12 +193,17 @@
       grading: !!course.metadata.grading,
       lesson_download: !!course.metadata.lessonDownload,
       is_published: !!course.is_published,
-      allow_new_students: course.metadata.allowNewStudent
+      allow_new_students: course.metadata.allowNewStudent,
+      max_capacity: course.max_capacity ?? null,
+      waitlist_enabled: !!course.waitlist_enabled
     });
   }
   $: setDefault($course);
 
   $: courseLink = `${$currentOrgDomain}/course/${$course.slug}`;
+
+  // Auto-disable waitlist when max_capacity is cleared
+  $: if (!$settings.max_capacity) $settings.waitlist_enabled = false;
 </script>
 
 <UnsavedChanges bind:hasUnsavedChanges />
@@ -427,6 +434,38 @@
         <span slot="labelA" style="color: gray">{$t('course.navItem.settings.unpublished')}</span>
         <span slot="labelB" style="color: gray">{$t('course.navItem.settings.published')}</span>
       </Toggle>
+    </Column>
+  </Row>
+
+  <!-- Enrollment: Max Capacity + Waiting List -->
+  <Row class="border-bottom-c flex flex-col py-7 lg:flex-row">
+    <Column sm={8} md={8} lg={8}>
+      <SectionTitle>{$t('course.navItem.settings.max_capacity')}</SectionTitle>
+      <p>{$t('course.navItem.settings.max_capacity_desc')}</p>
+    </Column>
+    <Column sm={8} md={8} lg={8}>
+      <TextField
+        label={$t('course.navItem.settings.max_capacity')}
+        placeholder={$t('course.navItem.settings.max_capacity_placeholder')}
+        type="number"
+        className="w-full mb-5"
+        bind:value={$settings.max_capacity}
+        onInputChange={() => {
+          hasUnsavedChanges = true;
+        }}
+      />
+      <Toggle
+        size="sm"
+        disabled={!$settings.max_capacity}
+        bind:toggled={$settings.waitlist_enabled}
+        on:toggle={() => {
+          hasUnsavedChanges = true;
+        }}
+      >
+        <span slot="labelA" style="color: gray">{$t('course.navItem.settings.waitlist_off')}</span>
+        <span slot="labelB" style="color: gray">{$t('course.navItem.settings.waitlist_on')}</span>
+      </Toggle>
+      <p class="mt-2 text-sm text-gray-500">{$t('course.navItem.settings.waitlist_desc')}</p>
     </Column>
   </Row>
 
