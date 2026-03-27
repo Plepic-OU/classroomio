@@ -4,18 +4,20 @@
 Goals:
 
 
-  0) Add testing section to the plan. We didn’t have e2e test setup in place, so could not add it before.
+  [x] 0) Add testing section to the plan. We didn’t have e2e test setup in place, so could not add it before.
 
-  1) Create a new skill for implementing a design document. We start from simple setup, but this serves as a recipe we can tune as we implement more features in the project.
+  [x] 1) Create a new skill for implementing a design document. We start from simple setup, but this serves as a recipe we can tune as we implement more features in the project.
 
 Prompt: https://drive.google.com/file/d/1TILxebPUupZzea_AKorUK0R0ACsnH8wn
 
 
-  2) Use the skill to implement the plan.
+
+
+  [x] 2) Use the skill to implement the plan.
 
     This will take a while (15-30 minutes)
 
-  2a) Make sure it works as expected. Playwright tests would be a nice automated way to do this. Most probably there are issues and you need to get through them with claude - (which is another 15-30 minutes)
+  [x] 2a) Make sure it works as expected. Playwright tests would be a nice automated way to do this. Most probably there are issues and you need to get through them with claude - (which is another 15-30 minutes)
 
 
   
@@ -31,3 +33,4 @@ Optional goals - choose which one seems interesting to tackle
 
 
   o3) There's a bug that when logging users out and in from same browser, some cache is not properly cleared. Fix that with claude.
+&

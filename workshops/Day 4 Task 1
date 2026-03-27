@@ -1,0 +1,97 @@
+Day 4 Task 1 - Git worktree workshop, instructions inside the file
+
+https://drive.google.com/file/d/1WNXaFJlHodoxTJ6Hp1SjfviipEozPCaq
+
+# Worktree Workshop: Instructions
+
+## Goal
+
+Complete 2-5 GitHub issues in parallel using git worktrees and Claude Code. You must run at least 2 tasks simultaneously.
+
+## Prerequisites
+
+- Devcontainer is running
+- cskip alias is available (runs Claude Code with --dangerously-skip-permissions)
+
+## [x] Step 0: Configure the WorktreeCreate hook
+
+Inside a devcontainer, the project folder is synced between your host machine and the container. If worktrees are created inside this synced folder, every file operation triggers a sync — and pnpm install in a worktree becomes painfully slow.
+
+The fix: tell Claude Code to create worktrees in /tmp/ instead, which lives entirely inside the container with no host sync overhead.
+
+Add this to your .claude/settings.json (create the file if it doesn't exist):
+
+{
+  "hooks": {
+    "WorktreeCreate": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'NAME=$(jq -r .name); DIR=\"/tmp/$NAME\"; git worktree add -b \"$NAME\" \"$DIR\" HEAD >&2 && echo \"$DIR\"'"
+          }
+        ]
+      }
+    ]
+  }
+}
+
+*How it works:* When Claude Code creates a worktree, it fires the WorktreeCreate hook and passes the worktree name as JSON. The hook reads that name, creates a directory under /tmp/ and uses git worktree command, and returns the path. Claude Code then uses that path and expects code to be checked out. This also enables to use other version control technology other that git.
+
+For more on this hook: https://code.claude.com/docs/en/hooks#decision-control
+
+## Tips
+
+- You don't need to babysit each Claude session. Start them, let them work, check back when they're done.
+- If a session gets stuck, check its terminal for errors.
+- Each worktree shares the git object database but has its own working directory. Commits in one worktree are visible to others after git merge.
+- The --dangerously-skip-permissions flag (cskip) lets Claude run commands without asking for approval. This is fine when running inside an isolated environment.
+- When claude is working you can log in with a 3rd bash and inspect "git worktree list" to see what's going on.
+
+## [x] Step 1: Start [#13 — E2E test](https://github.com/Plepic-OU/classroomio/issues/13) on your branch (no worktree)
+
+Issue #13 (E2E test) runs directly on your student branch. It needs the shared running environment, which makes it a bad fit for a worktree — this is heavy local state you don't want to duplicate. Start it first because it's the longest-running task.
+
+# Terminal 1 — your student branch, no worktree
+cskip
+
+Paste the issue URL and order Claude to implement this.
+
+## [x] Step 2: Start worktree tasks
+
+While Issue #13 is running, open new terminal and start implementing these issues one by one. Do at least one of the tasks or more.
+For each one start claude with new worktree: cskip -w <name>
+Do the work, commit, exit and start again.
+
+# Terminal 2 — https://github.com/Plepic-OU/classroomio/issues/14
+cskip --worktree task-progress-utils
+
+# Terminal 3 — https://github.com/Plepic-OU/classroomio/issues/15
+cskip --worktree task-review-schemas
+
+# Terminal 4 — https://github.com/Plepic-OU/classroomio/issues/16
+cskip --worktree task-text-utils
+
+# Terminal 5 — https://github.com/Plepic-OU/classroomio/issues/17
+cskip --worktree task-plan-permissions
+
+
+In each session, paste the corresponding issue URL and let Claude work. Each worktree gets its own isolated branch — no conflicts between sessions.
+
+## [x] Step 3: Merge everything
+
+Once all worktree tasks are complete and their tests pass, merge the branches back into your student branch. Issue #13 is already on your branch — only Issues #14–17 need merging.
+
+In your main terminal (Terminal 1), tell Claude:
+
+List all git worktree branches. Merge each worktree branch into the current branch
+one by one. If there are merge conflicts, resolve them. After all merges, run the full test suite.
+Finally, clean up the worktrees.
+
+## Optional advanced task
+
+Figure out how to start new devcontainer from host machine for a 2nd or 3rd worktree, so you could access each devcotainer services from host machine.
+The main difficulty is to managing the port forwarding.
+For this exercise you don't need to actually run these all the services as it's quite resource hungry.
+Final solution should be a startup script and changes to existing scripts, so it would dynamically find open ports.
+Using claude for this task is recommended.

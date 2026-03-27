@@ -118,7 +118,7 @@ Package: `apps/e2e` (`@cio/e2e`) — Playwright + BDD (Gherkin via playwright-bd
 ```bash
 pnpm test --filter=@cio/e2e          # headless
 pnpm test:ui --filter=@cio/e2e       # Playwright UI at http://localhost:9323
-pnpm report --filter=@cio/e2e        # HTML report at http://localhost:9222
+pnpm report --filter=@cio/e2e        # HTML report at http://localhost:9223
 ```
 
 ### Requirements before running

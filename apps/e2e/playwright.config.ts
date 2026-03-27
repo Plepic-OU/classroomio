@@ -20,5 +20,8 @@ export default defineConfig({
     video: 'on',
     screenshot: 'on',
     trace: 'on',
+    launchOptions: {
+      executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH || undefined,
+    },
   },
 });
