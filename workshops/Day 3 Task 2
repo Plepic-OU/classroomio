@@ -7,13 +7,13 @@ Even though we validated the plan etc, there are probably errors. Debug problem 
 Goals:
 
 
-  - [ ] 1) Make sure you can run E2E tests and see results from host machine
+  - [x] 1) Make sure you can run E2E tests and see results from host machine
 
-- [ ] Rebuild devcontainer (needed for port forwarding)
+- [x] Rebuild devcontainer (needed for port forwarding)
 
-- [ ] Run “pnpm dev:container” (start services)
+- [x] Run "pnpm dev:container" (start services)
 
-- [ ] Run E2E tests and see that you can see the report from http://localhost:9323
+- [x] Run E2E tests and see that you can see the report from http://localhost:9323
 
 See below about debugging steps
 
@@ -28,35 +28,35 @@ Optional goals:
   - [ ] o2) Help others to debug their setup
 Aspects to focus on while debugging:
 
- - [ ] 1) You can run E2E tests from pnpm command after rebuilding container
+ - [x] 1) You can run E2E tests from pnpm command after rebuilding container
 
- - [ ] 1a) If they timeout due to services not started, add a check to get fast failures with proper error message how to start the dev servers. Don’t let claude increase timeouts to fix problems, it will lead to slow troubleshooting experience.
+ - [x] 1a) If they timeout due to services not started, add a check to get fast failures with proper error message how to start the dev servers. Don't let claude increase timeouts to fix problems, it will lead to slow troubleshooting experience.
 
- - [ ] 1b) A good place to get to is running “pnpm dev:container” in one bash and then “pnpm test:e2e” in another bash to run tests.
+ - [x] 1b) A good place to get to is running "pnpm dev:container" in one bash and then "pnpm test:e2e" in another bash to run tests.
 
- - [ ] 1c) If tests run, focus on seeing playwright report. Run the “pnpm test:e2e:report” and see that is serves content.
+ - [x] 1c) If tests run, focus on seeing playwright report. Run the "pnpm test:e2e:report" and see that is serves content.
 
  - [ ] 1d) Try restarting “pnpm dev:container” and then run tests. When services are ready, the tests should pass. If not, explain this scenario to claude and let it debug.
 
 
- - [ ] 2) Port forwarding works from host machine to 9323 - when you run “pnpm test:e2e:report” from container, you should see the playwright dashboard. At least get 404.
+ - [x] 2) Port forwarding works from host machine to 9323 - when you run "pnpm test:e2e:report" from container, you should see the playwright dashboard. At least get 404.
 
 
- - [ ] 3) The test report is showing actual test results. If you get 404, it means network is working, but playwright configuration is bad. Claude helps.
+ - [x] 3) The test report is showing actual test results. If you get 404, it means network is working, but playwright configuration is bad. Claude helps.
 
 
- - [ ] 4) Validate database state is reset before running tests. It should be fast by using truncate tables and reseed. Reuse existing seed.sql
+ - [x] 4) Validate database state is reset before running tests. It should be fast by using truncate tables and reseed. Reuse existing seed.sql
 
- - [ ] 4a) make sure claude doesn’t duplicate seed.sql data, but reuses it instead.
+ - [x] 4a) make sure claude doesn't duplicate seed.sql data, but reuses it instead.
 
- - [ ] 4b) make sure running test:e2e logs out the data reset etc preparation steps.
+ - [x] 4b) make sure running test:e2e logs out the data reset etc preparation steps.
 
- - [ ] 4c) make sure the truncate script is future proof. In other words it shouldn’t list all tables to truncate, instead it should list tables NOT to truncate. Then new added tables are included by default. Keyword FUTURE PROOF.
-
-
- - [ ] 5) Validate SvelteKit hydration handling is done properly. We don’t want “waitForTimeout()” solution. Ask claude to validate and make a proper solution.
+ - [x] 4c) make sure the truncate script is future proof. In other words it shouldn't list all tables to truncate, instead it should list tables NOT to truncate. Then new added tables are included by default. Keyword FUTURE PROOF.
 
 
- - [ ] 6) When all above seems good and you are seeing playwright dashboard with videos, commit the state. It’s a good checkpoint to work upon.
+ - [x] 5) Validate SvelteKit hydration handling is done properly. We don't want "waitForTimeout()" solution. Ask claude to validate and make a proper solution.
+
+
+ - [x] 6) When all above seems good and you are seeing playwright dashboard with videos, commit the state. It's a good checkpoint to work upon.
 
     P.S. No playwright output in gitignore!
