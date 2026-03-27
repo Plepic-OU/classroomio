@@ -12,7 +12,7 @@ export default defineConfig({
   timeout: 10_000,
   expect: { timeout: 5_000 },
   retries: 0,
-  workers: 3,
+  workers: 1,
   use: {
     baseURL: 'http://localhost:5173',
     screenshot: 'on',

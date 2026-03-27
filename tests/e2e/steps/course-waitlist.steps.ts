@@ -27,7 +27,6 @@ When('I set the max capacity to {int}', async ({ page }, capacity: number) => {
   await capacityInput.fill(String(capacity));
   // Press Tab to trigger the change event so the waitlist toggle appears
   await capacityInput.press('Tab');
-  await page.waitForTimeout(500);
 });
 
 When('I enable the waiting list toggle', async ({ page }) => {
@@ -71,5 +70,4 @@ Then('I should see a {string} button', async ({ page }, label: string) => {
 
 When('I click the waiting list tab', async ({ page }) => {
   await page.getByRole('tab', { name: /waiting list/i }).click();
-  await page.waitForTimeout(500);
 });
