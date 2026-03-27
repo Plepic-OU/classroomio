@@ -1623,5 +1623,35 @@
         "message": "Dette bekræftelseslink er ugyldigt eller forkert udformet. Tjek venligst din e-mail for det korrekte link, eller anmod om en ny bekræftelses-e-mail."
       }
     }
+  },
+
+  "waitlist": {
+    "section_header": "Venteliste ({count})",
+    "column": {
+      "joined": "Tilmeldt",
+      "status": "Status"
+    },
+    "status": {
+      "waiting": "Venter",
+      "notified": "{hours} t. tilbage",
+      "expired": "Udløbet"
+    },
+    "action": {
+      "remove": "Fjern fra venteliste"
+    },
+    "course_full": "Dette kursus er i øjeblikket fuldt.",
+    "join_button": "Tilmeld venteliste",
+    "joined_confirmation": "Du er på ventelisten. Vi sender dig en e-mail, når der åbner en plads.",
+    "leave_button": "Forlad venteliste",
+    "claim": {
+      "expired_title": "Din plads er udløbet",
+      "expired_body": "48-timers vinduet til at kræve din plads er gået. Du skal tilmelde dig ventelisten igen.",
+      "error_title": "Noget gik galt",
+      "error_body": "Vi kunne ikke indmelde dig. Kontakt kursusadministratoren."
+    },
+    "settings": {
+      "max_students_label": "Maks. studerende",
+      "max_students_hint": "Lad det være tomt for ingen grænse"
+    }
   }
 }

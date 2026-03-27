@@ -1624,5 +1624,35 @@
         "message": "Ten link weryfikacyjny jest nieprawidłowy lub źle sformułowany. Sprawdź, czy w skrzynce e-mail znajduje się właściwy link, lub poproś o nowy e-mail weryfikacyjny."
       }
     }
+  },
+
+  "waitlist": {
+    "section_header": "Lista oczekujących ({count})",
+    "column": {
+      "joined": "Dołączono",
+      "status": "Status"
+    },
+    "status": {
+      "waiting": "Oczekujący",
+      "notified": "Zostało {hours} godz.",
+      "expired": "Wygasły"
+    },
+    "action": {
+      "remove": "Usuń z listy oczekujących"
+    },
+    "course_full": "Ten kurs jest aktualnie pełny.",
+    "join_button": "Dołącz do listy oczekujących",
+    "joined_confirmation": "Jesteś na liście oczekujących. Wyślemy do Ciebie e-mail, gdy pojawi się wolne miejsce.",
+    "leave_button": "Opuść listę oczekujących",
+    "claim": {
+      "expired_title": "Twoje miejsce wygasło",
+      "expired_body": "48-godzinny czas na zarezerwowanie miejsca minął. Musisz ponownie dołączyć do listy oczekujących.",
+      "error_title": "Coś poszło nie tak",
+      "error_body": "Nie udało się Cię zapisać. Skontaktuj się z administratorem kursu."
+    },
+    "settings": {
+      "max_students_label": "Maks. liczba uczniów",
+      "max_students_hint": "Pozostaw puste, aby nie ustawiać limitu"
+    }
   }
 }

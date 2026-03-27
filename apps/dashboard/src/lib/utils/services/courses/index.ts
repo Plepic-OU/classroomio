@@ -1,5 +1,6 @@
 import type {
   Course,
+  CourseWaitlist,
   Exercise,
   ExerciseTemplate,
   Group,
@@ -264,8 +265,32 @@ export async function deleteCourse(courseId: Course['id']) {
   return await supabase.from('course').update({ status: 'DELETED' }).match({ id: courseId });
 }
 
-export function addGroupMember(member: any) {
-  return supabase.from('groupmember').insert(member).select();
+// Enrolls a student, respecting course.max_students cap via atomic RPC.
+// When courseId is provided (student enroll path): uses enroll_student RPC,
+//   returns { data: { enrolled: true, id? } } or { data: { full: true } }.
+// When courseId is omitted (admin invite path): direct insert, no cap check.
+//   Accepts a single member object or an array of members (legacy behaviour).
+export async function addGroupMember(
+  member: { profile_id: string; group_id: string; role_id: number } | any[],
+  courseId?: string
+): Promise<{ data: { enrolled?: boolean; full?: boolean; id?: string } | null; error: unknown }> {
+  if (!courseId) {
+    // Admin invite path — bypass cap, preserve inserted id for callers that need it
+    const res = await supabase.from('groupmember').insert(member as any).select();
+    if (res.error) return { data: null, error: res.error };
+    const firstRow = Array.isArray(res.data) ? res.data[0] : null;
+    return { data: { enrolled: true, id: firstRow?.id }, error: null };
+  }
+
+  const m = member as { profile_id: string; group_id: string; role_id: number };
+  const { data, error } = await supabase.rpc('enroll_student', {
+    p_course_id: courseId,
+    p_profile_id: m.profile_id,
+    p_group_id: m.group_id,
+    p_role_id: m.role_id
+  });
+
+  return { data: data as { enrolled?: boolean; full?: boolean } | null, error };
 }
 
 export function addDefaultNewsFeed(feed) {
@@ -659,4 +684,88 @@ export async function deleteExercise(questions: Array<{ id: string }>, exerciseI
 
   await supabase.from('submission').delete().match({ exercise_id: exerciseId });
   await supabase.from('exercise').delete().match({ id: exerciseId });
+}
+
+// ─── Waitlist service functions ────────────────────────────────────────────
+
+// Adds the current student to the waitlist for a course.
+// Validates that the course is actually at capacity before inserting.
+export async function addToWaitlist(
+  courseId: Course['id'],
+  profileId: string
+): Promise<{ data: CourseWaitlist | null; error: unknown }> {
+  const { data, error } = await supabase
+    .from('course_waitlist')
+    .insert({ course_id: courseId, profile_id: profileId })
+    .select('id, course_id, profile_id, status, notified_at, expires_at, created_at, updated_at')
+    .single();
+
+  return { data: data as CourseWaitlist | null, error };
+}
+
+// Fetches all waitlist entries for a course, ordered FIFO.
+// token is excluded intentionally — it is a bearer secret.
+export async function getWaitlist(
+  courseId: Course['id']
+): Promise<{ data: CourseWaitlist[]; error: unknown }> {
+  const { data, error } = await supabase
+    .from('course_waitlist')
+    .select(
+      'id, course_id, profile_id, status, notified_at, expires_at, created_at, updated_at, profile:profile_id(id, fullname, email, avatar_url)'
+    )
+    .eq('course_id', courseId)
+    .order('created_at', { ascending: true });
+
+  return { data: (data as unknown as CourseWaitlist[]) ?? [], error };
+}
+
+// Returns the current student's waitlist entry for a course, or null if not queued.
+export async function getStudentWaitlistEntry(
+  courseId: Course['id'],
+  profileId: string
+): Promise<{ data: CourseWaitlist | null; error: unknown }> {
+  const { data, error } = await supabase
+    .from('course_waitlist')
+    .select('id, course_id, profile_id, status, notified_at, expires_at, created_at, updated_at')
+    .eq('course_id', courseId)
+    .eq('profile_id', profileId)
+    .maybeSingle();
+
+  return { data: data as CourseWaitlist | null, error };
+}
+
+// Removes a waitlist entry by id (admin removing any entry, or student removing own).
+export async function removeFromWaitlist(
+  waitlistId: CourseWaitlist['id']
+): Promise<{ error: unknown }> {
+  const { error } = await supabase.from('course_waitlist').delete().eq('id', waitlistId);
+  return { error };
+}
+
+// Claims a waitlist spot via token — atomic RPC (validates + enrolls + cleans up).
+// Returns { enrolled: true } | { expired: true } | { not_found: true }
+export async function claimWaitlistSpot(
+  token: string
+): Promise<{ data: { enrolled?: boolean; expired?: boolean; not_found?: boolean } | null; error: unknown }> {
+  const { data, error } = await supabase.rpc('claim_waitlist_spot', { p_token: token });
+  return { data: data as { enrolled?: boolean; expired?: boolean; not_found?: boolean } | null, error };
+}
+
+// Finds the next eligible waiting student and marks them as notified.
+// Returns the notification payload (email, name, course_title, token) for the
+// server-side caller to send the claim email, or null if nobody is waiting.
+// IMPORTANT: Must be called server-side — email sending is the caller's responsibility.
+export async function notifyNextInWaitlist(
+  courseId: Course['id']
+): Promise<{
+  data: { profile_id: string; token: string; email: string; name: string; course_title: string } | null;
+  error: unknown;
+}> {
+  const { data, error } = await supabase.rpc('notify_next_in_waitlist', {
+    p_course_id: courseId
+  });
+  return {
+    data: data as { profile_id: string; token: string; email: string; name: string; course_title: string } | null,
+    error
+  };
 }

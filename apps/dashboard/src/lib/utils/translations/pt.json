@@ -1654,5 +1654,35 @@
         "message": "Este link de verificação é inválido ou está incorreto. Verifique seu e-mail para obter o link correto ou solicite um novo e-mail de verificação."
       }
     }
+  },
+
+  "waitlist": {
+    "section_header": "Lista de espera ({count})",
+    "column": {
+      "joined": "Inscrito",
+      "status": "Estado"
+    },
+    "status": {
+      "waiting": "Aguardando",
+      "notified": "{hours}h restantes",
+      "expired": "Expirado"
+    },
+    "action": {
+      "remove": "Remover da lista de espera"
+    },
+    "course_full": "Este curso está atualmente cheio.",
+    "join_button": "Entrar na lista de espera",
+    "joined_confirmation": "Você está na lista de espera. Enviaremos um e-mail quando uma vaga abrir.",
+    "leave_button": "Sair da lista de espera",
+    "claim": {
+      "expired_title": "Sua vaga expirou",
+      "expired_body": "A janela de 48 horas para reivindicar sua vaga passou. Você precisará entrar novamente na lista de espera.",
+      "error_title": "Algo deu errado",
+      "error_body": "Não foi possível matriculá-lo. Entre em contato com o administrador do curso."
+    },
+    "settings": {
+      "max_students_label": "Máx. de alunos",
+      "max_students_hint": "Deixe vazio para sem limite"
+    }
   }
 }

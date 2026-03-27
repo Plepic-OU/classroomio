@@ -1704,5 +1704,35 @@
     "unsaved_changes": {
       "message": "You have unsaved changes. Are you sure you want to leave?"
     }
+  },
+
+  "waitlist": {
+    "section_header": "Waiting List ({count})",
+    "column": {
+      "joined": "Joined",
+      "status": "Status"
+    },
+    "status": {
+      "waiting": "Waiting",
+      "notified": "{hours}h left",
+      "expired": "Expired"
+    },
+    "action": {
+      "remove": "Remove from waitlist"
+    },
+    "course_full": "This course is currently full.",
+    "join_button": "Join Waiting List",
+    "joined_confirmation": "You're on the waiting list. We'll email you when a spot opens.",
+    "leave_button": "Leave Waitlist",
+    "claim": {
+      "expired_title": "Your spot has expired",
+      "expired_body": "The 48-hour window to claim your spot has passed. You'll need to rejoin the waiting list.",
+      "error_title": "Something went wrong",
+      "error_body": "We could not enroll you. Please contact the course admin."
+    },
+    "settings": {
+      "max_students_label": "Max students",
+      "max_students_hint": "Leave empty for no limit"
+    }
   }
 }

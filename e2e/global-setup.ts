@@ -31,6 +31,16 @@ export default async function globalSetup(config: FullConfig) {
   await page.waitForURL('**/org/**');
 
   await page.context().storageState({ path: 'playwright/.auth/admin.json' });
+
+  // ── Student session ───────────────────────────────────────────────────────
+  await page.goto(`${baseURL}/login`);
+  await page.waitForSelector('[name="email"]:focus');
+  await page.fill('[name="email"]', process.env.TEST_STUDENT_EMAIL!);
+  await page.fill('[name="password"]', process.env.TEST_STUDENT_PASSWORD!);
+  await page.click('[type="submit"]');
+  await page.waitForURL('**/lms**');
+
+  await page.context().storageState({ path: 'playwright/.auth/student.json' });
   await browser.close();
 }
 

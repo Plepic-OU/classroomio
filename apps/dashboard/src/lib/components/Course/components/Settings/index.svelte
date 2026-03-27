@@ -148,6 +148,7 @@
         type: $settings.type,
         logo: $settings.logo,
         is_published: $settings.is_published,
+        max_students: $settings.max_students ? Number($settings.max_students) : null,
         metadata: {
           ...(isObject($course.metadata) ? $course.metadata : {}),
           lessonTabsOrder: $settings.tabs,
@@ -191,7 +192,8 @@
       grading: !!course.metadata.grading,
       lesson_download: !!course.metadata.lessonDownload,
       is_published: !!course.is_published,
-      allow_new_students: course.metadata.allowNewStudent
+      allow_new_students: course.metadata.allowNewStudent,
+      max_students: course.max_students ?? null
     });
   }
   $: setDefault($course);
@@ -382,6 +384,26 @@
           value={COURSE_TYPE.SELF_PACED}
         />
       </RadioButtonGroup>
+    </Column>
+  </Row>
+
+  <Row class="border-bottom-c flex flex-col py-7 lg:flex-row">
+    <Column sm={8} md={8} lg={8}>
+      <SectionTitle>{$t('waitlist.settings.max_students_label')}</SectionTitle>
+      <p>{$t('waitlist.settings.max_students_hint')}</p>
+    </Column>
+    <Column sm={8} md={8} lg={8}>
+      <TextField
+        label={$t('waitlist.settings.max_students_label')}
+        placeholder=""
+        type="number"
+        min="1"
+        className="w-full mb-5"
+        bind:value={$settings.max_students}
+        onInputChange={() => {
+          hasUnsavedChanges = true;
+        }}
+      />
     </Column>
   </Row>
 

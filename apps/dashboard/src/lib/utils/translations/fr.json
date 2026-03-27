@@ -1654,5 +1654,35 @@
         "message": "Ce lien de vérification est invalide ou mal formé. Veuillez vérifier votre courrier électronique pour trouver le lien correct ou demander un nouvel e-mail de vérification."
       }
     }
+  },
+
+  "waitlist": {
+    "section_header": "Liste d'attente ({count})",
+    "column": {
+      "joined": "Inscrit",
+      "status": "Statut"
+    },
+    "status": {
+      "waiting": "En attente",
+      "notified": "{hours}h restantes",
+      "expired": "Expiré"
+    },
+    "action": {
+      "remove": "Retirer de la liste d'attente"
+    },
+    "course_full": "Ce cours est actuellement complet.",
+    "join_button": "Rejoindre la liste d'attente",
+    "joined_confirmation": "Vous êtes sur la liste d'attente. Nous vous enverrons un e-mail lorsqu'une place sera disponible.",
+    "leave_button": "Quitter la liste d'attente",
+    "claim": {
+      "expired_title": "Votre place a expiré",
+      "expired_body": "La fenêtre de 48 heures pour réclamer votre place est passée. Vous devez rejoindre à nouveau la liste d'attente.",
+      "error_title": "Une erreur s'est produite",
+      "error_body": "Nous n'avons pas pu vous inscrire. Veuillez contacter l'administrateur du cours."
+    },
+    "settings": {
+      "max_students_label": "Nombre max d'étudiants",
+      "max_students_hint": "Laisser vide pour aucune limite"
+    }
   }
 }

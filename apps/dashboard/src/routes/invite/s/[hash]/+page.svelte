@@ -6,7 +6,12 @@
   import AuthUI from '$lib/components/AuthUI/index.svelte';
   import { currentOrg } from '$lib/utils/store/org';
   import { setTheme } from '$lib/utils/functions/theme';
-  import { addGroupMember } from '$lib/utils/services/courses';
+  import {
+    addGroupMember,
+    addToWaitlist,
+    getStudentWaitlistEntry,
+    removeFromWaitlist
+  } from '$lib/utils/services/courses';
   import type { CurrentOrg } from '$lib/utils/types/org.js';
   import { ROLE } from '$lib/utils/constants/roles';
   import { profile } from '$lib/utils/store/user';
@@ -17,6 +22,7 @@
   import { snackbar } from '$lib/components/Snackbar/store.js';
   import { capturePosthogEvent } from '$lib/utils/services/posthog';
   import { page } from '$app/stores';
+  import { t } from '$lib/utils/functions/translations';
 
   export let data;
 
@@ -25,6 +31,12 @@
 
   let disableSubmit = false;
   let formRef: HTMLFormElement;
+
+  // Waitlist state
+  let courseFull = false;
+  let onWaitlist = false;
+  let waitlistEntryId: string | null = null;
+  let waitlistJoined = false;
 
   async function handleSubmit() {
     loading = true;
@@ -43,6 +55,7 @@
     console.log({ courseData });
     if (!courseData?.group_id) {
       console.error('error getting group', error);
+      loading = false;
       return;
     }
 
@@ -71,44 +84,87 @@
         return teacher.profile?.email || '';
       }) || [];
 
-    addGroupMember(member).then((addedMember) => {
-      if (addedMember.error) {
-        console.error('Error adding student to group', courseData.group_id, addedMember.error);
-        snackbar.error('snackbar.invite.failed_join');
+    const addedMember = await addGroupMember(member, data.id);
 
-        // Full page load to lms if error joining, probably user already joined
-        window.location.href = '/lms';
-        return;
-      }
+    if (addedMember.error) {
+      console.error('Error adding student to group', courseData.group_id, addedMember.error);
+      snackbar.error('snackbar.invite.failed_join');
+      // Full page load to lms if error joining, probably user already joined
+      window.location.href = '/lms';
+      return;
+    }
 
-      capturePosthogEvent('student_joined_course', {
-        course_name: data.name,
-        student_id: $profile.id,
-        student_email: $profile.email
-      });
+    if (addedMember.data?.full) {
+      courseFull = true;
+      loading = false;
+      return;
+    }
 
-      // Send email welcoming student to the course
-      triggerSendEmail(NOTIFICATION_NAME.STUDENT_COURSE_WELCOME, {
-        to: $profile.email,
-        orgName: data.currentOrg?.name,
-        courseName: data.name
-      });
-
-      // Send notification to all teacher(s) that a student has joined the course.
-      Promise.all(
-        teachers.map((email) =>
-          triggerSendEmail(NOTIFICATION_NAME.TEACHER_STUDENT_JOINED, {
-            to: email,
-            courseName: data.name,
-            studentName: $profile.fullname,
-            studentEmail: $profile.email
-          })
-        )
-      );
-
-      // go to lms
-      return goto('/lms');
+    capturePosthogEvent('student_joined_course', {
+      course_name: data.name,
+      student_id: $profile.id,
+      student_email: $profile.email
     });
+
+    // Send email welcoming student to the course
+    triggerSendEmail(NOTIFICATION_NAME.STUDENT_COURSE_WELCOME, {
+      to: $profile.email,
+      orgName: data.currentOrg?.name,
+      courseName: data.name
+    });
+
+    // Send notification to all teacher(s) that a student has joined the course.
+    Promise.all(
+      teachers.map((email) =>
+        triggerSendEmail(NOTIFICATION_NAME.TEACHER_STUDENT_JOINED, {
+          to: email,
+          courseName: data.name,
+          studentName: $profile.fullname,
+          studentEmail: $profile.email
+        })
+      )
+    );
+
+    return goto('/lms');
+  }
+
+  async function handleJoinWaitlist() {
+    if (!$profile.id) return;
+    loading = true;
+
+    const { data: entry, error } = await addToWaitlist(data.id, $profile.id);
+
+    if (error) {
+      console.error('Error joining waitlist', error);
+      snackbar.error('snackbar.invite.failed_join');
+      loading = false;
+      return;
+    }
+
+    waitlistEntryId = entry?.id ?? null;
+    onWaitlist = true;
+    waitlistJoined = true;
+    loading = false;
+  }
+
+  async function handleLeaveWaitlist() {
+    if (!waitlistEntryId) return;
+    loading = true;
+
+    const { error } = await removeFromWaitlist(waitlistEntryId);
+
+    if (error) {
+      console.error('Error leaving waitlist', error);
+      snackbar.error('snackbar.invite.failed_join');
+      loading = false;
+      return;
+    }
+
+    onWaitlist = false;
+    waitlistEntryId = null;
+    waitlistJoined = false;
+    courseFull = true; // keep the "course full" state visible
+    loading = false;
   }
 
   function setCurOrg(cOrg: CurrentOrg) {
@@ -126,6 +182,18 @@
     }
 
     setTheme(data.currentOrg?.theme || '');
+
+    // Check if the student is already on the waitlist.
+    // profile store hydrates async — use session.user.id as the reliable fallback.
+    const profileId = $profile.id || session.user?.id;
+    if (profileId) {
+      const { data: entry } = await getStudentWaitlistEntry(data.id, profileId);
+      if (entry) {
+        onWaitlist = true;
+        waitlistEntryId = entry.id;
+        courseFull = true; // course must be full if they're on the waitlist
+      }
+    }
   });
 
   $: setCurOrg(data.currentOrg as CurrentOrg);
@@ -149,12 +217,44 @@
     <p class="text-center text-sm font-light dark:text-white">{data.description}</p>
   </div>
 
-  <div class="my-4 flex w-full items-center justify-center">
-    <PrimaryButton
-      label="Join Course"
-      type="submit"
-      isDisabled={disableSubmit || loading}
-      isLoading={loading || !$profile.id}
-    />
+  <div class="my-4 flex w-full flex-col items-center justify-center gap-3">
+    {#if waitlistJoined}
+      <!-- Confirmation after joining waitlist -->
+      <p class="text-center text-sm dark:text-white" data-testid="waitlist-success-message">
+        {$t('waitlist.joined_confirmation')}
+      </p>
+    {:else if onWaitlist}
+      <!-- Already on the waitlist -->
+      <p class="text-center text-sm dark:text-white">
+        {$t('waitlist.joined_confirmation')}
+      </p>
+      <PrimaryButton
+        label={$t('waitlist.leave_button')}
+        isDisabled={loading}
+        isLoading={loading}
+        onClick={handleLeaveWaitlist}
+        data-testid="leave-waitlist-btn"
+      />
+    {:else if courseFull}
+      <!-- Course is full — offer to join waitlist -->
+      <p class="text-center text-sm dark:text-white" data-testid="course-full-message">
+        {$t('waitlist.course_full')}
+      </p>
+      <PrimaryButton
+        label={$t('waitlist.join_button')}
+        isDisabled={loading || !$profile.id}
+        isLoading={loading}
+        onClick={handleJoinWaitlist}
+        data-testid="join-waitlist-btn"
+      />
+    {:else}
+      <!-- Default: enroll -->
+      <PrimaryButton
+        label="Join Course"
+        type="submit"
+        isDisabled={disableSubmit || loading}
+        isLoading={loading || !$profile.id}
+      />
+    {/if}
   </div>
 </AuthUI>

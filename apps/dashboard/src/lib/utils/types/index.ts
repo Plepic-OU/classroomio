@@ -244,6 +244,21 @@ export interface Course {
   lesson_section?: LessonSection[];
   lessons?: Lesson[];
   polls: { status: string }[];
+  max_students?: number | null;
+}
+
+export type WaitlistStatus = 'waiting' | 'notified' | 'expired';
+
+export interface CourseWaitlist {
+  id: string;
+  course_id: string;
+  profile_id: string;
+  status: WaitlistStatus;
+  notified_at?: string | null;
+  expires_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  profile?: Pick<Profile, 'id' | 'fullname' | 'email' | 'avatar_url'>;
 }
 
 export interface Groupmember {

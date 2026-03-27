@@ -1,7 +1,7 @@
 import { test as base } from 'playwright-bdd';
 import { Page } from '@playwright/test';
 
-export const test = base.extend<{ adminPage: Page; orgSlug: string }>({
+export const test = base.extend<{ adminPage: Page; orgSlug: string; studentPage: Page }>({
   // storageState from globalSetup means the page context is already authenticated.
   adminPage: async ({ page }, use) => {
     await use(page);
@@ -12,5 +12,9 @@ export const test = base.extend<{ adminPage: Page; orgSlug: string }>({
     await adminPage.waitForURL('**/org/**');
     const slug = new URL(adminPage.url()).pathname.split('/')[2];
     await use(slug);
+  },
+  // studentPage uses the student storageState set by the student-authenticated project.
+  studentPage: async ({ page }, use) => {
+    await use(page);
   },
 });

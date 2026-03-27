@@ -11,7 +11,8 @@ export const NOTIFICATION_NAME = {
   TEACHER_STUDENT_JOINED: 'TEACHER STUDENT JOINED',
   SUBMISSION_UPDATE: 'SUBMISSION UPDATE',
   EXERCISE_SUBMISSION_UPDATE: 'EXERCISE SUBMISSION UPDATE',
-  NEWSFEED: 'NEWSFEED'
+  NEWSFEED: 'NEWSFEED',
+  WAITLIST_NOTIFY: 'WAITLIST NOTIFY'
 };
 
 const NAME_TO_PATH = {
@@ -26,7 +27,8 @@ const NAME_TO_PATH = {
   [NOTIFICATION_NAME.TEACHER_STUDENT_JOINED]: '/api/email/course/teacher_student_joined',
   [NOTIFICATION_NAME.SUBMISSION_UPDATE]: '/api/email/course/submission_update',
   [NOTIFICATION_NAME.EXERCISE_SUBMISSION_UPDATE]: '/api/email/course/exercise_submission_update',
-  [NOTIFICATION_NAME.NEWSFEED]: '/api/email/course/newsfeed'
+  [NOTIFICATION_NAME.NEWSFEED]: '/api/email/course/newsfeed',
+  [NOTIFICATION_NAME.WAITLIST_NOTIFY]: '/api/email/course/waitlist_notify'
 };
 
 export const triggerSendEmail = async (name: string, body: { [k: string]: unknown }) => {

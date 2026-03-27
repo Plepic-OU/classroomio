@@ -1654,5 +1654,35 @@
         "message": "Dieser Bestätigungslink ist ungültig oder fehlerhaft. Bitte überprüfen Sie Ihre E-Mails auf den richtigen Link oder fordern Sie eine neue Bestätigungs-E-Mail an."
       }
     }
+  },
+
+  "waitlist": {
+    "section_header": "Warteliste ({count})",
+    "column": {
+      "joined": "Eingetragen",
+      "status": "Status"
+    },
+    "status": {
+      "waiting": "Wartend",
+      "notified": "Noch {hours} Std.",
+      "expired": "Abgelaufen"
+    },
+    "action": {
+      "remove": "Von Warteliste entfernen"
+    },
+    "course_full": "Dieser Kurs ist derzeit voll.",
+    "join_button": "Auf Warteliste setzen",
+    "joined_confirmation": "Sie stehen auf der Warteliste. Wir senden Ihnen eine E-Mail, wenn ein Platz frei wird.",
+    "leave_button": "Warteliste verlassen",
+    "claim": {
+      "expired_title": "Ihr Platz ist abgelaufen",
+      "expired_body": "Das 48-Stunden-Fenster zum Beanspruchen Ihres Platzes ist abgelaufen. Sie müssen sich erneut auf die Warteliste setzen.",
+      "error_title": "Etwas ist schiefgelaufen",
+      "error_body": "Wir konnten Sie nicht einschreiben. Bitte kontaktieren Sie den Kursadministrator."
+    },
+    "settings": {
+      "max_students_label": "Max. Teilnehmerzahl",
+      "max_students_hint": "Leer lassen für keine Begrenzung"
+    }
   }
 }

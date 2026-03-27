@@ -1654,5 +1654,35 @@
         "message": "Liên kết xác minh này không hợp lệ hoặc không đúng định dạng. Vui lòng kiểm tra email của bạn để tìm liên kết chính xác hoặc yêu cầu email xác minh mới."
       }
     }
+  },
+
+  "waitlist": {
+    "section_header": "Danh sách chờ ({count})",
+    "column": {
+      "joined": "Đăng ký",
+      "status": "Trạng thái"
+    },
+    "status": {
+      "waiting": "Đang chờ",
+      "notified": "Còn {hours} giờ",
+      "expired": "Hết hạn"
+    },
+    "action": {
+      "remove": "Xóa khỏi danh sách chờ"
+    },
+    "course_full": "Khóa học này hiện đã đầy.",
+    "join_button": "Vào danh sách chờ",
+    "joined_confirmation": "Bạn đã có trong danh sách chờ. Chúng tôi sẽ gửi email khi có chỗ trống.",
+    "leave_button": "Rời danh sách chờ",
+    "claim": {
+      "expired_title": "Chỗ của bạn đã hết hạn",
+      "expired_body": "Thời gian 48 giờ để nhận chỗ của bạn đã qua. Bạn cần đăng ký lại vào danh sách chờ.",
+      "error_title": "Đã xảy ra lỗi",
+      "error_body": "Chúng tôi không thể đăng ký cho bạn. Vui lòng liên hệ quản trị viên khóa học."
+    },
+    "settings": {
+      "max_students_label": "Số học viên tối đa",
+      "max_students_hint": "Để trống nếu không có giới hạn"
+    }
   }
 }

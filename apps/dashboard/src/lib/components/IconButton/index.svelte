@@ -40,6 +40,7 @@
     {disabled}
     {type}
     on:click={handleClick}
+    {...$$restProps}
   >
     <slot />
   </button>

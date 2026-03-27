@@ -28,11 +28,17 @@ export default defineConfig({
       testMatch: /login\.feature/,
       use: { ...devices['Desktop Chrome'] },
     },
-    // Authenticated project — all other flows use saved admin session
+    // Authenticated project — admin flows; excludes login and student-specific flows
     {
       name: 'authenticated',
-      testIgnore: /login\.feature/,
+      testIgnore: /login\.feature|student-enrollment\.feature|student-waitlist\.feature/,
       use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/admin.json' },
+    },
+    // Student-authenticated project — student enrollment and waitlist flows
+    {
+      name: 'student-authenticated',
+      testMatch: /student-enrollment\.feature|student-waitlist\.feature/,
+      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/student.json' },
     },
   ],
   // No webServer block — tests MUST NOT auto-start services.
