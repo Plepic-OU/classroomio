@@ -1,0 +1,16 @@
+--- Day 4 - improve your claude code skills
+
+Goals
+
+  1. run /insights inside the “cskip”. This produces a report of your usage in the classroomio project
+  2. Read through the report
+  3. Write to the course discord:
+  3a. What did you learn about your Claude usage?
+  3b. Which suggestion from Claude to improve makes sense to you?
+
+
+Optional goals
+* Let claude do it when report is being generated in parallel thread
+
+  o1. Install prometheus and configure claude code to send metrics there
+  o2. Add grafana too with an existing claude code dashboard
