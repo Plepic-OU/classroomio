@@ -30,8 +30,7 @@ CREATE POLICY "authenticated can select own org waitinglist"
     org_id IS NULL
     OR EXISTS (
       SELECT 1 FROM public.organizationmember om
-      JOIN public.profile p ON p.id = om.profile_id
-      WHERE p.auth_user_id = auth.uid()
+      WHERE om.profile_id = (SELECT id FROM public.profile WHERE id = auth.uid() LIMIT 1)
         AND om.organization_id = waitinglist.org_id
     )
   );
