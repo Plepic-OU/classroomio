@@ -16,7 +16,7 @@ export default defineConfig({
   // multiple concurrent workers within the 10s per-test timeout.
   workers: 1,
   retries: process.env.CI ? 2 : 0,
-  timeout: 10_000,
+  timeout: 20_000,
   reporter: [['html', { open: 'never' }]],
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:5173',

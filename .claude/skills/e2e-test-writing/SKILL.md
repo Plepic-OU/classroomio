@@ -66,7 +66,7 @@ After the test passes, reflect: **was anything surprising or different from what
 
 **STOP when 2 consecutive tests pass with no new learnings.** The skill is mature.
 
-Track the counter here: `consecutive_no_learning_count: 0` (reset — 1 new learning after org-settings)
+Track the counter here: `consecutive_no_learning_count: 0` (reset — 2 new learnings after org-settings reload)
 
 ---
 
@@ -206,6 +206,12 @@ Patterns discovered during implementation — consult before writing new tests t
 **`bddgen` must run before `playwright test`**: Never call `playwright test` alone — always `bddgen && playwright test` or the generated specs will be stale.
 
 **Playwright browser install**: The correct browser version must match the installed `@playwright/test` version. If the binary is missing, run `pnpm exec playwright install chromium` from `tests/e2e/`.
+
+**`getOrganizations` debounce overwrites typed form values**: The root layout calls `getProfileDebounced(1000ms)` → `getProfile` → `getOrganizations` → `currentOrg.set(orgData)` approximately 1–1.5s after `onMount`. If you type into a Svelte `bind:value={$currentOrg.field}` input before this completes, the debounced call will overwrite your typed value with the DB value. **Fix**: in `gotoOrgTab`, set up a `page.waitForResponse(url.includes('/rest/v1/organizationmember'))` listener BEFORE calling `page.goto()`, then `await` it after navigation. This ensures `$currentOrg` is settled before the test interacts with the form.
+
+**`getProfile` early-returns on reload if `profile.id` is already set**: In the full suite (not isolation), `profile.id` may already be populated when a reload triggers `getProfileDebounced`. `getProfile` checks `if (profileStore.id) return` early, skipping `getOrganizations`. This means `waitForResponse('/rest/v1/organizationmember')` will time out on reload in the full suite. **Fix**: for reload-verification steps (where we only READ, not write), use `expect(field).toHaveValue(expectedName, { timeout: 10000 })` directly — SSR already loads the correct DB value on every request, so the field will eventually show the saved name without needing to wait for the client-side debounce.
+
+**20s test timeout needed for reload scenarios**: Tests that include a full page reload cycle (navigate → interact → reload → verify) use ~12–15s total. The default 10s timeout is too tight. Increase `timeout` in `playwright.config.ts` to `20_000` for test suites that include reload-based assertions.
 
 **`organization.siteName` camelCase**: PostgREST embeds use the exact column name. The `organization` table column is `siteName` (camelCase), not `site_name`. Using `site_name` causes a silent error response with no data. Always use `organization(siteName)` in REST queries.
 
