@@ -1,11 +1,11 @@
-FROM mcr.microsoft.com/devcontainers/javascript-node:20-bookworm
+FROM mcr.microsoft.com/devcontainers/javascript-node:20-bookworm@sha256:29637c7d6f3a4a98323843cc2b3ebf0bdd80800978b1906174c1f31d3582b6be
 
 # Enable pnpm via corepack
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.28.2 --activate
 
 # Install turbo v1 globally (matches project's ^1.10.16)
 # Supabase CLI is installed via npx in setup.sh (avoids version pinning issues)
-RUN npm install -g turbo@1
+RUN npm install -g turbo@1.13.4
 
 # Install Supabase CLI from GitHub releases (pinned version to avoid GitHub API rate limits)
 RUN ARCH=$(dpkg --print-architecture) \

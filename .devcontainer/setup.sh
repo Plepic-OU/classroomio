@@ -17,7 +17,7 @@ done
 
 echo "==> Starting Redis..."
 docker rm -f classroomio-redis 2>/dev/null || true
-docker run -d --name classroomio-redis -p 6379:6379 redis:7-alpine
+docker run -d --name classroomio-redis -p 6379:6379 redis:7.4.9-alpine
 
 echo "==> Starting Supabase..."
 supabase stop 2>/dev/null || true
