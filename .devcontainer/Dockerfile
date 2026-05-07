@@ -19,4 +19,5 @@ RUN ARCH=$(dpkg --print-architecture) \
 RUN npm install -g @anthropic-ai/claude-code
 
 # Add alias for all bash sessions
-RUN echo "alias cskip='claude --dangerously-skip-permissions'" >> /etc/bash.bashrc
+# Inside isolated environment, remove all permissions. In non-isolated environment the mode "auto" is good substitute
+RUN echo "alias cskip='claude --permission-mode bypassPermissions'" >> /etc/bash.bashrc
