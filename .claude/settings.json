@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "tmpfile=$(mktemp); cat > \"$tmpfile\"; if jq -e '((.tool_input.file_path // \"\") + \" \" + (.tool_input.command // \"\")) | test(\"devcontainer/[^/]*token\")' \"$tmpfile\" > /dev/null 2>&1; then jq -c '{timestamp: (now | todate), status: \"BLOCKED\", tool: .tool_name, input: .tool_input}' \"$tmpfile\" >> .claude/audit.log; rm \"$tmpfile\"; echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Access to protected file is blocked.\"}}'; exit 2; fi; rm \"$tmpfile\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/save-tool-call.py"
+          }
+        ]
+      }
+    ]
+  }
+}
