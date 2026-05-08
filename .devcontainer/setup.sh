@@ -4,6 +4,10 @@ set -euo pipefail
 echo "==> Fixing volume permissions..."
 sudo chown -R node:node /home/node/.claude
 
+echo "==> Wiring shell config..."
+BASHRC_LINE='[ -f /workspaces/classroomio/.devcontainer/shell/bashrc ] && source /workspaces/classroomio/.devcontainer/shell/bashrc'
+grep -qF "$BASHRC_LINE" ~/.bashrc || echo "$BASHRC_LINE" >> ~/.bashrc
+
 echo "==> Installing dependencies..."
 pnpm install
 

@@ -1,0 +1,10 @@
+# Aliases
+alias ll='ls -la'
+alias cskip='claude --permission-mode bypassPermissions'
+
+# Persist history in workspace so it survives container rebuilds
+export HISTFILE=/workspaces/classroomio/.devcontainer/shell/bash_history
+export HISTSIZE=10000
+export HISTFILESIZE=20000
+export HISTCONTROL=ignoredups:erasedups
+shopt -s histappend
