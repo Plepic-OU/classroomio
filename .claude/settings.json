@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); if echo \"$input\" | jq -e '(.tool_input | tojson) | contains(\"github-token\")' > /dev/null 2>&1; then echo \"$input\" | jq -r '\"[\" + (now | todate) + \"] BLOCKED tool=\" + .tool_name + \" input=\" + (.tool_input | tojson)' >> .claude/audit.log 2>/dev/null; echo \"Blocked: access to the github-token file is not permitted\"; exit 2; fi"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p .claude/tool-inputs; input=$(cat); echo \"$input\" | jq -c '{ts:(now|todate),tool:.tool_name,input:.tool_input,output:.tool_response}' >> .claude/session.jsonl 2>/dev/null; name=$(echo \"$input\" | jq -r '.tool_name' 2>/dev/null); [ -n \"$name\" ] && echo \"$input\" | jq '.tool_input' > \".claude/tool-inputs/${name}.json\" 2>/dev/null; true"
+          }
+        ]
+      }
+    ]
+  }
+}

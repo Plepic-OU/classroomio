@@ -46,3 +46,11 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+
+# Claude Code tool-input snapshots and runtime logs
+.claude/tool-inputs/
+.claude/audit.log
+.claude/session.jsonl
+
+# GitHub CLI auth token — never commit
+.devcontainer/github-token
