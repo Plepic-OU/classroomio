@@ -60,22 +60,83 @@ Migrations live in `supabase/migrations/`, seed data in `supabase/seed.sql`.
 
 ```
 apps/
-  dashboard/          SvelteKit app – main LMS UI (port 5173)
-  api/                Hono API – async tasks, file uploads, email (port 3002)
-  classroomio-com/    SvelteKit landing/marketing site (port 5174)
-  docs/               React Start documentation site (port 3000)
+  dashboard/          SvelteKit 4 LMS UI (port 5173)
+  api/                Hono 4 API – async tasks, file uploads, email (port 3002)
+  classroomio-com/    SvelteKit 2 landing/marketing site (port 5174)
+  docs/               React Start (TanStack Router) documentation site (port 3000)
+  course-app/         SvelteKit 5 standalone public course viewer
 packages/
-  shared/             Utilities shared across apps
-  tsconfig/           Shared TypeScript configs
-supabase/             Migrations, seed, edge functions
+  shared/             PLAN constants, billing utils, Senja integration
+  tsconfig/           Shared TypeScript configs (base, svelte, nextjs, react-library)
+  course-app/         CLI tool published to npm (@classroomio/course-app)
+supabase/             Migrations (38+), seed.sql, edge functions
 docker/               Dockerfiles + docker-compose for self-hosting
 cypress/              E2E tests
+ai/                   AI feature experiments
 ```
 
 ### Data flow
 - The **dashboard** talks directly to **Supabase** (Postgres + realtime + storage) for most operations via the Supabase JS client.
-- Long-running or async work (emails, file processing) is delegated to the **API** (`PUBLIC_SERVER_URL`).
+- Long-running or async work (emails, file processing, PDF generation, course cloning) is delegated to the **API** (`PUBLIC_SERVER_URL`).
 - The API uses Supabase service-role access and calls external services (Cloudflare R2, SMTP, OpenAI).
+- The API exports `./rpc-types` so the dashboard can infer Hono client types for type-safe RPC calls.
+
+### Dashboard routing conventions
+
+SvelteKit file-based routing under `apps/dashboard/src/routes/`:
+
+- `/courses/[id]/*` — course management (lessons, people, analytics, submissions, marks, attendance, certificates, settings, landingpage)
+- `/courses/[id]/lessons/[...lessonParams]` — catch-all for lesson detail
+- `/lms/*` — student-facing learning section (community, exercises, explore)
+- `/org/[slug]/*` — organisation workspace (audience, community, team, settings)
+- `/course/[slug]` — public course view
+- `/invite/s/[hash]` and `/invite/t/[hash]` — student/teacher invite links
+- `/api/completion/*` — server-side AI completion endpoints
+- `/api/email/*` — email template server routes
+- `/api/polar/*` — Polar subscription webhook handler
+
+`+layout.server.ts` files load auth state and org context; `+page.ts` files load page-level data with server-side validation.
+
+### Hono API structure
+
+`apps/api/src/`:
+- `app.ts` — middleware chain (logger → prettyJSON → secureHeaders → CORS → rate limiter) then routes
+- `routes/course/` — certificate PDF, content PDF, file upload presigning, lesson ops, course cloning, KaTeX rendering
+- `routes/mail/` — email delivery via nodemailer + Zeptomail
+- Auth middleware validates Bearer tokens against Supabase; rate limiting uses Redis
+
+### Database
+
+All tables have Row-Level Security (RLS) enabled. Core entities: `profile`, `organization`, `course`, `lesson`, `exercise`, `submission`, `lesson_completion`, `groupmember`, `apps_poll`.
+
+Postgres functions for complex queries: `get_courses()`, `get_student_exercises()`, `get_marks()`, `get_user_upcoming_lessons()`.
+
+### Key libraries
+
+**Dashboard:**
+- UI: Carbon Design System (`carbon-components-svelte`) + TailwindCSS
+- Charts: Carbon Charts + D3.js
+- i18n: `sveltekit-i18n` with ICU parser (multi-language, plural/gender handling)
+- Payments: Stripe (legacy) + Polar (current)
+- Analytics: PostHog
+- AI: Vercel AI SDK + OpenAI Edge
+
+**API:**
+- Validation: Zod + `@hono/zod-validator`; OpenAPI spec via `zod-openapi`
+- PDF: jsPDF (also used client-side in dashboard)
+- Uploads: AWS SDK v3 targeting Cloudflare R2
+
+### Svelte store patterns
+
+Global state in `apps/dashboard/src/lib/utils/store/`:
+- `userStore` — session, login state, profile data (writable with TypeScript interfaces)
+- `globalStore` — dark mode, org site context
+
+### Deployment adapters
+
+`apps/dashboard/svelte.config.js` selects the adapter at build time:
+- `@sveltejs/adapter-node` when `PUBLIC_IS_SELFHOSTED=true`
+- `@sveltejs/adapter-vercel` for cloud deployments
 
 ### Key env vars
 
