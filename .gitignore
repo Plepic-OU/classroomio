@@ -46,3 +46,10 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+
+# Claude Code local settings and hook outputs
+.claude/settings.local.json
+.claude/tool-inputs/
+
+# GitHub token for devcontainer gh auth — never commit this
+.devcontainer/github-token
