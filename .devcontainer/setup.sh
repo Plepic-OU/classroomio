@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "==> Fixing volume permissions..."
-sudo chown -R node:node /home/node/.claude
+# This can probably be removed here - the chown has to run at the end.
+# echo "==> Fixing volume permissions..."
+# sudo chown -R node:node /home/node/.claude
 
 echo "==> Installing dependencies..."
 pnpm install
@@ -47,5 +48,8 @@ sudo chmod -R g+w /usr/local/share/npm-global/bin/
 
 echo "==> Running turbo prepare..."
 pnpm turbo prepare
+
+# Ensure node user owns their home directory. This has to be done at the end, not in the beginning.
+sudo chown -R node:node /home/node
 
 echo "==> Setup complete!"
