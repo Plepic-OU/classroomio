@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/devcontainers/javascript-node:20-bookworm@sha256:29637c7d6f3a4a98323843cc2b3ebf0bdd80800978b1906174c1f31d3582b6be
+FROM mcr.microsoft.com/devcontainers/javascript-node:20-bookworm
 
 # Enable pnpm via corepack
 RUN corepack enable && corepack prepare pnpm@10.28.2 --activate

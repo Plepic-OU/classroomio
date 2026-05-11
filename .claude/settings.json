@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); if printf '%s' \"$input\" | jq -e '.tool_input | tostring | test(\"\\\\.devcontainer/github-token\")' >/dev/null 2>&1; then echo '{\"decision\":\"block\",\"reason\":\"Blocked: tool input references .devcontainer/github-token\"}'; exit 2; fi"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); mkdir -p .claude/tool-inputs && printf '%s' \"$input\" | jq '.tool_input' > \".claude/tool-inputs/$(printf '%s' \"$input\" | jq -r '.tool_name').json\"",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

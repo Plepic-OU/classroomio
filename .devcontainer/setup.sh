@@ -4,6 +4,9 @@ set -euo pipefail
 echo "==> Fixing volume permissions..."
 sudo chown -R node:node /home/node/.claude
 
+echo "==> Fixing node_modules volume permissions..."
+sudo chown node:node /workspaces/classroomio/node_modules
+
 echo "==> Installing dependencies..."
 pnpm install
 
