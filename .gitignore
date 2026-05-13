@@ -23,8 +23,6 @@ build
 # misc
 .DS_Store
 *.pem
-.claude/hook-logs
-docs/c4/extracted-structure.json
 
 # debug
 npm-debug.log*
