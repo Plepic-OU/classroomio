@@ -46,3 +46,6 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+.claude/tool-blocks.log
+.claude/session-replay.log
+.devcontainer/github-token

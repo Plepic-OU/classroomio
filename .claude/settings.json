@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PermissionDenied": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -c '{timestamp: now | strftime(\"%Y-%m-%dT%H:%M:%SZ\"), tool: .tool_name, input: .tool_input, reason: (.reason // \"hook blocked\")}' >> .claude/tool-blocks.log 2>/dev/null || true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -c '{timestamp: now | strftime(\"%Y-%m-%dT%H:%M:%SZ\"), tool: .tool_name, input: .tool_input, output: .tool_response}' >> .claude/session-replay.log 2>/dev/null || true",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if grep -qF '.devcontainer/github-token'; then echo 'Blocked: tool input references .devcontainer/github-token. This file holds a GitHub PAT and must never be read, copied, displayed, or referenced.' >&2; exit 2; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
