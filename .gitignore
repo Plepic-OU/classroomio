@@ -39,3 +39,8 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+
+.devcontainer/github-token
+
+# Claude Code captured tool inputs (observability hook output)
+.claude/tool-inputs/

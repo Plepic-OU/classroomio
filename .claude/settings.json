@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p .claude/tool-inputs && input=$(cat) && name=$(printf '%s' \"$input\" | jq -r '.tool_name // \"unknown\"') && printf '%s' \"$input\" | jq '.tool_input' > \".claude/tool-inputs/${name}.json\" || true"
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); if printf '%s' \"$input\" | grep -qE 'github[-]token'; then printf 'Blocked by token-block hook: tool input references a protected credential filename. Refusing to read, write, or otherwise expose secrets. If you need a token, use an env var or secret manager — never inline the literal filename in a tool call.\\n' >&2; exit 2; fi; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}
