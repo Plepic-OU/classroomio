@@ -35,6 +35,27 @@ pnpm test --filter=@cio/api
 pnpm test:coverage --filter=@cio/api
 ```
 
+### E2E / BDD Tests (Playwright + playwright-bdd)
+
+Requires three services running before tests can execute:
+- Dashboard at http://localhost:5173
+- API at http://localhost:3002
+- Supabase at http://localhost:54321 (started via `supabase start`)
+
+**Before starting any service, check if it is already up:**
+```bash
+curl -sf http://localhost:5173/login > /dev/null && echo "dashboard up" || echo "dashboard down"
+curl -sf http://localhost:3002       > /dev/null && echo "api up"       || echo "api down"
+curl -sf http://localhost:54321      > /dev/null && echo "supabase up"  || echo "supabase down"
+```
+Only start services that are not already running. If a service is already up, skip starting it.
+
+```bash
+pnpm test:e2e           # generate BDD specs + run all tests
+pnpm test:e2e:ui        # interactive Playwright UI on :9324
+pnpm test:e2e:report    # serve last HTML report on :9323
+```
+
 ### Database
 
 ```bash
