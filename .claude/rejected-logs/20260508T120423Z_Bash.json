@@ -1,0 +1,15 @@
+{
+  "session_id": "59f0e593-9cb0-4332-88a8-f789e845e6e4",
+  "transcript_path": "/home/node/.claude/projects/-workspaces-classroomio/59f0e593-9cb0-4332-88a8-f789e845e6e4.jsonl",
+  "cwd": "/workspaces/classroomio",
+  "permission_mode": "bypassPermissions",
+  "effort": {
+    "level": "high"
+  },
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "ls .devcontainer/github-token"
+  },
+  "tool_use_id": "toolu_01DEkMMEFWxKH9rqKKCW9mhM"
+}

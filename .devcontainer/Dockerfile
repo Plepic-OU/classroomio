@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/devcontainers/javascript-node:20-bookworm@sha256:29637c7d6f3a4a98323843cc2b3ebf0bdd80800978b1906174c1f31d3582b6be
 
-# Enable pnpm via corepack
-RUN corepack enable && corepack prepare pnpm@10.28.2 --activate
+# Enable pnpm via npm (corepack's HTTP client can fail in restricted network builds)
+RUN npm install -g pnpm@10.28.2 && corepack enable
 
 # Install turbo v1 globally (matches project's ^1.10.16)
 # Supabase CLI is installed via npx in setup.sh (avoids version pinning issues)

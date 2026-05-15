@@ -39,3 +39,11 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+
+# Claude Code local hook outputs and settings
+.claude/tool-logs/
+.claude/*.local.json
+.claude/*.local.md
+
+# GitHub token for devcontainer — never commit
+.devcontainer/github-token
