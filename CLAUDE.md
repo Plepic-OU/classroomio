@@ -86,6 +86,13 @@ PRIVATE_SUPABASE_SERVICE_ROLE=
 
 ## Architecture
 
+C4 diagrams (auto-generated, re-run `/c4-model` after structural changes):
+- @../docs/c4/system-context.md
+- @../docs/c4/containers.md
+- @../docs/c4/dashboard-components.md
+- @../docs/c4/api-components.md
+- [Database Schema](docs/c4/database.md)
+
 ### Dashboard (`apps/dashboard`) — SvelteKit
 
 The dashboard is a full SvelteKit app. Key structural patterns:
