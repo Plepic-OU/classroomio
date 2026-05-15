@@ -1,0 +1,66 @@
+// ClassroomIO — Layer 3: API Components | Generated 2026-05-15
+// 14 components, 32 relationships (depth 2)
+// Render: dot -Tsvg l3-api.dot -o l3-api.svg
+digraph L3_API {
+    graph [label="ClassroomIO — API Components|Generated 2026-05-15" labelloc=t fontsize=18 rankdir=LR fontname=Arial pad=0.5 nodesep=0.4 ranksep=1.0]
+    node  [fontname=Arial fontsize=10 shape=box margin="0.2,0.1"]
+    edge  [fontname=Arial fontsize=9]
+
+    subgraph cluster_api {
+        label="API (Hono 4 / Node.js)"
+        style=dashed
+        color="#444444"
+        fontname=Arial
+        fontsize=13
+
+        config [label="«Component»\nConfig\n[TypeScript]\n\n1 TS files" fillcolor="#85BBF0" fontcolor="#1D3649" style="filled"]
+        constants [label="«Component»\nConstants\n[TypeScript]\n\n3 TS files" fillcolor="#85BBF0" fontcolor="#1D3649" style="filled"]
+        middlewares [label="«Component»\nMiddlewares\n[Hono Middleware]\n\n2 TS files" fillcolor="#85BBF0" fontcolor="#1D3649" style="filled"]
+        root [label="«Component»\nRoot\n[TypeScript]\n\n3 TS files" fillcolor="#85BBF0" fontcolor="#1D3649" style="filled"]
+        routes [label="«Component»\nRoutes\n[Hono]\n\n1 TS files" fillcolor="#85BBF0" fontcolor="#1D3649" style="filled"]
+        routes_course [label="«Component»\nCourse\n[Hono]\n\n5 TS files" fillcolor="#85BBF0" fontcolor="#1D3649" style="filled"]
+        services [label="«Component»\nServices\n[TypeScript]\n\n1 TS files" fillcolor="#85BBF0" fontcolor="#1D3649" style="filled"]
+        services_course [label="«Component»\nCourse\n[TypeScript]\n\n1 TS files" fillcolor="#85BBF0" fontcolor="#1D3649" style="filled"]
+        types [label="«Component»\nTypes\n[TypeScript]\n\n3 TS files" fillcolor="#85BBF0" fontcolor="#1D3649" style="filled"]
+        types_course [label="«Component»\nCourse\n[TypeScript]\n\n2 TS files" fillcolor="#85BBF0" fontcolor="#1D3649" style="filled"]
+        utils [label="«Component»\nUtils\n[TypeScript]\n\n10 TS files" fillcolor="#85BBF0" fontcolor="#1D3649" style="filled"]
+        utils_auth [label="«Component»\nAuth\n[TypeScript]\n\n1 TS files" fillcolor="#85BBF0" fontcolor="#1D3649" style="filled"]
+        utils_openapi [label="«Component»\nOpenapi\n[TypeScript]\n\n1 TS files" fillcolor="#85BBF0" fontcolor="#1D3649" style="filled"]
+        utils_redis [label="«Component»\nRedis\n[ioredis]\n\n3 TS files" fillcolor="#85BBF0" fontcolor="#1D3649" style="filled"]
+    }
+
+    supabase_ext [label="«External System DB»\nSupabase\n\nPostgreSQL + Auth + Storage" fillcolor="#999999" fontcolor="white" style="filled"]
+
+    routes_course -> utils [label="6 imports"]
+    routes_course -> types_course [label="4 imports"]
+    utils -> types_course [label="3 imports"]
+    middlewares -> utils_redis [label="2 imports"]
+    services -> utils [label="2 imports"]
+    utils -> constants [label="2 imports"]
+    utils -> config [label="2 imports"]
+    routes_course -> middlewares [label="2 imports"]
+    routes_course -> constants [label="2 imports"]
+    root -> routes_course [label="1 imports"]
+    root -> routes [label="1 imports"]
+    root -> middlewares [label="1 imports"]
+    root -> utils_openapi [label="1 imports"]
+    root -> config [label="1 imports"]
+    constants -> config [label="1 imports"]
+    middlewares -> utils_auth [label="1 imports"]
+    middlewares -> constants [label="1 imports"]
+    routes -> services [label="1 imports"]
+    routes -> types [label="1 imports"]
+    routes -> config [label="1 imports"]
+    services -> types [label="1 imports"]
+    services -> config [label="1 imports"]
+    routes_course -> services_course [label="1 imports"]
+    routes_course -> types [label="1 imports"]
+    services_course -> utils [label="1 imports"]
+    services_course -> types [label="1 imports"]
+    types_course -> constants [label="1 imports"]
+    utils_auth -> utils [label="1 imports"]
+    utils_openapi -> config [label="1 imports"]
+    utils_redis -> utils [label="1 imports"]
+    utils_redis -> constants [label="1 imports"]
+    utils_redis -> config [label="1 imports"]
+}

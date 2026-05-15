@@ -253,6 +253,21 @@ function main() {
     process.exit(1);
   }
 
+  const force = process.argv.includes('--force');
+  const OUTPUT_NAMES = ['l1-context.md', 'l2-containers.md', 'l3-dashboard.md', 'l3-api.md'];
+
+  if (!force) {
+    const extractedMtime = fs.statSync(EXTRACTED_JSON).mtimeMs;
+    const upToDate = OUTPUT_NAMES.every((n) => {
+      const p = path.join(OUT_DIR, n);
+      return fs.existsSync(p) && fs.statSync(p).mtimeMs >= extractedMtime;
+    });
+    if (upToDate) {
+      console.log('✓ Mermaid diagrams are up to date — skipping. Use --force to override.');
+      process.exit(0);
+    }
+  }
+
   const extracted: Extracted = JSON.parse(fs.readFileSync(EXTRACTED_JSON, 'utf-8'));
   const date = extracted.extractedAt.split('T')[0];
 

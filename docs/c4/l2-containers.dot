@@ -1,0 +1,41 @@
+// ClassroomIO — Layer 2: Containers | Generated 2026-05-15
+// Render: dot -Tsvg l2-containers.dot -o l2-containers.svg
+digraph L2_Containers {
+    graph [label="ClassroomIO — Containers|Generated 2026-05-15" labelloc=t fontsize=18 rankdir=TB fontname=Arial pad=0.5 nodesep=0.8 ranksep=1.2]
+    node  [fontname=Arial fontsize=11 shape=box margin="0.3,0.15"]
+    edge  [fontname=Arial fontsize=10]
+
+    teacher [label="«Person»\nTeacher / Admin\n\nManages org, courses, and members" fillcolor="#08427B" fontcolor="white" style="rounded,filled"]
+    student [label="«Person»\nStudent\n\nLearns via courses and exercises" fillcolor="#08427B" fontcolor="white" style="rounded,filled"]
+
+    subgraph cluster_classroomio {
+        label="ClassroomIO"
+        style=dashed
+        color="#444444"
+        fontname=Arial
+        fontsize=14
+
+        dashboard  [label="«Container»\nDashboard\n[SvelteKit v1 / Svelte 4]\n\nTeacher/admin UI (port 5173).\nCourse CRUD, org management, analytics, billing." fillcolor="#438DD5" fontcolor="white" style="filled"]
+        course_app [label="«Container»\nCourse App\n[SvelteKit v2 / Svelte 5]\n\nStudent-facing LMS (port 5174).\nLessons, quizzes, certificates." fillcolor="#438DD5" fontcolor="white" style="filled"]
+        api        [label="«Container»\nAPI\n[Hono 4 / Node.js]\n\nLong-running jobs (port 3002):\nPDF export, course clone, S3 presign, email dispatch." fillcolor="#438DD5" fontcolor="white" style="filled"]
+        website    [label="«Container»\nWebsite\n[SvelteKit v2 / mdsvex]\n\nMarketing and landing pages." fillcolor="#438DD5" fontcolor="white" style="filled"]
+        docs       [label="«Container»\nDocs\n[React 19 / TanStack Start / Fumadocs]\n\nDeveloper and user documentation." fillcolor="#438DD5" fontcolor="white" style="filled"]
+    }
+
+    supabase  [label="«External System DB»\nSupabase\n\nPostgreSQL + Auth + Storage.\nPrimary data store — all apps connect directly via SDK." fillcolor="#999999" fontcolor="white" style="filled"]
+    s3        [label="«External System»\nAWS S3 / R2\n\nFile storage for uploads and generated exports." fillcolor="#999999" fontcolor="white" style="filled"]
+    redis     [label="«External System»\nRedis\n\nRate-limiting cache for API routes." fillcolor="#999999" fontcolor="white" style="filled"]
+    polar     [label="«External System»\nPolar\n\nOrg subscription billing." fillcolor="#999999" fontcolor="white" style="filled"]
+    email_svc [label="«External System»\nEmail Provider\n\nNodemailer / ZeptoMail for transactional mail." fillcolor="#999999" fontcolor="white" style="filled"]
+
+    teacher    -> dashboard  [label="Uses [HTTPS]"]
+    student    -> course_app [label="Takes courses [HTTPS]"]
+    dashboard  -> api        [label="PDF generation, course clone, S3 presign [HTTP :3002]"]
+    dashboard  -> supabase   [label="Reads/writes all data and files [HTTPS]"]
+    course_app -> supabase   [label="Reads course content and progress [HTTPS]"]
+    api        -> supabase   [label="Reads/writes course and user data [HTTPS]"]
+    api        -> s3         [label="Stores files, generates presigned URLs [HTTPS]"]
+    api        -> redis      [label="Rate-limiting [TCP]"]
+    api        -> email_svc  [label="Sends emails [SMTP/HTTPS]"]
+    dashboard  -> polar      [label="Org subscription management [HTTPS]"]
+}

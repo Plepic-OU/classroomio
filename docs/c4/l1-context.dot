@@ -1,0 +1,28 @@
+// ClassroomIO — Layer 1: System Context | Generated 2026-05-15
+// Render: dot -Tsvg l1-context.dot -o l1-context.svg
+digraph L1_Context {
+    graph [label="ClassroomIO — System Context|Generated 2026-05-15" labelloc=t fontsize=18 rankdir=TB fontname=Arial pad=0.5 nodesep=0.8 ranksep=1.2]
+    node  [fontname=Arial fontsize=11 shape=box margin="0.3,0.15"]
+    edge  [fontname=Arial fontsize=10]
+
+    teacher     [label="«Person»\nTeacher / Admin\n\nCreates courses, manages org members,\nviews analytics, configures billing" fillcolor="#08427B" fontcolor="white" style="rounded,filled"]
+    student     [label="«Person»\nStudent\n\nEnrols in courses, completes lessons\nand exercises, earns certificates" fillcolor="#08427B" fontcolor="white" style="rounded,filled"]
+
+    classroomio [label="«System»\nClassroomIO\n\nOpen-source LMS: course authoring,\nstudent progress tracking, subscription billing" fillcolor="#1168BD" fontcolor="white" style="filled"]
+
+    supabase    [label="«External System»\nSupabase\n\nPostgreSQL + Auth + Object Storage\n— primary data store" fillcolor="#999999" fontcolor="white" style="filled"]
+    polar       [label="«External System»\nPolar\n\nOrg-level subscription billing" fillcolor="#999999" fontcolor="white" style="filled"]
+    s3          [label="«External System»\nAWS S3 / Cloudflare R2\n\nFile and asset storage\nfor uploads and exports" fillcolor="#999999" fontcolor="white" style="filled"]
+    email_svc   [label="«External System»\nEmail Provider\n\nTransactional email\n— Nodemailer / ZeptoMail" fillcolor="#999999" fontcolor="white" style="filled"]
+    posthog     [label="«External System»\nPostHog\n\nProduct analytics and event tracking" fillcolor="#999999" fontcolor="white" style="filled"]
+    sentry      [label="«External System»\nSentry\n\nError monitoring and performance tracing" fillcolor="#999999" fontcolor="white" style="filled"]
+
+    teacher     -> classroomio [label="Manages courses and org [HTTPS]"]
+    student     -> classroomio [label="Takes courses and quizzes [HTTPS]"]
+    classroomio -> supabase    [label="Persists data, auth, files [HTTPS]"]
+    classroomio -> polar       [label="Manages org subscriptions [HTTPS]"]
+    classroomio -> s3          [label="Stores and retrieves files [HTTPS]"]
+    classroomio -> email_svc   [label="Sends transactional emails [SMTP/HTTPS]"]
+    classroomio -> posthog     [label="Tracks product analytics [HTTPS]"]
+    classroomio -> sentry      [label="Reports errors [HTTPS]"]
+}

@@ -19,22 +19,37 @@
 import { Project } from 'ts-morph';
 import * as fs from 'fs';
 import * as path from 'path';
+import { createHash } from 'crypto';
 
 const REPO_ROOT = path.resolve(__dirname, '../../..');
+const HASH_FILE = path.join(__dirname, '.component-hash');
 
 // ── CLI args ─────────────────────────────────────────────────────────────────
 
+function readStoredHash(): { hash: string; depthDashboard: number; depthApi: number } | null {
+  if (!fs.existsSync(HASH_FILE)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(HASH_FILE, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
+
 function parseArgs() {
   const argv = process.argv.slice(2);
-  let depthDashboard = 3;
-  let depthApi = 2;
+  const stored = readStoredHash();
+  // Default to last-used depth so re-runs with no flag still hit the cache.
+  let depthDashboard = stored?.depthDashboard ?? 3;
+  let depthApi = stored?.depthApi ?? 2;
   let outputPath = path.join(__dirname, 'extracted.json');
+  let force = false;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--depth-dashboard' && argv[i + 1]) depthDashboard = parseInt(argv[++i], 10);
     else if (argv[i] === '--depth-api' && argv[i + 1]) depthApi = parseInt(argv[++i], 10);
     else if (argv[i] === '--output' && argv[i + 1]) outputPath = argv[++i];
+    else if (argv[i] === '--force') force = true;
   }
-  return { depthDashboard, depthApi, outputPath };
+  return { depthDashboard, depthApi, outputPath, force };
 }
 
 // ── JSONC comment stripping ───────────────────────────────────────────────────
@@ -365,10 +380,50 @@ function extractApp(config: {
   };
 }
 
+// ── Source hash ───────────────────────────────────────────────────────────────
+
+function hashSources(srcDirs: string[], depthDashboard: number, depthApi: number): string {
+  const h = createHash('sha256');
+  const EXCLUDE = new Set(['node_modules', '.svelte-kit', 'dist', '.git', 'mocks', '__mocks__']);
+
+  function walk(dir: string) {
+    let entries: fs.Dirent[];
+    try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+    for (const e of entries) {
+      if (EXCLUDE.has(e.name)) continue;
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        walk(full);
+      } else if (/\.(ts|tsx|js|svelte)$/.test(e.name) && !e.name.endsWith('.d.ts')) {
+        h.update(full);
+        h.update(fs.readFileSync(full));
+      }
+    }
+  }
+
+  for (const dir of srcDirs) walk(dir);
+  h.update(`depth-dashboard:${depthDashboard}|depth-api:${depthApi}`);
+  try { h.update(fs.readFileSync(__filename)); } catch { /* ignore */ }
+  return h.digest('hex');
+}
+
 // ── Entry point ───────────────────────────────────────────────────────────────
 
 function main() {
-  const { depthDashboard, depthApi, outputPath } = parseArgs();
+  const { depthDashboard, depthApi, outputPath, force } = parseArgs();
+
+  const dashSrc = path.join(REPO_ROOT, 'apps/dashboard/src');
+  const apiSrc  = path.join(REPO_ROOT, 'apps/api/src');
+  const currentHash = hashSources([dashSrc, apiSrc], depthDashboard, depthApi);
+
+  if (!force) {
+    const stored = readStoredHash();
+    if (stored?.hash === currentHash && fs.existsSync(outputPath)) {
+      console.log('✓ No source changes detected — skipping extraction. Use --force to override.');
+      process.exit(0);
+    }
+  }
 
   const result = {
     extractedAt: new Date().toISOString(),
@@ -392,6 +447,7 @@ function main() {
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, JSON.stringify(result, null, 2));
+  fs.writeFileSync(HASH_FILE, JSON.stringify({ hash: currentHash, depthDashboard, depthApi }));
   console.log(`\n✓ Wrote ${outputPath}`);
 
   const allWarnings = [...result.apps.dashboard.warnings, ...result.apps.api.warnings];

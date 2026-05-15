@@ -47,8 +47,10 @@ vite.config.ts*.mjs
 
 .pnpm-store/*
 
-# C4 model skill — AST extraction output (generated, large)
+# C4 model skill — generated/cache files
 .claude/skills/c4-model/extracted.json
+.claude/skills/c4-model/.component-hash
+.claude/skills/c4-model/.schema-hash
 
 # GitHub token for devcontainer auth — never commit
 .devcontainer/github-token
