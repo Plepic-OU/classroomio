@@ -2,6 +2,7 @@
   "hooks": {
     "PreToolUse": [
       {
+        "description": "Block any tool call that tries to read or run a command against devcontainer token files (e.g. .devcontainer/*token*). Denies the tool and appends a BLOCKED entry to .claude/audit.log.",
         "hooks": [
           {
             "type": "command",
@@ -12,6 +13,7 @@
     ],
     "PostToolUse": [
       {
+        "description": "After every tool call, run .claude/save-tool-call.py which appends a structured log entry (tool name, inputs, result) to .claude/tool-calls.log for auditing and debugging.",
         "hooks": [
           {
             "type": "command",
