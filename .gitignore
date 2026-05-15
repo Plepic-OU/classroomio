@@ -6,7 +6,9 @@ node_modules
 .pnp.js
 
 # testing
-coverage
+/coverage
+apps/*/coverage
+packages/*/coverage
 
 # Playwright BDD generated tests
 tests/e2e/.features-gen/

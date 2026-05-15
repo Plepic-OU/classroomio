@@ -38,6 +38,8 @@ pnpm run test --filter=@cio/course-app          # Vitest
 
 Test login credentials (local dev): `admin@test.com` / `123456`
 
+Functional coverage map (behaviour-level, not line coverage): `docs/coverage/functional.md`
+
 ### Database (Supabase)
 ```bash
 pnpx supabase start                 # Start local Supabase (ports 54321–54324)
