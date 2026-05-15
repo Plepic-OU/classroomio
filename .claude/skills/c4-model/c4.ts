@@ -755,19 +755,8 @@ function l3Dot(app: AppData): string {
   ].join('\n');
 }
 
-function wrapDotMd(heading: string, mermaidFile: string, dot: string): string {
-  return `# ${heading}
-
-_DOT (Graphviz) version. See [Mermaid version](../${mermaidFile}) for the elements table and description._
-
-Render with: \`dot -Tsvg file.dot.md -o out.svg\` (after extracting the code block) or paste into [Graphviz Online](https://dreampuf.github.io/GraphvizOnline/).
-
-## Diagram
-
-\`\`\`dot
-${dot}
-\`\`\`
-`;
+function addDotHeader(mermaidFile: string, dot: string): string {
+  return `// Mermaid version (elements table + description): docs/c4/${mermaidFile}\n// Render: dot -Tsvg <file> -o out.svg\n\n${dot}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -803,17 +792,15 @@ function main() {
 
   if (writeDot) {
     fs.mkdirSync(OUT_DOT_DIR, { recursive: true });
-    fs.writeFileSync(path.join(OUT_DOT_DIR, 'l1-system-context.md'), wrapDotMd('C4 L1 — System Context (DOT)',       'l1-system-context.md', l1Dot()));
-    fs.writeFileSync(path.join(OUT_DOT_DIR, 'l2-containers.md'),     wrapDotMd('C4 L2 — Containers (DOT)',           'l2-containers.md',     l2Dot()));
+    fs.writeFileSync(path.join(OUT_DOT_DIR, 'l1-system-context.dot'), addDotHeader('l1-system-context.md', l1Dot()));
+    fs.writeFileSync(path.join(OUT_DOT_DIR, 'l2-containers.dot'),     addDotHeader('l2-containers.md',     l2Dot()));
     for (const app of allApps) {
-      const titleMap: Record<string, string> = { dashboard: 'Dashboard (SvelteKit)', api: 'API (Hono)' };
-      const title = titleMap[app.name] ?? app.name;
-      fs.writeFileSync(path.join(OUT_DOT_DIR, `l3-${app.name}.md`), wrapDotMd(`C4 L3 — ${title} Components (DOT)`, `l3-${app.name}.md`, l3Dot(app)));
+      fs.writeFileSync(path.join(OUT_DOT_DIR, `l3-${app.name}.dot`), addDotHeader(`l3-${app.name}.md`, l3Dot(app)));
     }
     console.log('\nDOT → docs/c4/dot/:');
-    console.log('  l1-system-context.md');
-    console.log('  l2-containers.md');
-    for (const app of allApps) console.log(`  l3-${app.name}.md`);
+    console.log('  l1-system-context.dot');
+    console.log('  l2-containers.dot');
+    for (const app of allApps) console.log(`  l3-${app.name}.dot`);
   }
 }
 

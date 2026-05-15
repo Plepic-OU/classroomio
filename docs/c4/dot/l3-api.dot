@@ -1,12 +1,6 @@
-# C4 L3 — API (Hono) Components (DOT)
+// Mermaid version (elements table + description): docs/c4/l3-api.md
+// Render: dot -Tsvg <file> -o out.svg
 
-_DOT (Graphviz) version. See [Mermaid version](../l3-api.md) for the elements table and description._
-
-Render with: `dot -Tsvg file.dot.md -o out.svg` (after extracting the code block) or paste into [Graphviz Online](https://dreampuf.github.io/GraphvizOnline/).
-
-## Diagram
-
-```dot
 digraph L3_api {
   graph [label="API (Hono) — Components", labelloc=t, fontsize=14, fontname="Helvetica", rankdir=LR, splines=ortho, pad=0.6, nodesep=0.5, ranksep=1.5, compound=true]
   edge [fontname="Helvetica", fontsize=8, color="#555555"]
@@ -93,4 +87,3 @@ digraph L3_api {
   // Relationships
   api_middlewares -> api_utils [label="imports (1)"]
 }
-```

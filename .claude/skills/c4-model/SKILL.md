@@ -44,7 +44,7 @@ The script:
   - `l3-api.md` — Components grouped by Routes / Services / Utils / Types / Middleware + C4Component diagram
   - `components.json` — structured JSON (gitignored; AI context)
 
-**DOT output** (`docs/c4/dot/`) — same four files, each containing a `dot` code block. Color-coded by component group (blue = UI, green = utils, orange = server routes, purple = page routes). Each DOT file links back to its Mermaid counterpart for the elements table and description. Render with `dot -Tsvg` or paste into [Graphviz Online](https://dreampuf.github.io/GraphvizOnline/).
+**DOT output** (`docs/c4/dot/`) — four raw `.dot` files, openable directly in IntelliJ IDEA (Graphviz integration plugin) or any Graphviz tool. Color-coded by component group (blue = UI, green = utils, orange = server routes, purple = page routes). Each file has a comment header linking to its Mermaid counterpart for the elements table and description. Render with `dot -Tsvg` or paste into [Graphviz Online](https://dreampuf.github.io/GraphvizOnline/).
 
 ## Step 3 — Database schema (optional)
 

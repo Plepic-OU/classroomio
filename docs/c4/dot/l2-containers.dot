@@ -1,12 +1,6 @@
-# C4 L2 — Containers (DOT)
+// Mermaid version (elements table + description): docs/c4/l2-containers.md
+// Render: dot -Tsvg <file> -o out.svg
 
-_DOT (Graphviz) version. See [Mermaid version](../l2-containers.md) for the elements table and description._
-
-Render with: `dot -Tsvg file.dot.md -o out.svg` (after extracting the code block) or paste into [Graphviz Online](https://dreampuf.github.io/GraphvizOnline/).
-
-## Diagram
-
-```dot
 digraph L2 {
   graph [label="ClassroomIO — Containers", labelloc=t, fontsize=14, fontname="Helvetica", rankdir=TB, splines=ortho, pad=0.6, nodesep=0.8, ranksep=1.2, compound=true]
   edge [fontname="Helvetica", fontsize=9, color="#555555"]
@@ -50,4 +44,3 @@ digraph L2 {
   api       -> s3        [label="Stores course assets [AWS SDK]"]
   api       -> email     [label="Sends emails [Nodemailer]"]
 }
-```
