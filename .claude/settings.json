@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 .claude/save-tool-call.py"
+            "command": "python3 /workspaces/classroomio/.claude/save-tool-call.py"
           }
         ]
       }
