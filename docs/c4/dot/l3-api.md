@@ -1,0 +1,96 @@
+# C4 L3 — API (Hono) Components (DOT)
+
+_DOT (Graphviz) version. See [Mermaid version](../l3-api.md) for the elements table and description._
+
+Render with: `dot -Tsvg file.dot.md -o out.svg` (after extracting the code block) or paste into [Graphviz Online](https://dreampuf.github.io/GraphvizOnline/).
+
+## Diagram
+
+```dot
+digraph L3_api {
+  graph [label="API (Hono) — Components", labelloc=t, fontsize=14, fontname="Helvetica", rankdir=LR, splines=ortho, pad=0.6, nodesep=0.5, ranksep=1.5, compound=true]
+  edge [fontname="Helvetica", fontsize=8, color="#555555"]
+
+  // External systems
+  ext_supabase [label="[External]\nSupabase\nDatabase", shape=box, style="filled,rounded", fillcolor="#999999", fontcolor="white", fontname="Helvetica", fontsize=10]
+  ext_cloudflare [label="[External]\nCloudflare\nVideo", shape=box, style="filled,rounded", fillcolor="#999999", fontcolor="white", fontname="Helvetica", fontsize=10]
+  ext_s3 [label="[External]\nAWS S3\nFiles", shape=box, style="filled,rounded", fillcolor="#999999", fontcolor="white", fontname="Helvetica", fontsize=10]
+  ext_email [label="[External]\nZeptoMail\nEmail", shape=box, style="filled,rounded", fillcolor="#999999", fontcolor="white", fontname="Helvetica", fontsize=10]
+  ext_redis [label="[External]\nRedis\nCache", shape=box, style="filled,rounded", fillcolor="#999999", fontcolor="white", fontname="Helvetica", fontsize=10]
+
+  subgraph cluster_bound {
+    label="API (Hono)"
+    style=dashed
+    color="#1168BD"
+    fontcolor="#1168BD"
+    fontname="Helvetica"
+    fontsize=12
+
+    subgraph cluster_g0 {
+      label="Route Handlers (routes/)"
+      style=filled
+      fillcolor="#FDF3E7"
+      color="#C47D2E"
+      fontcolor="#C47D2E"
+      fontname="Helvetica"
+      fontsize=10
+      api_routes [label="routes\n6 ts\nRoute handlers", shape=box, style="filled,rounded", fillcolor="#C47D2E", fontcolor="white", fontname="Helvetica", fontsize=9]
+    }
+    subgraph cluster_g1 {
+      label="Services"
+      style=filled
+      fillcolor="#EDF7ED"
+      color="#57A660"
+      fontcolor="#57A660"
+      fontname="Helvetica"
+      fontsize=10
+      api_services [label="services\n2 ts\nData access & business logic", shape=box, style="filled,rounded", fillcolor="#57A660", fontcolor="white", fontname="Helvetica", fontsize=9]
+    }
+    subgraph cluster_g2 {
+      label="Utils"
+      style=filled
+      fillcolor="#EDF7ED"
+      color="#57A660"
+      fontcolor="#57A660"
+      fontname="Helvetica"
+      fontsize=10
+      api_utils [label="utils\n15 ts\nUtility functions", shape=box, style="filled,rounded", fillcolor="#57A660", fontcolor="white", fontname="Helvetica", fontsize=9]
+    }
+    subgraph cluster_g3 {
+      label="Types"
+      style=filled
+      fillcolor="#F3EFF8"
+      color="#7B68A8"
+      fontcolor="#7B68A8"
+      fontname="Helvetica"
+      fontsize=10
+      api_types [label="types\n5 ts\nType definitions", shape=box, style="filled,rounded", fillcolor="#7B68A8", fontcolor="white", fontname="Helvetica", fontsize=9]
+    }
+    subgraph cluster_g4 {
+      label="Middleware"
+      style=filled
+      fillcolor="#FDF3E7"
+      color="#C47D2E"
+      fontcolor="#C47D2E"
+      fontname="Helvetica"
+      fontsize=10
+      api_middlewares [label="middlewares\n2 ts\nRequest middleware", shape=box, style="filled,rounded", fillcolor="#C47D2E", fontcolor="white", fontname="Helvetica", fontsize=9]
+    }
+    subgraph cluster_g5 {
+      label="Other"
+      style=filled
+      fillcolor="#F5F5F5"
+      color="#777777"
+      fontcolor="#777777"
+      fontname="Helvetica"
+      fontsize=10
+      api_config [label="config\n1 ts\nApp configuration", shape=box, style="filled,rounded", fillcolor="#777777", fontcolor="white", fontname="Helvetica", fontsize=9]
+      api_constants [label="constants\n3 ts\nShared constants", shape=box, style="filled,rounded", fillcolor="#777777", fontcolor="white", fontname="Helvetica", fontsize=9]
+      api_root [label="root\n3 ts\nRoot", shape=box, style="filled,rounded", fillcolor="#777777", fontcolor="white", fontname="Helvetica", fontsize=9]
+    }
+  }
+
+  // Relationships
+  api_middlewares -> api_utils [label="imports (1)"]
+}
+```

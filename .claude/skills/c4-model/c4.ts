@@ -2,10 +2,14 @@
 /**
  * C4 model extractor for ClassroomIO.
  * Parses apps/dashboard and apps/api with ts-morph, groups files into components
- * by directory depth, maps cross-component relationships, outputs Mermaid C4 diagrams
- * to docs/c4/.
+ * by directory depth, maps cross-component relationships, outputs structured
+ * markdown files (description + elements table + diagram) to docs/c4/.
  *
- * Usage: npx tsx .claude/skills/c4-model/c4.ts [--depth-dashboard=N] [--depth-api=N]
+ * Usage:
+ *   npx tsx .claude/skills/c4-model/c4.ts                  # Mermaid only (default)
+ *   npx tsx .claude/skills/c4-model/c4.ts --dot            # DOT (Graphviz) only → docs/c4/dot/
+ *   npx tsx .claude/skills/c4-model/c4.ts --all            # Both formats
+ *   npx tsx .claude/skills/c4-model/c4.ts --depth-dashboard=N --depth-api=N
  */
 
 import { Project } from 'ts-morph';
@@ -16,8 +20,9 @@ import * as path from 'path';
 // Config
 // ---------------------------------------------------------------------------
 
-const REPO_ROOT = path.resolve(__dirname, '../../..');
-const OUT_DIR = path.join(REPO_ROOT, 'docs/c4');
+const REPO_ROOT    = path.resolve(__dirname, '../../..');
+const OUT_DIR      = path.join(REPO_ROOT, 'docs/c4');
+const OUT_DOT_DIR  = path.join(REPO_ROOT, 'docs/c4/dot');
 
 interface AppConfig {
   name: string;
@@ -26,7 +31,9 @@ interface AppConfig {
   depth: number; // how many dir segments after src/ form a component key
 }
 
-const args = process.argv.slice(2);
+const args   = process.argv.slice(2);
+const format = args.includes('--all') ? 'all' : args.includes('--dot') ? 'dot' : 'mermaid';
+
 const argDepth = (flag: string, def: number) => {
   const m = args.find(a => a.startsWith(`--depth-${flag}=`));
   return m ? parseInt(m.split('=')[1], 10) : def;
@@ -536,12 +543,238 @@ ${relLines}
 }
 
 // ---------------------------------------------------------------------------
+// DOT (Graphviz) diagram generation
+// ---------------------------------------------------------------------------
+
+const DC = {
+  person:       { fill: '#08427B', font: 'white' },
+  system:       { fill: '#1168BD', font: 'white' },
+  ext:          { fill: '#999999', font: 'white' },
+  db:           { fill: '#438DD5', font: 'white' },
+  // cluster background tints
+  bgUi:         '#EBF3FB',
+  bgUtil:       '#EDF7ED',
+  bgServer:     '#FDF3E7',
+  bgPage:       '#F3EFF8',
+  bgOther:      '#F5F5F5',
+  // component node fills
+  compUi:       { fill: '#4A7FC1', font: 'white' },
+  compUtil:     { fill: '#57A660', font: 'white' },
+  compServer:   { fill: '#C47D2E', font: 'white' },
+  compPage:     { fill: '#7B68A8', font: 'white' },
+  compOther:    { fill: '#777777', font: 'white' },
+} as const;
+
+function dn(id: string, stereotype: string, name: string, desc: string,
+            fill: string, font: string, shape = 'box'): string {
+  const lbl = `"[${stereotype}]\\n${name}\\n${desc}"`;
+  return `  ${id} [label=${lbl}, shape=${shape}, style="filled,rounded", fillcolor="${fill}", fontcolor="${font}", fontname="Helvetica", fontsize=10]`;
+}
+
+function l1Dot(): string {
+  return [
+    'digraph L1 {',
+    '  graph [label="ClassroomIO — System Context", labelloc=t, fontsize=14, fontname="Helvetica", rankdir=TB, splines=ortho, pad=0.6, nodesep=0.8, ranksep=1.2]',
+    '  edge [fontname="Helvetica", fontsize=9, color="#555555"]',
+    '',
+    '  // Users',
+    dn('teacher',    'Person',          'Teacher / Admin',           'Manages courses, exercises, students',        DC.person.fill, DC.person.font),
+    dn('student',    'Person',          'Student',                   'Takes courses, submits exercises',            DC.person.fill, DC.person.font),
+    '',
+    '  // System',
+    dn('cio',        'Software System', 'ClassroomIO',               'Open-source LMS for bootcamps and educators', DC.system.fill, DC.system.font),
+    '',
+    '  // External Systems',
+    dn('supabase',   'External System', 'Supabase',                  'PostgreSQL database, auth, storage',          DC.ext.fill, DC.ext.font),
+    dn('cloudflare', 'External System', 'Cloudflare Stream',         'Video upload and streaming',                  DC.ext.fill, DC.ext.font),
+    dn('s3',         'External System', 'AWS S3',                    'File and asset storage',                      DC.ext.fill, DC.ext.font),
+    dn('email',      'External System', 'ZeptoMail / SMTP',          'Transactional email',                         DC.ext.fill, DC.ext.font),
+    dn('redis',      'External System', 'Redis',                     'Rate limiting and caching',                   DC.ext.fill, DC.ext.font),
+    dn('billing',    'External System', 'Polar.sh / Lemon Squeezy',  'Subscription billing',                        DC.ext.fill, DC.ext.font),
+    dn('posthog',    'External System', 'PostHog',                   'Product analytics',                           DC.ext.fill, DC.ext.font),
+    '',
+    '  // Relationships',
+    '  teacher    -> cio        [label="Manages courses [HTTPS]"]',
+    '  student    -> cio        [label="Takes courses [HTTPS]"]',
+    '  cio        -> supabase   [label="Reads/writes data [SDK]"]',
+    '  cio        -> cloudflare [label="Uploads/streams video [HTTP API]"]',
+    '  cio        -> s3         [label="Stores files [AWS SDK]"]',
+    '  cio        -> email      [label="Sends emails [SMTP/API]"]',
+    '  cio        -> redis      [label="Rate-limits requests [TCP]"]',
+    '  cio        -> billing    [label="Manages subscriptions [API]"]',
+    '  cio        -> posthog    [label="Tracks events [SDK]"]',
+    '}',
+  ].join('\n');
+}
+
+function l2Dot(): string {
+  return [
+    'digraph L2 {',
+    '  graph [label="ClassroomIO — Containers", labelloc=t, fontsize=14, fontname="Helvetica", rankdir=TB, splines=ortho, pad=0.6, nodesep=0.8, ranksep=1.2, compound=true]',
+    '  edge [fontname="Helvetica", fontsize=9, color="#555555"]',
+    '',
+    '  // Users',
+    dn('teacher', 'Person', 'Teacher / Admin', 'Manages courses', DC.person.fill, DC.person.font),
+    dn('student', 'Person', 'Student',         'Takes courses',   DC.person.fill, DC.person.font),
+    '',
+    '  subgraph cluster_cio {',
+    '    label="ClassroomIO"',
+    '    style=dashed',
+    '    color="#1168BD"',
+    '    fontcolor="#1168BD"',
+    '    fontname="Helvetica"',
+    '    fontsize=12',
+    '',
+    `    ${dn('dashboard', 'Container: SvelteKit 2', 'Dashboard', 'Main LMS UI. Port 5173.',                              DC.system.fill, DC.system.font).trimStart()}`,
+    `    ${dn('api',       'Container: Hono/Node.js','API',        'Async ops: certs, video, email. Port 3002.',            DC.system.fill, DC.system.font).trimStart()}`,
+    `    ${dn('courseapp', 'Container: Svelte 5',    'Course App', 'Embeddable course viewer (npm)',                        DC.system.fill, DC.system.font).trimStart()}`,
+    '  }',
+    '',
+    '  // Data & Auth',
+    dn('db',    'Database: Supabase Postgres', 'PostgreSQL',    'All LMS data',              DC.db.fill,  DC.db.font,  'cylinder'),
+    dn('auth',  'Container: GoTrue',           'Supabase Auth', 'JWT auth & RLS enforcement', DC.ext.fill, DC.ext.font),
+    dn('redis', 'Container: Redis 7',          'Redis',         'Rate limiting',              DC.ext.fill, DC.ext.font),
+    '',
+    '  // External Services',
+    dn('cloudflare', 'External System', 'Cloudflare Stream', 'Video streaming',    DC.ext.fill, DC.ext.font),
+    dn('s3',         'External System', 'AWS S3',            'File storage',       DC.ext.fill, DC.ext.font),
+    dn('email',      'External System', 'ZeptoMail / SMTP',  'Email delivery',     DC.ext.fill, DC.ext.font),
+    '',
+    '  // Relationships',
+    '  teacher   -> dashboard [label="Uses [HTTPS]"]',
+    '  student   -> dashboard [label="Uses [HTTPS]"]',
+    '  dashboard -> db        [label="Reads/writes via RLS [Supabase SDK]"]',
+    '  dashboard -> auth      [label="Authenticates users [Supabase SDK]"]',
+    '  dashboard -> api       [label="Delegates async tasks [RPC/REST]"]',
+    '  api       -> db        [label="Service-level DB ops [Supabase SDK]"]',
+    '  api       -> redis     [label="Rate limiting [ioredis]"]',
+    '  api       -> cloudflare [label="Presigns video uploads [HTTP]"]',
+    '  api       -> s3        [label="Stores course assets [AWS SDK]"]',
+    '  api       -> email     [label="Sends emails [Nodemailer]"]',
+    '}',
+  ].join('\n');
+}
+
+function l3Dot(app: AppData): string {
+  const titleMap: Record<string, string> = { dashboard: 'Dashboard (SvelteKit)', api: 'API (Hono)' };
+  const title = titleMap[app.name] ?? app.name;
+
+  const did = (key: string) => safeId(app.name, key);
+
+  // Assign each component to a DOT cluster group
+  const groups = app.name === 'dashboard' ? DASHBOARD_GROUPS : API_GROUPS;
+  const groupColors: Record<string, { node: typeof DC.compUi; bg: string }> = {
+    'UI Components (`lib/components/`)':  { node: DC.compUi,     bg: DC.bgUi },
+    'Utilities (`lib/utils/`)':           { node: DC.compUtil,   bg: DC.bgUtil },
+    'Server Routes (`routes/api/`)':      { node: DC.compServer, bg: DC.bgServer },
+    'Page Routes (`routes/`)':            { node: DC.compPage,   bg: DC.bgPage },
+    'Route Handlers (`routes/`)':         { node: DC.compServer, bg: DC.bgServer },
+    'Services':                           { node: DC.compUtil,   bg: DC.bgUtil },
+    'Utils':                              { node: DC.compUtil,   bg: DC.bgUtil },
+    'Types':                              { node: DC.compPage,   bg: DC.bgPage },
+    'Middleware':                         { node: DC.compServer, bg: DC.bgServer },
+    'Other':                              { node: DC.compOther,  bg: DC.bgOther },
+  };
+
+  const assigned = new Set<string>();
+  const clusterBlocks: string[] = [];
+
+  for (let gi = 0; gi < groups.length; gi++) {
+    const group = groups[gi];
+    const members = app.components.filter(c => !assigned.has(c.key) && group.match(c.key));
+    if (members.length === 0) continue;
+    members.forEach(c => assigned.add(c.key));
+
+    const colors = groupColors[group.label] ?? { node: DC.compOther, bg: DC.bgOther };
+    const nodeLines = members.map(c => {
+      const files = c.svelteCount > 0 ? `${c.svelteCount} svelte + ${c.fileCount} ts` : `${c.fileCount} ts`;
+      const desc = c.description || c.name;
+      return `      ${did(c.key)} [label="${c.key}\\n${files}\\n${desc}", shape=box, style="filled,rounded", fillcolor="${colors.node.fill}", fontcolor="${colors.node.font}", fontname="Helvetica", fontsize=9]`;
+    });
+
+    clusterBlocks.push([
+      `    subgraph cluster_g${gi} {`,
+      `      label="${group.label.replace(/`/g, '')}"`,
+      `      style=filled`,
+      `      fillcolor="${colors.bg}"`,
+      `      color="${colors.node.fill}"`,
+      `      fontcolor="${colors.node.fill}"`,
+      `      fontname="Helvetica"`,
+      `      fontsize=10`,
+      ...nodeLines,
+      '    }',
+    ].join('\n'));
+  }
+
+  // External nodes
+  const externals = app.name === 'dashboard'
+    ? [dn('ext_supabase', 'External', 'Supabase', 'Database & Auth', DC.ext.fill, DC.ext.font),
+       dn('ext_api',      'External', 'API',       'Hono backend',   DC.ext.fill, DC.ext.font)]
+    : [dn('ext_supabase',   'External', 'Supabase',          'Database', DC.ext.fill, DC.ext.font),
+       dn('ext_cloudflare', 'External', 'Cloudflare',         'Video',    DC.ext.fill, DC.ext.font),
+       dn('ext_s3',         'External', 'AWS S3',             'Files',    DC.ext.fill, DC.ext.font),
+       dn('ext_email',      'External', 'ZeptoMail',          'Email',    DC.ext.fill, DC.ext.font),
+       dn('ext_redis',      'External', 'Redis',              'Cache',    DC.ext.fill, DC.ext.font)];
+
+  // Relationships (deduplicated, same logic as Mermaid)
+  const seen = new Set<string>();
+  const edges = app.relationships
+    .filter(r => r.count >= 1)
+    .sort((a, b) => b.count - a.count)
+    .filter(r => {
+      const fwd = `${r.from}|${r.to}`;
+      const rev = `${r.to}|${r.from}`;
+      if (seen.has(fwd) || seen.has(rev)) return false;
+      seen.add(fwd);
+      return true;
+    })
+    .map(r => `  ${did(r.from)} -> ${did(r.to)} [label="imports (${r.count})"]`);
+
+  return [
+    `digraph L3_${app.name} {`,
+    `  graph [label="${title} — Components", labelloc=t, fontsize=14, fontname="Helvetica", rankdir=LR, splines=ortho, pad=0.6, nodesep=0.5, ranksep=1.5, compound=true]`,
+    '  edge [fontname="Helvetica", fontsize=8, color="#555555"]',
+    '',
+    '  // External systems',
+    ...externals,
+    '',
+    `  subgraph cluster_bound {`,
+    `    label="${title}"`,
+    '    style=dashed',
+    '    color="#1168BD"',
+    '    fontcolor="#1168BD"',
+    '    fontname="Helvetica"',
+    '    fontsize=12',
+    '',
+    ...clusterBlocks,
+    '  }',
+    '',
+    '  // Relationships',
+    ...edges,
+    '}',
+  ].join('\n');
+}
+
+function wrapDotMd(heading: string, mermaidFile: string, dot: string): string {
+  return `# ${heading}
+
+_DOT (Graphviz) version. See [Mermaid version](../${mermaidFile}) for the elements table and description._
+
+Render with: \`dot -Tsvg file.dot.md -o out.svg\` (after extracting the code block) or paste into [Graphviz Online](https://dreampuf.github.io/GraphvizOnline/).
+
+## Diagram
+
+\`\`\`dot
+${dot}
+\`\`\`
+`;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 function main() {
-  fs.mkdirSync(OUT_DIR, { recursive: true });
-
   const allApps: AppData[] = [];
   for (const cfg of APPS) {
     console.log(`Extracting ${cfg.name} (depth=${cfg.depth})...`);
@@ -550,21 +783,38 @@ function main() {
     console.log(`  → ${data.components.length} components, ${data.relationships.length} relationships`);
   }
 
-  // Write JSON (gitignored — AI context only)
-  fs.writeFileSync(path.join(OUT_DIR, 'components.json'), JSON.stringify(allApps, null, 2));
+  const writeMermaid = format === 'mermaid' || format === 'all';
+  const writeDot     = format === 'dot'     || format === 'all';
 
-  // Write Mermaid diagrams
-  fs.writeFileSync(path.join(OUT_DIR, 'l1-system-context.md'), l1SystemContext());
-  fs.writeFileSync(path.join(OUT_DIR, 'l2-containers.md'), l2Containers());
-  for (const app of allApps) {
-    fs.writeFileSync(path.join(OUT_DIR, `l3-${app.name}.md`), l3Component(app));
+  if (writeMermaid) {
+    fs.mkdirSync(OUT_DIR, { recursive: true });
+    fs.writeFileSync(path.join(OUT_DIR, 'components.json'), JSON.stringify(allApps, null, 2));
+    fs.writeFileSync(path.join(OUT_DIR, 'l1-system-context.md'), l1SystemContext());
+    fs.writeFileSync(path.join(OUT_DIR, 'l2-containers.md'), l2Containers());
+    for (const app of allApps) {
+      fs.writeFileSync(path.join(OUT_DIR, `l3-${app.name}.md`), l3Component(app));
+    }
+    console.log('\nMermaid → docs/c4/:');
+    console.log('  l1-system-context.md');
+    console.log('  l2-containers.md');
+    for (const app of allApps) console.log(`  l3-${app.name}.md`);
+    console.log('  components.json (gitignored)');
   }
 
-  console.log(`\nOutput written to docs/c4/:`);
-  console.log('  l1-system-context.md');
-  console.log('  l2-containers.md');
-  for (const app of allApps) console.log(`  l3-${app.name}.md`);
-  console.log('  components.json (gitignored)');
+  if (writeDot) {
+    fs.mkdirSync(OUT_DOT_DIR, { recursive: true });
+    fs.writeFileSync(path.join(OUT_DOT_DIR, 'l1-system-context.md'), wrapDotMd('C4 L1 — System Context (DOT)',       'l1-system-context.md', l1Dot()));
+    fs.writeFileSync(path.join(OUT_DOT_DIR, 'l2-containers.md'),     wrapDotMd('C4 L2 — Containers (DOT)',           'l2-containers.md',     l2Dot()));
+    for (const app of allApps) {
+      const titleMap: Record<string, string> = { dashboard: 'Dashboard (SvelteKit)', api: 'API (Hono)' };
+      const title = titleMap[app.name] ?? app.name;
+      fs.writeFileSync(path.join(OUT_DOT_DIR, `l3-${app.name}.md`), wrapDotMd(`C4 L3 — ${title} Components (DOT)`, `l3-${app.name}.md`, l3Dot(app)));
+    }
+    console.log('\nDOT → docs/c4/dot/:');
+    console.log('  l1-system-context.md');
+    console.log('  l2-containers.md');
+    for (const app of allApps) console.log(`  l3-${app.name}.md`);
+  }
 }
 
 main();

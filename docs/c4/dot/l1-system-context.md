@@ -1,0 +1,41 @@
+# C4 L1 — System Context (DOT)
+
+_DOT (Graphviz) version. See [Mermaid version](../l1-system-context.md) for the elements table and description._
+
+Render with: `dot -Tsvg file.dot.md -o out.svg` (after extracting the code block) or paste into [Graphviz Online](https://dreampuf.github.io/GraphvizOnline/).
+
+## Diagram
+
+```dot
+digraph L1 {
+  graph [label="ClassroomIO — System Context", labelloc=t, fontsize=14, fontname="Helvetica", rankdir=TB, splines=ortho, pad=0.6, nodesep=0.8, ranksep=1.2]
+  edge [fontname="Helvetica", fontsize=9, color="#555555"]
+
+  // Users
+  teacher [label="[Person]\nTeacher / Admin\nManages courses, exercises, students", shape=box, style="filled,rounded", fillcolor="#08427B", fontcolor="white", fontname="Helvetica", fontsize=10]
+  student [label="[Person]\nStudent\nTakes courses, submits exercises", shape=box, style="filled,rounded", fillcolor="#08427B", fontcolor="white", fontname="Helvetica", fontsize=10]
+
+  // System
+  cio [label="[Software System]\nClassroomIO\nOpen-source LMS for bootcamps and educators", shape=box, style="filled,rounded", fillcolor="#1168BD", fontcolor="white", fontname="Helvetica", fontsize=10]
+
+  // External Systems
+  supabase [label="[External System]\nSupabase\nPostgreSQL database, auth, storage", shape=box, style="filled,rounded", fillcolor="#999999", fontcolor="white", fontname="Helvetica", fontsize=10]
+  cloudflare [label="[External System]\nCloudflare Stream\nVideo upload and streaming", shape=box, style="filled,rounded", fillcolor="#999999", fontcolor="white", fontname="Helvetica", fontsize=10]
+  s3 [label="[External System]\nAWS S3\nFile and asset storage", shape=box, style="filled,rounded", fillcolor="#999999", fontcolor="white", fontname="Helvetica", fontsize=10]
+  email [label="[External System]\nZeptoMail / SMTP\nTransactional email", shape=box, style="filled,rounded", fillcolor="#999999", fontcolor="white", fontname="Helvetica", fontsize=10]
+  redis [label="[External System]\nRedis\nRate limiting and caching", shape=box, style="filled,rounded", fillcolor="#999999", fontcolor="white", fontname="Helvetica", fontsize=10]
+  billing [label="[External System]\nPolar.sh / Lemon Squeezy\nSubscription billing", shape=box, style="filled,rounded", fillcolor="#999999", fontcolor="white", fontname="Helvetica", fontsize=10]
+  posthog [label="[External System]\nPostHog\nProduct analytics", shape=box, style="filled,rounded", fillcolor="#999999", fontcolor="white", fontname="Helvetica", fontsize=10]
+
+  // Relationships
+  teacher    -> cio        [label="Manages courses [HTTPS]"]
+  student    -> cio        [label="Takes courses [HTTPS]"]
+  cio        -> supabase   [label="Reads/writes data [SDK]"]
+  cio        -> cloudflare [label="Uploads/streams video [HTTP API]"]
+  cio        -> s3         [label="Stores files [AWS SDK]"]
+  cio        -> email      [label="Sends emails [SMTP/API]"]
+  cio        -> redis      [label="Rate-limits requests [TCP]"]
+  cio        -> billing    [label="Manages subscriptions [API]"]
+  cio        -> posthog    [label="Tracks events [SDK]"]
+}
+```

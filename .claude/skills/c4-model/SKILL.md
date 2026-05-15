@@ -19,7 +19,9 @@ node -e "require('ts-morph')" 2>/dev/null || pnpm add -w -D ts-morph tsx
 ## Step 2 — Run the extractor
 
 ```bash
-npx tsx .claude/skills/c4-model/c4.ts
+npx tsx .claude/skills/c4-model/c4.ts                  # Mermaid only (default)
+npx tsx .claude/skills/c4-model/c4.ts --dot            # DOT (Graphviz) only
+npx tsx .claude/skills/c4-model/c4.ts --all            # both formats
 ```
 
 Optional depth overrides (increase if any component has >50 files):
@@ -34,12 +36,15 @@ The script:
 - Maps cross-component import relationships
 - Counts `.svelte` files per component directory (ts-morph cannot parse .svelte)
 - Warns if any component contains >50 files (depth too shallow)
-- Writes to `docs/c4/`. Each file has three sections: description → elements table → Mermaid diagram:
+
+**Mermaid output** (`docs/c4/`) — each file has: description → elements table → Mermaid diagram:
   - `l1-system-context.md` — Users and External Systems tables + C4Context diagram
   - `l2-containers.md` — Internal Containers, Data & Auth, External Services tables + C4Container diagram
   - `l3-dashboard.md` — Components grouped by UI Components / Utilities / Server Routes / Page Routes + C4Component diagram
   - `l3-api.md` — Components grouped by Routes / Services / Utils / Types / Middleware + C4Component diagram
   - `components.json` — structured JSON (gitignored; AI context)
+
+**DOT output** (`docs/c4/dot/`) — same four files, each containing a `dot` code block. Color-coded by component group (blue = UI, green = utils, orange = server routes, purple = page routes). Each DOT file links back to its Mermaid counterpart for the elements table and description. Render with `dot -Tsvg` or paste into [Graphviz Online](https://dreampuf.github.io/GraphvizOnline/).
 
 ## Step 3 — Database schema (optional)
 
