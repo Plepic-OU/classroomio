@@ -51,5 +51,11 @@ vite.config.ts*.mjs
 .claude/settings.local.json
 .claude/tool-inputs/
 
+# c4-model skill: local deps and intermediate AST extraction output
+.claude/skills/c4-model/node_modules/
+.claude/skills/c4-model/package-lock.json
+.claude/skills/c4-model/pnpm-lock.yaml
+docs/c4/.extraction/
+
 # GitHub token for devcontainer gh auth — never commit this
 .devcontainer/github-token

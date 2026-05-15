@@ -1,0 +1,10 @@
+{
+  "name": "c4-model-skill",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local deps for the c4-model Claude Code skill. Not part of the workspace.",
+  "type": "module",
+  "dependencies": {
+    "ts-morph": "^23.0.0"
+  }
+}

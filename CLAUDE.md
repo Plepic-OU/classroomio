@@ -101,3 +101,12 @@ Copy `.env.example` → `.env` in each app before starting.
 ### Turbo pipeline notes
 
 `@cio/dashboard#build` depends on `@cio/api#build` — the API must compile before the dashboard so its exported RPC types are available. Running `pnpm build` from the root handles this automatically.
+
+## Architecture maps (C4 model)
+
+- @docs/c4/layer1-context.md
+- @docs/c4/layer2-containers.md
+- @docs/c4/layer3-dashboard.md
+- @docs/c4/layer3-api.md
+
+Database schema (load on demand): `docs/c4/database.md`
