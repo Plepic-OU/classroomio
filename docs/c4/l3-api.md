@@ -1,5 +1,11 @@
 # C4 L3 — API (Hono) Components
 
+Components are grouped at depth 1 (one level below `src/`). Relationship arrows show TypeScript import edges.
+
+The API follows a standard layered structure: **routes** (Hono handlers), **services** (Supabase queries and business logic), **utils** (shared helpers, mail, certificate generation), **types** (Zod schemas and TypeScript types), **middlewares** (rate-limiter, auth validation), and **config** (environment setup). Low internal coupling is intentional — the only detected import edge is middlewares → utils.
+
+Regenerate with `/c4-model` after adding new routes or services.
+
 ```mermaid
 C4Component
   title API (Hono) — Components

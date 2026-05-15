@@ -276,6 +276,10 @@ const safeId = (app: string, key: string) =>
 function l1SystemContext(): string {
   return `# C4 L1 — System Context
 
+ClassroomIO sits between two types of users — **Teachers/Admins** who create and manage content, and **Students** who consume it. All persistent state lives in **Supabase** (PostgreSQL + Auth). The remaining external systems handle specialised concerns: video streaming (Cloudflare), file storage (S3), transactional email, rate-limiting (Redis), subscription billing, and product analytics.
+
+This diagram treats ClassroomIO as a single black box. See [L2 Containers](l2-containers.md) to zoom into its internal structure.
+
 \`\`\`mermaid
 C4Context
   title ClassroomIO — System Context
@@ -308,6 +312,12 @@ C4Context
 
 function l2Containers(): string {
   return `# C4 L2 — Containers
+
+ClassroomIO is composed of three deployable containers. The **Dashboard** (SvelteKit, port 5173) is the primary UI for both teachers and students; it reads and writes directly to Supabase via Row-Level Security and delegates long-running work to the API. The **API** (Hono/Node.js, port 3002) handles async operations — PDF certificate generation, video upload presigning, and email dispatch — and is the only container that talks to Cloudflare, S3, and the mail server. The **Course App** is a standalone embeddable Svelte 5 component published to npm, independent of the other two.
+
+Key architectural decision: the API does **not** own the database. Both the Dashboard and the API use the Supabase SDK; the difference is that the Dashboard operates under user-scoped RLS policies while the API uses the service-role key for privileged operations.
+
+See [L3 Dashboard](l3-dashboard.md) and [L3 API](l3-api.md) for the internal component structure.
 
 \`\`\`mermaid
 C4Container
@@ -388,7 +398,25 @@ function l3Component(app: AppData): string {
       ? `\n  System_Ext(supabase, "Supabase", "Database & Auth")\n  System_Ext(hono_api, "API Container", "Hono backend")`
       : `\n  System_Ext(supabase, "Supabase", "Database")\n  System_Ext(cloudflare, "Cloudflare", "Video")\n  System_Ext(s3, "AWS S3", "Files")\n  System_Ext(email, "ZeptoMail", "Email")\n  System_Ext(redis, "Redis", "Cache")`;
 
+  const descriptionMap: Record<string, string> = {
+    dashboard: `Components are grouped from the source tree at depth 2 (e.g. \`lib/components\`, \`lib/utils\`, \`routes/api\`). Relationship arrows show TypeScript import edges between groups; the number is the count of distinct imports.
+
+**\`lib/utils\`** is the architectural hub — route handlers and UI components all funnel through it. It packages utility functions, Supabase data-access services, Svelte stores, shared types, and constants. **\`routes/api/*\`** are SvelteKit \`+server.ts\` endpoints (server-side API handlers). All other \`routes/*\` sub-directories map directly to browser URL paths.
+
+Regenerate with \`/c4-model\` after adding routes or refactoring \`lib/\`.`,
+
+    api: `Components are grouped at depth 1 (one level below \`src/\`). Relationship arrows show TypeScript import edges.
+
+The API follows a standard layered structure: **routes** (Hono handlers), **services** (Supabase queries and business logic), **utils** (shared helpers, mail, certificate generation), **types** (Zod schemas and TypeScript types), **middlewares** (rate-limiter, auth validation), and **config** (environment setup). Low internal coupling is intentional — the only detected import edge is middlewares → utils.
+
+Regenerate with \`/c4-model\` after adding new routes or services.`,
+  };
+
+  const description = descriptionMap[app.name] ?? '';
+
   return `# C4 L3 — ${title} Components
+
+${description}
 
 \`\`\`mermaid
 C4Component

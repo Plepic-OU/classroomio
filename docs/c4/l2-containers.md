@@ -1,5 +1,11 @@
 # C4 L2 — Containers
 
+ClassroomIO is composed of three deployable containers. The **Dashboard** (SvelteKit, port 5173) is the primary UI for both teachers and students; it reads and writes directly to Supabase via Row-Level Security and delegates long-running work to the API. The **API** (Hono/Node.js, port 3002) handles async operations — PDF certificate generation, video upload presigning, and email dispatch — and is the only container that talks to Cloudflare, S3, and the mail server. The **Course App** is a standalone embeddable Svelte 5 component published to npm, independent of the other two.
+
+Key architectural decision: the API does **not** own the database. Both the Dashboard and the API use the Supabase SDK; the difference is that the Dashboard operates under user-scoped RLS policies while the API uses the service-role key for privileged operations.
+
+See [L3 Dashboard](l3-dashboard.md) and [L3 API](l3-api.md) for the internal component structure.
+
 ```mermaid
 C4Container
   title ClassroomIO — Containers
