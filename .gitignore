@@ -50,5 +50,8 @@ vite.config.ts*.mjs
 # Claude Code local settings
 .claude/settings.local.json
 
+# C4 AST extraction output (AI context only, not for version control)
+docs/c4/ast-*.json
+
 # GitHub auth token — never commit
 .devcontainer/github-token
