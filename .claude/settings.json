@@ -1,0 +1,26 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'p=$(cat); if printf \"%s\" \"$p\" | jq -r .tool_input | grep -q \"github-token\"; then mkdir -p .claude/observations; printf \"%s [BLOCKED] %s\\n\" \"$(date -u +\"%Y-%m-%dT%H:%M:%SZ\")\" \"$(printf \"%s\" \"$p\" | jq -r .tool_name)\" >> .claude/observations/blocked.log; exit 2; fi'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'p=$(cat); tn=$(printf \"%s\" \"$p\" | jq -r .tool_name); mkdir -p .claude/observations; printf \"%s\" \"$p\" | jq .tool_input > \".claude/observations/$tn.json\"'"
+          }
+        ]
+      }
+    ]
+  }
+}
