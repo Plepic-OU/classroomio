@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/log-tool-input.sh"
+          }
+        ]
+      },
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input | .. | strings' 2>/dev/null | grep -qF '.devcontainer/github-token' && exit 2 || exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}

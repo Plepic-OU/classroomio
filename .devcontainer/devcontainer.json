@@ -7,7 +7,8 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2.16.1": {
       "moby": false,
       "version": "29.4.3"
-    }
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   "containerEnv": {
     "CLAUDE_CONFIG_DIR": "/home/node/.claude"
@@ -31,7 +32,7 @@
     "9324": { "label": "Playwright UI" }
   },
   "postCreateCommand": "bash .devcontainer/setup.sh",
-  "postStartCommand": "echo '✅ ClassroomIO devcontainer is ready. Run: pnpm dev:container'",
+  "postStartCommand": "bash .devcontainer/gh-auth.sh",
   "remoteUser": "node",
   "customizations": {}
 }
