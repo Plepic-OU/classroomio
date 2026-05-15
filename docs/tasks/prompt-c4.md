@@ -4,12 +4,6 @@ the API and Dashboard containers, outputting Mermaid C4 diagrams to `docs/c4/`.
 Familiarize yourself with https://c4model.com/ (especially https://c4model.com/abstractions/component for Layer 3
 granularity) and https://mermaid.js.org/syntax/c4.html.
 
-### Sub goals
-
-- [ ] Explain in skill what is AST.
-- [ ] Explain each tech stack element in two sentences.
-  - [ ] Make footnotes (1),(2),... for each tech stack element on the diagram
-
 ### Skill structure
 
 Create a skill at `.claude/skills/c4-model/` with a `SKILL.md`, an extraction script, and a `references/` folder for C4
@@ -43,3 +37,9 @@ foreign key references between tables. Requires `supabase start`.
 - Use Mermaid C4 diagrams.
 - Output should be concise — it's mainly for AI context consumption.
 - Layer 3 components must be derived from AST, not hardcoded.
+
+### In addition to main goal, add additional explanations for:
+
+- [ ] What is AST.
+- [ ] Explain each tech stack element in two sentences.
+  - [ ] Make footnotes (1),(2),... for each tech stack element on the diagram
