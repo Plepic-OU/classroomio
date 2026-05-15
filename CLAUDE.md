@@ -107,3 +107,14 @@ The API exports its Hono app type for **RPC-style type-safe calls** from the das
 Both `apps/dashboard` and `apps/api` need `.env` files created from their respective `.env.example` files. Supabase local dev credentials are output by `supabase start`.
 
 The Turborepo pipeline has `PUBLIC_IS_SELFHOSTED` as a global env variable that affects build output — the dashboard supports both Vercel and Node.js adapter deployment modes (configured in `apps/dashboard/svelte.config.js`).
+
+## Architecture Maps
+
+C4 diagrams (auto-loaded into context):
+
+@../docs/c4/l1-system-context.md
+@../docs/c4/l2-containers.md
+@../docs/c4/l3-dashboard.md
+@../docs/c4/l3-api.md
+
+Database schema (load on demand): [docs/c4/database.md](../docs/c4/database.md)
