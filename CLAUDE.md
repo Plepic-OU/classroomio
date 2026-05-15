@@ -40,7 +40,15 @@ pnpm supabase:push   # Push migrations to linked project
 
 **Test login:** `admin@test.com` / `123456`
 
-## Architecture
+## Architecture Maps
+
+C4 diagrams (auto-generated, do not edit by hand — run `/c4-model` to refresh):
+
+- @docs/c4/L1-context.md
+- @docs/c4/L2-containers.md
+- @docs/c4/L3-dashboard.md
+- @docs/c4/L3-api.md
+- [Database schema](docs/c4/database.md) — load on demand; requires `supabase start` to regenerate
 
 ### Monorepo (Turbo + pnpm)
 
