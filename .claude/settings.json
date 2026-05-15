@@ -9,6 +9,21 @@
             "statusMessage": "Checking for token file access..."
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git commit*)",
+            "command": "echo '{\"decision\":\"block\",\"reason\":\"Prohibited operation. Ask the user to stage and commit manually.\"}'; exit 2"
+          },
+          {
+            "type": "command",
+            "if": "Bash(git push*)",
+            "command": "echo '{\"decision\":\"block\",\"reason\":\"Prohibited operation. Ask the user to push manually.\"}'; exit 2"
+          }
+        ]
       }
     ]
   }
