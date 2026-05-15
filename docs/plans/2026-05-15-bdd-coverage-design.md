@@ -46,6 +46,11 @@ Wave 3: /courses/[id]/lessons  /courses/[id]/lessons/[...lessonParams]  /lms/myl
 Wave 4: /lms/exercises  /courses/[id]/submissions  /courses/[id]/marks
 ```
 
+`/onboarding` is explicitly **out of scope** for autonomous generation. The org onboarding
+flow is exercised implicitly via the seed strategy (the seed pre-creates the org, bypassing
+onboarding for all Wave 2+ scenarios). A dedicated onboarding scenario can be added manually
+in a follow-up.
+
 ### 1.3 Target Feature File Set
 
 Files marked `← exists` are already in the repo; all others are to be created.
@@ -68,29 +73,48 @@ tests/e2e/features/
 
 ### 1.4 Isolation and Determinism Strategy
 
-**Full DB reset per scenario** is enforced through a `Before` hook in
-`tests/e2e/helpers/hooks.ts`, registered globally via the `require` array in
-`playwright.config.ts`. No individual scenario or step definition is responsible
+**Partial DB reset per scenario** is enforced through a `BeforeScenario` hook in
+`tests/e2e/helpers/hooks.ts`. No individual scenario or step definition is responsible
 for cleanup — the hook makes the rule impossible to forget.
 
 **Reset + seed sequence (per scenario):**
 
-1. `reset-db.ts` — truncates all mutable tables (existing implementation,
-   called from the hook rather than manually).
-2. `seed-db.ts` (new) — re-inserts the fixed baseline records listed below.
+1. `reset-db.ts` — truncates all mutable tables **except** those in `PRESERVE_TABLES`
+   (`profile`, `organization`, `organizationmember`, `organization_plan`, `role`,
+   `course_type`, `resource_type`). These baseline tables are loaded once from
+   `supabase/seed.sql` at `supabase start` and survive every per-scenario reset.
+2. `seed-db.ts` (new) — upserts the fixed baseline records listed below using
+   `INSERT … ON CONFLICT DO UPDATE` so re-runs are idempotent even if a test
+   modified a baseline row. Also populates `auth.users` for each test user via
+   `docker exec supabase_db_classroomio psql` (same pattern as `reset-db.ts`) to
+   satisfy the `profile.id → auth.users(id)` FK constraint.
 
 **Baseline seed records:**
 
 | Record | Details |
 |--------|---------|
-| `profile` — teacher | `email: admin@test.com`, `password: 123456` (matches `TEST_USERS.admin`) |
-| `profile` — student | `email: student@test.com`, `password: 123456` (matches `TEST_USERS.student`) |
-| `organization` | One org linked to the teacher via `organizationmember` |
+| `auth.users` — teacher | `id` matching `admin@test.com` profile; `encrypted_password` from `E2E_ADMIN_PASSWORD` env var |
+| `auth.users` — student | `id` matching `student@test.com` profile; `encrypted_password` from `E2E_STUDENT_PASSWORD` env var |
+| `profile` — teacher | `email: admin@test.com` (matches `TEST_USERS.admin`); password from `process.env.E2E_ADMIN_PASSWORD` |
+| `profile` — student | `email: student@test.com` (matches `TEST_USERS.student`); password from `process.env.E2E_STUDENT_PASSWORD` |
+| `organization` | One org linked to the teacher via `organizationmember` with `role_id: 1` (Admin) |
+
+Passwords are **never hard-coded** — they are read from environment variables
+(`E2E_ADMIN_PASSWORD`, `E2E_STUDENT_PASSWORD`) set in the devcontainer's `.env`.
+CI must assert that `SUPABASE_URL` matches `localhost` before executing any
+destructive DB operation.
 
 The org seed gives Wave 2+ teacher scenarios a pre-existing org to work inside
 without depending on the onboarding flow completing first. Wave 2 course
 scenarios create their own course on top; the reset wipes it before the next
 scenario.
+
+**Known schema risk: `is_org_admin()` no-argument overload** contains a
+`WHERE organization_id = organization_id` self-comparison that always evaluates
+true, meaning any `role_id = 1` user is treated as admin of every org. This is a
+pre-existing production bug. Wave 2 scenarios that assert org-scoped access control
+may produce false-positive passes as a result — flag these scenarios with a comment
+until the bug is fixed upstream.
 
 **`workers: 1` is load-bearing.** The Playwright config already sets
 `workers: 1`. This must not be changed in pursuit of speed — sequential
@@ -100,33 +124,25 @@ execution is what makes per-scenario DB resets race-condition-free.
 
 ```typescript
 import { createBdd } from 'playwright-bdd';
-import { resetDb } from './reset-db';
+import { resetTestData } from './reset-db';
 import { seedDb } from './seed-db';
 
-const { Before } = createBdd();
+const { BeforeScenario } = createBdd();
 
-Before(async () => {
-  await resetDb();
+BeforeScenario(async () => {
+  await resetTestData();
   await seedDb();
 });
 ```
 
-Register it globally in `playwright.config.ts`:
+Register it globally by adding it to the `steps` array in the existing `defineBddConfig` call in `playwright.config.ts` — `playwright-bdd` v8 does **not** have a `require` array; hook files are discovered via the `steps` glob:
 
 ```typescript
-import { defineBddConfig } from 'playwright-bdd';
-
-export default defineConfig({
-  use: { /* … */ },
-  projects: [{
-    name: 'chromium',
-    use: devices['Desktop Chrome'],
-    ...defineBddConfig({
-      features: 'features/**/*.feature',
-      steps: 'steps/**/*.steps.ts',
-      require: ['helpers/hooks.ts'],   // ← global hook registration
-    }),
-  }],
+// tests/e2e/playwright.config.ts — add helpers/hooks.ts to the steps list:
+const testDir = defineBddConfig({
+  features: 'features/**/*.feature',
+  steps: ['steps/**/*.steps.ts', 'helpers/hooks.ts'],  // ← hooks included here
+  outputDir: '.features-gen',
 });
 ```
 
@@ -134,7 +150,7 @@ export default defineConfig({
 
 These rules apply to all hand-written and skill-generated scenarios:
 
-- **No `Background:` blocks** — the `Before` hook handles DB state; use an
+- **No `Background:` blocks** — the `BeforeScenario` hook handles DB state; use an
   explicit `Given I am logged in as "admin@test.com"` step to keep each
   scenario self-describing.
 - **Scenario titles** follow the form `[Role] [action] [object]`,
@@ -207,7 +223,10 @@ const { Given, When, Then } = createBdd();
 
 Given('Student is on the course landing page', async ({ page }) => {
   await page.goto('/lms/explore');
-  await waitForHydration(page);
+  // waitForHydration() only works on /login and /signup (waits for input[type="email"]).
+  // For all other routes derive a page-specific hydration signal from +page.svelte,
+  // or use: await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('networkidle');
 });
 ```
 
@@ -217,7 +236,7 @@ Files are written to disk but not staged. The WRITE phase ends here — no
 ### 2.5 Phase 4 — RUN
 
 ```bash
-pnpm test:e2e 2>&1 | tee /tmp/e2e-run.txt; echo "EXIT:$?"
+cd /workspaces/classroomio && pnpm test:e2e 2>&1 | tee /tmp/e2e-run.txt; echo "EXIT:$?"
 ```
 
 The skill reads `/tmp/e2e-run.txt` in full after the command completes.
@@ -277,9 +296,14 @@ creation:
 ```markdown
 ## Known Quirks
 
+- /login and /signup only: waitForHydration() waits for input[type="email"] —
+  call it only on auth pages. For all other routes use page.waitForLoadState('networkidle')
+  or a route-specific DOM sentinel derived from the page's +page.svelte.
 - All pages: SvelteKit SSR renders inputs as type="text" until hydration;
-  use waitForHydration() before any form interaction.
+  interact with forms only after the appropriate hydration signal above.
 - All pages: workers must stay at 1; parallel execution breaks DB reset safety.
+- loginAs() in helpers/login.ts awaits /org/ redirect — only valid for teacher/admin users.
+  Student users are redirected to /lms/ after login; use page.waitForURL(/\/lms\//) for student steps.
 ```
 
 ### 2.8 Full Directory Layout
@@ -313,7 +337,7 @@ tests/e2e/
 │   └── marks/
 │       └── marks-viewing.steps.ts
 ├── helpers/
-│   ├── hooks.ts          ← new: global Before hook (reset + seed)
+│   ├── hooks.ts          ← new: global BeforeScenario hook (reset + seed)
 │   ├── seed-db.ts        ← new: baseline seed after truncate
 │   ├── hydration.ts      ← exists
 │   ├── login.ts          ← exists
@@ -330,19 +354,21 @@ tests/e2e/
 
 Key facts the skill must apply when generating code:
 
-- `createBdd()` returns `{ Given, When, Then, Before, After, BeforeAll, AfterAll }`.
+- `createBdd()` returns `{ Given, When, Then, BeforeScenario, AfterScenario, BeforeWorker, AfterWorker }`.
+  The aliases `Before`/`After`/`BeforeAll`/`AfterAll` still work but are deprecated in v8.
   Hooks come from the same call — do **not** import them from `@cucumber/cucumber`.
-- Hook signature: `Before(async ({ page, context, browser }) => { … })` —
+- Hook signature: `BeforeScenario(async ({ page, context, browser }) => { … })` —
   receives the full Playwright fixture bag, same as steps.
-- `defineBddConfig` in `playwright.config.ts` accepts a `require` string array
-  for global hook files.
+- `defineBddConfig` in `playwright.config.ts` does **not** have a `require` array in v8.
+  Register hook files by including them in the `steps` option (array form):
+  `steps: ['steps/**/*.steps.ts', 'helpers/hooks.ts']`
 - Files in `.features-gen/` are auto-generated by `bddgen` and must never be
   edited directly; they are gitignored.
 - Tag filter at run time: `npx playwright test --config … --grep @tag-name`.
   Use `@known-failing` to exclude broken scenarios from CI without deleting them.
 - `$tags` fixture in a step gives access to the current scenario's tags:
-  `const { $tags } = await createBdd()` — useful for conditional behaviour in
-  shared steps.
+  `const { $tags } = createBdd()` — note `createBdd()` is synchronous, no `await`.
+  `$tags` is a fixture available inside step/hook functions, not a top-level variable.
 
 ---
 
@@ -361,6 +387,14 @@ git diff
 cat /tmp/bdd-coverage-diff.md
 
 # Run the full suite manually at any time:
-pnpm test:e2e
+cd /workspaces/classroomio && pnpm test:e2e
 pnpm test:e2e:report   # view HTML report on :9323
 ```
+
+**CI integration:** `pnpm test:e2e` should be wired as a separate CI step after the
+existing `pnpm ci` (Cypress) step. Both suites run until BDD wave coverage is
+complete and validated; at that point Cypress can be retired. The CI step must:
+1. Assert `SUPABASE_URL` contains `localhost` before running (prevent accidental
+   execution against staging).
+2. Run `supabase start` if the DB is not already up.
+3. Run `pnpm dev:container` in the background and wait for the preflight check to pass.
