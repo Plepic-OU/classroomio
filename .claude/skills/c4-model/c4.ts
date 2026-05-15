@@ -574,7 +574,7 @@ function dn(id: string, stereotype: string, name: string, desc: string,
 function l1Dot(): string {
   return [
     'digraph L1 {',
-    '  graph [label="ClassroomIO — System Context", labelloc=t, fontsize=14, fontname="Helvetica", rankdir=TB, splines=ortho, pad=0.6, nodesep=0.8, ranksep=1.2]',
+    '  graph [label="ClassroomIO — System Context", labelloc=t, fontsize=14, fontname="Helvetica", rankdir=TB, pad=0.6, nodesep=0.8, ranksep=1.2]',
     '  edge [fontname="Helvetica", fontsize=9, color="#555555"]',
     '',
     '  // Users',

@@ -82,8 +82,7 @@ The **dashboard** is the primary frontend (SvelteKit). It connects directly to *
 @docs/c4/l2-containers.md
 @docs/c4/l3-dashboard.md
 @docs/c4/l3-api.md
-
-Database schema (load on demand): `docs/c4/database.md`
+@docs/c4/database.md
 
 ## Tech Stack
 
