@@ -1,0 +1,14 @@
+{
+  "name": "@cio/c4-model-skill",
+  "version": "0.0.0",
+  "private": true,
+  "description": "C4 model extraction for ClassroomIO. Not part of the pnpm workspace.",
+  "type": "module",
+  "scripts": {
+    "extract": "tsx scripts/extract-components.ts"
+  },
+  "dependencies": {
+    "ts-morph": "^24.0.0",
+    "tsx": "^4.19.2"
+  }
+}

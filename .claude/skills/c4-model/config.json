@@ -1,0 +1,27 @@
+{
+  "apps": {
+    "dashboard": {
+      "srcRoot": "apps/dashboard/src",
+      "tsconfig": "apps/dashboard/tsconfig.json",
+      "depth": 3,
+      "label": "Dashboard (SvelteKit LMS)"
+    },
+    "api": {
+      "srcRoot": "apps/api/src",
+      "tsconfig": "apps/api/tsconfig.json",
+      "depth": 2,
+      "label": "API (Hono service)"
+    }
+  },
+  "externalPackagesOfInterest": [
+    "@cio/api",
+    "@cio/shared",
+    "@supabase/supabase-js",
+    "hono",
+    "@sveltejs/kit",
+    "svelte",
+    "nodemailer",
+    "stripe"
+  ],
+  "outputPath": "docs/c4/extraction.json"
+}

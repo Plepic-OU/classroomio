@@ -27,6 +27,14 @@ A `course` is paired 1:1 with a `group` (via `course.group_id`). Course membersh
 
 For deeper context on the enrollment flow specifically (the most-touched flow), see `ENROLLMENT_OVERVIEW.md` at the repo root — it traces the end-to-end path through routes, services, RLS, and email side effects.
 
+## C4 architecture diagrams
+
+- @docs/c4/context.md — Layer 1: System Context
+- @docs/c4/containers.md — Layer 2: Containers
+- @docs/c4/components-dashboard.md — Layer 3: Components (dashboard)
+- @docs/c4/components-api.md — Layer 3: Components (api)
+- `docs/c4/database.md` — Postgres schema overview (load on demand)
+
 ## Common commands
 
 Everything is driven through Turbo from the repo root.
