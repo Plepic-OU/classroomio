@@ -121,3 +121,14 @@ Heavy Supabase logic lives in `apps/dashboard/src/lib/utils/services/`:
 ### i18n
 
 Dashboard uses `sveltekit-i18n` with ICU parser. Translations live in `apps/dashboard/src/lib/utils/translations/`. Supported locales: `en, hi, fr, pt, de, vi, ru, es, pl, da`. The `lesson_language` table stores per-lesson translated content.
+
+---
+
+## Architecture maps (C4)
+
+@docs/c4/l1-context.md
+@docs/c4/l2-containers.md
+@docs/c4/l3-dashboard.md
+@docs/c4/l3-api.md
+
+Database schema (load on demand): [docs/c4/database.md](docs/c4/database.md)
