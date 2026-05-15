@@ -1,0 +1,14 @@
+{
+  "name": "@cio/c4-skill",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "extract": "node extract.mjs",
+    "generate": "node generate.mjs",
+    "db-schema": "bash db-schema.sh",
+    "run": "node extract.mjs && node generate.mjs"
+  },
+  "dependencies": {
+    "ts-morph": "^23.0.0"
+  }
+}
