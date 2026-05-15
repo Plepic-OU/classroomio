@@ -1,7 +1,7 @@
 # C4 Model Skill
 
 Generate or update a C4 architecture model (Layers 1–3) for ClassroomIO.
-Outputs Mermaid C4 diagrams to `docs/c4/`. Components are derived from AST, not hardcoded.
+Outputs structured markdown files to `docs/c4/`. Each file contains a prose description, a grouped elements/components table (readable as plain text in context), and a Mermaid diagram. Components are derived from AST, not hardcoded.
 
 ## When this skill is invoked
 
@@ -34,11 +34,11 @@ The script:
 - Maps cross-component import relationships
 - Counts `.svelte` files per component directory (ts-morph cannot parse .svelte)
 - Warns if any component contains >50 files (depth too shallow)
-- Writes to `docs/c4/`:
-  - `l1-system-context.md` — Mermaid C4Context diagram
-  - `l2-containers.md` — Mermaid C4Container diagram
-  - `l3-dashboard.md` — Mermaid C4Component diagram for Dashboard
-  - `l3-api.md` — Mermaid C4Component diagram for API
+- Writes to `docs/c4/`. Each file has three sections: description → elements table → Mermaid diagram:
+  - `l1-system-context.md` — Users and External Systems tables + C4Context diagram
+  - `l2-containers.md` — Internal Containers, Data & Auth, External Services tables + C4Container diagram
+  - `l3-dashboard.md` — Components grouped by UI Components / Utilities / Server Routes / Page Routes + C4Component diagram
+  - `l3-api.md` — Components grouped by Routes / Services / Utils / Types / Middleware + C4Component diagram
   - `components.json` — structured JSON (gitignored; AI context)
 
 ## Step 3 — Database schema (optional)
@@ -53,8 +53,8 @@ Requires local Supabase (`pnpx supabase start`). Outputs `docs/c4/database.md`.
 
 ## Step 4 — Show the user what was generated
 
-After running, read `docs/c4/l1-system-context.md`, `l2-containers.md`, and summarize:
-- Component counts per app
+After running, summarize:
+- Component counts per app (from extractor stdout)
 - Any depth warnings
 - Whether database schema was generated
 - Suggest next steps: `/c4-model` again after adding new routes or services
