@@ -1,0 +1,33 @@
+// Generated 2026-05-15T08:41:20.841Z
+digraph components_dashboard {
+  label="Dashboard (SvelteKit) — Components"
+  labelloc=t
+  fontname="Arial"
+  fontsize=14
+  rankdir=TB
+
+  subgraph cluster_dashboard {
+    label="Dashboard (SvelteKit)"
+    style=dashed
+    color="#666666"
+    fontname="Arial"
+
+    lib_components [label="Components\n[Svelte+TS (242+49 files)]\nShared UI component library" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    lib_utils [label="Utils\n[TypeScript (96 files)]\nServices, stores, types, constants, i18n" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    routes [label="Routes\n[Svelte+TS (3+2 files)]\nSvelteKit page routes" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    routes_api [label="Api\n[TypeScript (34 files)]\nServer-side API endpoints" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    routes_course [label="Course\n[Svelte+TS (1+1 files)]\nPublic course view (unauthenticated)" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    routes_courses [label="Courses\n[Svelte+TS (14+13 files)]\nCourse editor hub (teacher side)" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    routes_invite [label="Invite\n[Svelte+TS (2+2 files)]\nInvitation accept flow" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    routes_lms [label="Lms\n[Svelte+TS (9+1 files)]\nStudent-facing LMS pages" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    routes_org [label="Org\n[Svelte+TS (15+7 files)]\nOrganization management pages" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    routes_profile [label="Profile\n[Svelte+TS (1+1 files)]\nUser profile pages" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+  }
+
+  lib_components -> lib_utils
+  lib_utils -> lib_components
+  routes -> lib_utils
+  routes_api -> lib_utils
+  routes_course -> lib_utils
+  routes_invite -> lib_utils
+}

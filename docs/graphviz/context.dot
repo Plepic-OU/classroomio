@@ -1,0 +1,41 @@
+// Generated 2026-05-15T10:06:37.459Z
+digraph context {
+  label="System Context — ClassroomIO LMS"
+  labelloc=t
+  fontname="Arial"
+  fontsize=14
+  rankdir=TB
+
+  // Actors
+  teacher [label="Teacher / Admin\n[Person]\nCreates courses, manages students" shape=box style="filled,rounded" fillcolor="#08427b" fontcolor="white" fontname="Arial" fontsize=11]
+  student [label="Student\n[Person]\nLearns through courses, submits exercises" shape=box style="filled,rounded" fillcolor="#08427b" fontcolor="white" fontname="Arial" fontsize=11]
+
+  // Core system
+  classroomio [label="ClassroomIO\n[SvelteKit + Hono]\nOpen-source Learning Management System" shape=box style=filled fillcolor="#1168bd" fontcolor="white" fontname="Arial" fontsize=11]
+
+  // External systems
+  supabase_auth [label="Supabase Auth\n[External System]\nJWT-based authentication" shape=box style=filled fillcolor="#999999" fontcolor="white" fontname="Arial" fontsize=11]
+  supabase_db [label="Supabase PostgreSQL\n[External System]\nPrimary relational data store" shape=box style=filled fillcolor="#999999" fontcolor="white" fontname="Arial" fontsize=11]
+  cloudflare_r2 [label="Cloudflare R2\n[External System]\nVideo and file storage (S3-compatible)" shape=box style=filled fillcolor="#999999" fontcolor="white" fontname="Arial" fontsize=11]
+  redis [label="Redis\n[External System]\nRate limiting and caching" shape=box style=filled fillcolor="#999999" fontcolor="white" fontname="Arial" fontsize=11]
+  openai [label="OpenAI\n[External System]\nAI-powered grading and completions" shape=box style=filled fillcolor="#999999" fontcolor="white" fontname="Arial" fontsize=11]
+  email_svc [label="ZeptoMail / SMTP\n[External System]\nTransactional email delivery" shape=box style=filled fillcolor="#999999" fontcolor="white" fontname="Arial" fontsize=11]
+  payment [label="Payment Providers\n[External System]\nStripe, Polar, LemonSqueezy" shape=box style=filled fillcolor="#999999" fontcolor="white" fontname="Arial" fontsize=11]
+  posthog [label="PostHog\n[External System]\nProduct analytics" shape=box style=filled fillcolor="#999999" fontcolor="white" fontname="Arial" fontsize=11]
+  sentry [label="Sentry\n[External System]\nError monitoring" shape=box style=filled fillcolor="#999999" fontcolor="white" fontname="Arial" fontsize=11]
+  unsplash [label="Unsplash\n[External System]\nStock image search proxy" shape=box style=filled fillcolor="#999999" fontcolor="white" fontname="Arial" fontsize=11]
+
+  // Relationships
+  teacher -> classroomio [label="Manages courses via HTTPS" fontsize=9 fontname="Arial"]
+  student -> classroomio [label="Learns via HTTPS" fontsize=9 fontname="Arial"]
+  classroomio -> supabase_auth [label="Authenticates users" fontsize=9 fontname="Arial"]
+  classroomio -> supabase_db [label="Stores and reads data" fontsize=9 fontname="Arial"]
+  classroomio -> cloudflare_r2 [label="Stores videos and files" fontsize=9 fontname="Arial"]
+  classroomio -> redis [label="Rate-limits API requests" fontsize=9 fontname="Arial"]
+  classroomio -> openai [label="AI completions and grading" fontsize=9 fontname="Arial"]
+  classroomio -> email_svc [label="Sends transactional emails" fontsize=9 fontname="Arial"]
+  classroomio -> payment [label="Processes payments" fontsize=9 fontname="Arial"]
+  classroomio -> posthog [label="Tracks analytics" fontsize=9 fontname="Arial"]
+  classroomio -> sentry [label="Reports errors" fontsize=9 fontname="Arial"]
+  classroomio -> unsplash [label="Searches stock images" fontsize=9 fontname="Arial"]
+}

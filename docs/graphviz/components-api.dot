@@ -1,0 +1,30 @@
+// Generated 2026-05-15T08:41:21.959Z
+digraph components_api {
+  label="API (Hono + Node.js) — Components"
+  labelloc=t
+  fontname="Arial"
+  fontsize=14
+  rankdir=TB
+
+  subgraph cluster_api {
+    label="API (Hono + Node.js)"
+    style=dashed
+    color="#666666"
+    fontname="Arial"
+
+    constants [label="Constants\n[TypeScript (3 files)]\nApplication constants" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    middlewares [label="Middlewares\n[TypeScript (2 files)]\nAuth and rate-limiting middleware" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    routes_course [label="Course\n[TypeScript (5 files)]\nPublic course view (unauthenticated)" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    types [label="Types\n[TypeScript (3 files)]\nTypeScript type definitions" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    types_course [label="Course\n[TypeScript (2 files)]\nCourse-related types" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    utils [label="Utils\n[TypeScript (10 files)]\nUtility modules (S3, email, Redis, Supabase, certificates)" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+    utils_redis [label="Redis\n[TypeScript (3 files)]\nRedis client and rate limiter" shape=box style=filled fillcolor="#85bbf0" fontcolor="#000000" fontname="Arial" fontsize=10]
+  }
+
+  middlewares -> utils_redis
+  routes_course -> constants
+  routes_course -> types_course
+  types -> types_course
+  utils -> constants
+  utils -> types_course
+}

@@ -6,6 +6,8 @@ not hardcoded.
 
 ## Output files
 
+**Mermaid (docs/c4/)**
+
 | File | C4 Layer | How produced |
 |------|----------|--------------|
 | `docs/c4/c4-context.md` | L1 System Context | Static / curated |
@@ -14,6 +16,17 @@ not hardcoded.
 | `docs/c4/c4-components-dashboard.md` | L3 Dashboard | AST extraction |
 | `docs/c4/database.md` | DB schema | Live Supabase (optional) |
 | `docs/c4/components-{app}.json` | Intermediate | AST (gitignored) |
+
+**Graphviz DOT (docs/graphviz/)**
+
+| File | C4 Layer | How produced |
+|------|----------|--------------|
+| `docs/graphviz/context.dot` | L1 System Context | Static / curated |
+| `docs/graphviz/containers.dot` | L2 Containers | Static / curated |
+| `docs/graphviz/components-api.dot` | L3 API | AST extraction |
+| `docs/graphviz/components-dashboard.dot` | L3 Dashboard | AST extraction |
+
+Both formats share the same intermediate JSON — same nodes, same edges, same relationships.
 
 ## Known limitations
 
@@ -66,7 +79,23 @@ The script prints `(unchanged)` for files that need no update, and a short diff 
 
 ---
 
-## Step 4 — Extract database schema
+## Step 4 — Generate Graphviz DOT diagrams
+
+```bash
+npx --prefix .claude/skills/c4-model tsx .claude/skills/c4-model/generate-dot.ts
+```
+
+Outputs four `.dot` files to `docs/graphviz/`. Only writes files whose content has changed.
+
+To render to SVG (requires `graphviz` installed — `sudo apt-get install graphviz`):
+
+```bash
+for f in docs/graphviz/*.dot; do dot -Tsvg "$f" -o "${f%.dot}.svg"; done
+```
+
+---
+
+## Step 5 — Extract database schema
 
 Check if Supabase is running, then extract:
 
@@ -81,17 +110,17 @@ It reports added/removed tables, or "column or type changes only" for subtler up
 
 ---
 
-## Step 5 — Present results to the user
+## Step 6 — Present results to the user
 
 After all scripts complete:
 
 1. Report the change summary printed by each script:
-   - If all files are unchanged: "No changes — docs/c4/ is already up to date."
+   - If all files are unchanged: "No changes — docs/c4/ and docs/graphviz/ are already up to date."
    - If files changed: list each updated file with its added/removed components, relationships, or tables.
 
 2. Only read and display the markdown files that actually changed (skip unchanged ones).
 
-3. Mention the JSON intermediates are gitignored; the `.md` files should be committed.
+3. Mention the JSON intermediates are gitignored; the `.md` and `.dot` files should be committed.
 
 ---
 
