@@ -1,5 +1,6 @@
 Feature: Course Creation
 
+  @write
   Scenario: Create a new course with a title
     Given I am logged in as "admin@test.com"
     And I am on the courses page
