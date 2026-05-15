@@ -28,3 +28,10 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
 # This plays nicer with devcontainer's
 RUN npm install -g @anthropic-ai/claude-code
 
+
+# Install Playwright OS dependencies during build (browsers installed in setup.sh after pnpm install)
+RUN npx playwright install-deps chromium
+
+# Add alias for all bash sessions
+# Inside isolated environment, remove all permissions. In non-isolated environment the mode "auto" is good substitute
+RUN echo "alias cskip='claude --permission-mode bypassPermissions'" >> /etc/bash.bashrc
