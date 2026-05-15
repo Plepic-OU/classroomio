@@ -57,6 +57,8 @@ Default seed login (from `supabase/seed.sql`): `admin@test.com` / `123456`.
 
 ## Architecture notes
 
+For a visual overview, see the C4 model in [`docs/c4/`](./docs/c4/README.md): [system context](./docs/c4/01-context.md), [containers](./docs/c4/02-container.md), and component diagrams for the [dashboard](./docs/c4/03-component-dashboard.md) and [API](./docs/c4/03-component-api.md). Regenerate with `/c4-model`.
+
 ### How the dashboard talks to the API
 
 The dashboard talks to Supabase directly for most CRUD (RLS-protected). The Hono API in `apps/api` handles things that don't belong on the edge: PDF certificates, presigned R2 uploads for video, course cloning, KaTeX rendering, transactional email. Routes are mounted in `apps/api/src/app.ts` (`/course`, `/mail`).
