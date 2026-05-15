@@ -1,0 +1,158 @@
+// Mermaid version (prose + description): docs/c4/skills-flow.md
+// Render: dot -Tsvg docs/c4/dot/skills-flow.dot -o out.svg
+
+digraph validate_design_document {
+  graph [label="validate-design-document — Context Flow", labelloc=t, fontsize=16, fontname="Helvetica", rankdir=TB, pad=0.8, nodesep=0.6, ranksep=1.0, compound=true]
+  edge [fontname="Helvetica", fontsize=9, color="#555555"]
+  node [fontname="Helvetica", fontsize=10]
+
+  // ── Input ─────────────────────────────────────────────────────────────────
+  user [label="User\n/validate-design-document [path]", shape=oval, style=filled, fillcolor="#08427B", fontcolor=white]
+
+  // ── Step 1: Read & Select ─────────────────────────────────────────────────
+  subgraph cluster_step1 {
+    label="Step 1 — Read & Select"
+    style=filled
+    fillcolor="#EBF3FB"
+    color="#4A7FC1"
+    fontcolor="#4A7FC1"
+    fontname="Helvetica"
+    fontsize=11
+
+    s1_read   [label="Read design doc",              shape=box,     style="filled,rounded", fillcolor="#4A7FC1", fontcolor=white]
+    s1_decide [label="Which domains\ndoes it touch?", shape=diamond, style=filled,           fillcolor="#4A7FC1", fontcolor=white]
+
+    s1_read -> s1_decide
+  }
+
+  // ── Step 2: Spawn ─────────────────────────────────────────────────────────
+  subgraph cluster_step2 {
+    label="Step 2 — Spawn in Parallel"
+    style=filled
+    fillcolor="#EBF3FB"
+    color="#4A7FC1"
+    fontcolor="#4A7FC1"
+    fontname="Helvetica"
+    fontsize=11
+
+    s2_read  [label="Read validator\nprompt files",                      shape=box, style="filled,rounded", fillcolor="#4A7FC1", fontcolor=white]
+    s2_sub   [label="Substitute {PATH}",                                  shape=box, style="filled,rounded", fillcolor="#4A7FC1", fontcolor=white]
+    s2_spawn [label="Spawn all as general-purpose agents\n(single message → parallel)", shape=box, style="filled,rounded", fillcolor="#1168BD", fontcolor=white]
+
+    s2_read -> s2_sub -> s2_spawn
+  }
+
+  // ── Validator agents ──────────────────────────────────────────────────────
+  subgraph cluster_agents {
+    label="Validator agents — running in parallel"
+    style=filled
+    fillcolor="#F5F5F5"
+    color="#777777"
+    fontcolor="#777777"
+    fontname="Helvetica"
+    fontsize=11
+
+    a1 [label="Supabase &\nDatabase",          shape=box, style="filled,rounded", fillcolor="#08427B", fontcolor=white]
+    a2 [label="Auth &\nPermissions",           shape=box, style="filled,rounded", fillcolor="#08427B", fontcolor=white]
+    a3 [label="SvelteKit\nFrontend",           shape=box, style="filled,rounded", fillcolor="#08427B", fontcolor=white]
+    a4 [label="API Contract",                  shape=box, style="filled,rounded", fillcolor="#08427B", fontcolor=white]
+    a5 [label="Monorepo &\nIntegration",       shape=box, style="filled,rounded", fillcolor="#08427B", fontcolor=white]
+    a6 [label="Devcontainer",                  shape=box, style="filled,rounded", fillcolor="#08427B", fontcolor=white]
+    a7 [label="E2E Tests",                     shape=box, style="filled,rounded", fillcolor="#08427B", fontcolor=white]
+    a8 [label="Simplifier\n(always)",          shape=box, style="filled,rounded", fillcolor="#08427B", fontcolor=white]
+    a9 [label="General Design\nQuality (always)", shape=box, style="filled,rounded", fillcolor="#08427B", fontcolor=white]
+  }
+
+  // ── Context sources ───────────────────────────────────────────────────────
+  subgraph cluster_context {
+    label="Context each agent reads independently"
+    style=filled
+    fillcolor="#EDF7ED"
+    color="#57A660"
+    fontcolor="#57A660"
+    fontname="Helvetica"
+    fontsize=11
+
+    c1 [label="Design doc\n{PATH}",                                                shape=cylinder, style=filled, fillcolor="#438DD5", fontcolor=white]
+    c2 [label="Codebase files\ndatabase.md · migrations\nplaywright.config · steps …", shape=cylinder, style=filled, fillcolor="#438DD5", fontcolor=white]
+    c3 [label="Context7 MCP\ncurrent library docs\nsupabase · playwright-bdd\nsvelte · hono …",  shape=cylinder, style=filled, fillcolor="#999999", fontcolor=white]
+  }
+
+  // ── Triage ────────────────────────────────────────────────────────────────
+  subgraph cluster_triage {
+    label="Step 3 — Triage findings"
+    style=filled
+    fillcolor="#FDF3E7"
+    color="#C47D2E"
+    fontcolor="#C47D2E"
+    fontname="Helvetica"
+    fontsize=11
+
+    ta [label="Bucket A — Auto-apply\n(unambiguous · no conflict · no scope change)", shape=box, style="filled,rounded", fillcolor="#57A660", fontcolor=white]
+    tb [label="Bucket B — Conflicts\n(validators disagree)",                          shape=box, style="filled,rounded", fillcolor="#C47D2E", fontcolor=white]
+    tc [label="Bucket C — User input needed\n(scope / arch decision)",                shape=box, style="filled,rounded", fillcolor="#C47D2E", fontcolor=white]
+  }
+
+  // ── Output ────────────────────────────────────────────────────────────────
+  ask     [label="AskUserQuestion\none item per message", shape=box,      style="filled,rounded", fillcolor="#C47D2E", fontcolor=white]
+  user2   [label="User decides",                          shape=oval,     style=filled,           fillcolor="#08427B", fontcolor=white]
+  doc_out [label="Updated design doc",                    shape=cylinder, style=filled,           fillcolor="#438DD5", fontcolor=white]
+  report  [label="Step 4 — Write report\ndocs/plans/reports/\n*-validation-report.md (gitignored)", shape=box, style="filled,rounded", fillcolor="#57A660", fontcolor=white]
+
+  // ── Edges ─────────────────────────────────────────────────────────────────
+  user      -> s1_read  [label="invoke"]
+  s1_decide -> s2_read  [label="select relevant validators"]
+
+  s2_spawn -> a1
+  s2_spawn -> a2
+  s2_spawn -> a3
+  s2_spawn -> a4
+  s2_spawn -> a5
+  s2_spawn -> a6
+  s2_spawn -> a7
+  s2_spawn -> a8
+  s2_spawn -> a9
+
+  // Context: only a1 edges drawn — all agents read the same three sources
+  a1 -> c1 [style=dashed]
+  a1 -> c2 [style=dashed]
+  a1 -> c3 [style=dashed]
+
+  // Findings flow to triage
+  a1 -> ta [label="CRITICAL / WARNING / NOTE"]
+  a2 -> ta
+  a3 -> ta
+  a4 -> ta
+  a5 -> ta
+  a6 -> ta
+  a7 -> ta
+  a8 -> ta
+  a9 -> ta
+
+  a1 -> tb
+  a2 -> tb
+  a3 -> tb
+  a4 -> tb
+  a5 -> tb
+  a6 -> tb
+  a7 -> tb
+  a8 -> tb
+  a9 -> tb
+
+  a1 -> tc
+  a2 -> tc
+  a3 -> tc
+  a4 -> tc
+  a5 -> tc
+  a6 -> tc
+  a7 -> tc
+  a8 -> tc
+  a9 -> tc
+
+  ta      -> doc_out [label="apply immediately"]
+  tb      -> ask
+  tc      -> ask
+  ask     -> user2
+  user2   -> doc_out [label="chosen option applied to doc"]
+  doc_out -> report
+}
