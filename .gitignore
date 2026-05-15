@@ -8,6 +8,13 @@ node_modules
 # testing
 coverage
 
+# Playwright BDD generated tests
+tests/e2e/.features-gen/
+
+# Playwright artifacts
+playwright-report/
+test-results/
+
 # next.js
 .next/
 out/
@@ -39,8 +46,6 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
-
-.devcontainer/github-token
 
 # Claude Code captured tool inputs (observability hook output)
 .claude/tool-inputs/
