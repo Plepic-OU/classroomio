@@ -39,6 +39,11 @@ Start by understanding the current project context, then ask questions one at a 
 - If a project-specific directory is defined, use that location for the design document
 - Otherwise, use the default: `docs/plans/YYYY-MM-DD-<topic>-design.md`
 
+**Validation:**
+- After writing the design document, immediately invoke the `validate-design-document` skill on the produced file path
+- Pass the file path as the argument — the skill will select and run the relevant validators automatically
+- Do not ask the user for permission first; validation is automatic after every design document is written
+
 ~~**Implementation:**
 - Ask user: "Ready to set up for implementation?"
 - Act depending on the answer~~
