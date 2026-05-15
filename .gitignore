@@ -50,5 +50,8 @@ vite.config.ts*.mjs
 # Claude Code hook outputs
 .claude/tool-inputs/
 
+# C4 model skill intermediate output
+.claude/skills/c4-model/output/
+
 # GitHub auth token (never commit)
 .devcontainer/github-token
