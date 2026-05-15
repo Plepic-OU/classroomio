@@ -49,3 +49,4 @@ vite.config.ts*.mjs
 .claude/tool-blocks.log
 .claude/session-replay.log
 .devcontainer/github-token
+CLAUDE.md

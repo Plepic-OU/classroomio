@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if grep -qF '.devcontainer/github-token'; then echo 'Blocked: tool input references .devcontainer/github-token. This file holds a GitHub PAT and must never be read, copied, displayed, or referenced.' >&2; exit 2; fi"
+            "command": "input=$(cat); if echo \"$input\" | grep -qF 'github-token'; then echo \"$input\" | jq -c '{timestamp: now | strftime(\"%Y-%m-%dT%H:%M:%SZ\"), tool: .tool_name, input: .tool_input, reason: \"blocked: references github-token\"}' >> .claude/tool-blocks.log 2>/dev/null; echo 'Blocked: github-token is a PAT and must never be read, copied, displayed, or referenced.' >&2; exit 2; fi"
           }
         ]
       }
