@@ -40,5 +40,8 @@ vite.config.ts*.mjs
 
 .pnpm-store/*
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # GitHub auth token — never commit
 .devcontainer/github-token
