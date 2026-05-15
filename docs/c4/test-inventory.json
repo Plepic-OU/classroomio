@@ -1,0 +1,254 @@
+[
+  {
+    "path": "apps/course-app/src/demo.spec.ts",
+    "framework": "vitest",
+    "describes": [
+      "sum test"
+    ],
+    "tests": [
+      "adds 1 + 2 to equal 3"
+    ]
+  },
+  {
+    "path": "apps/dashboard/src/lib/utils/functions/course.spec.ts",
+    "framework": "jest",
+    "describes": [
+      "course.ts"
+    ],
+    "tests": [
+      "Should return True when cost is 0",
+      "Should return true when cost is negative",
+      "Should return True when cost is Not A Number"
+    ]
+  },
+  {
+    "path": "apps/dashboard/src/lib/utils/functions/date.spec.ts",
+    "framework": "jest",
+    "describes": [
+      "calDateDiff",
+      "getGreeting"
+    ],
+    "tests": [
+      "should return the correct time difference when the input date is in the past",
+      "should return the correct time difference when the input date is a number",
+      "should return morning i18n key when the current time is before 12pm",
+      "should return afternoon i18n key when the current time is after 12pm",
+      "should return evening i18n key when the current time is after 6pm"
+    ]
+  },
+  {
+    "path": "apps/dashboard/src/lib/utils/functions/formatYoutubeVideo.spec.ts",
+    "framework": "jest",
+    "describes": [
+      "format youtube video",
+      "getEmbedId"
+    ],
+    "tests": [
+      "should return the same url when given a valid youtube embed url",
+      "should return the correct embed url when given a youtube url with a start time parameter",
+      "should return the correct embed id when the url contains \"embed\"",
+      "should return an empty string when the url does not contain \"watch\" or \"embed\" and is not in the format \"youtu.be/\"",
+      "should return an empty string when the url is an empty string"
+    ]
+  },
+  {
+    "path": "apps/dashboard/src/lib/utils/functions/generateSlug.spec.js",
+    "framework": "jest",
+    "describes": [
+      "generateSlug"
+    ],
+    "tests": [
+      "should return a string with lowercase letters and hyphens when given a valid title",
+      "should include the current timestamp at the end of the string"
+    ]
+  },
+  {
+    "path": "apps/dashboard/src/lib/utils/functions/generateUUID.spec.ts",
+    "framework": "jest",
+    "describes": [
+      "GenerateUUID"
+    ],
+    "tests": [
+      "should be true when tested with the uuid function",
+      "should generate unique UUIDs each time",
+      "should return true for a valid UUID",
+      "should return false for an invalid UUID"
+    ]
+  },
+  {
+    "path": "apps/dashboard/src/lib/utils/functions/genUniqueId.spec.js",
+    "framework": "jest",
+    "describes": [
+      "Generate Unique Ids"
+    ],
+    "tests": [
+      "should start with letter",
+      "should not contain special characters",
+      "should return different ids on multiple calls",
+      "multiple calls in closer time frames should have same first 3 letters"
+    ]
+  },
+  {
+    "path": "apps/dashboard/src/lib/utils/functions/getCurrencyFormatter.spec.ts",
+    "framework": "jest",
+    "describes": [
+      "GetCurrencyFormatter"
+    ],
+    "tests": [
+      "should return a new instance of Intl.NumberFormat with the correct locale and currency options when currency is \"NGN\"",
+      "should return a new instance of Intl.NumberFormat with the correct locale and currency options when currency is \"USD\"",
+      "should return a new instance of Intl.NumberFormat with the correct locale and currency options when currency is \"EUR\""
+    ]
+  },
+  {
+    "path": "apps/dashboard/src/lib/utils/functions/isObject.spec.ts",
+    "framework": "jest",
+    "describes": [
+      "isObject"
+    ],
+    "tests": [
+      "should return true for an empty object",
+      "should return false for a non-object",
+      "should return true for a nested object",
+      "should return true for an object with properties"
+    ]
+  },
+  {
+    "path": "apps/dashboard/src/lib/utils/functions/IsSubmissionEarly.spec.js",
+    "framework": "jest",
+    "describes": [
+      "isSubmissionEarly"
+    ],
+    "tests": [
+      "should return true when createdAt is earlier than dueDate",
+      "should return true when both createdAt and dueDate are null",
+      "should return true when createdAt is the same as dueDate",
+      "should return false when createdAt is later than dueDate"
+    ]
+  },
+  {
+    "path": "apps/dashboard/src/lib/utils/functions/org.spec.ts",
+    "framework": "jest",
+    "describes": [
+      "Generate Quiz Pin",
+      "Generate Site name"
+    ],
+    "tests": [
+      "should return a random 6-digit pin",
+      "should return random pin each time",
+      "should generate a pin between 100000 and 999999",
+      "should not generate a negative pin",
+      "should generate an integer pin",
+      "should not generate a zero pin",
+      "should return slug-like string",
+      "should remove special characters",
+      "should return empty string when orgName is an empty string",
+      "should return slug-like string with all uppercase characters converted to lowercase"
+    ]
+  },
+  {
+    "path": "apps/dashboard/src/lib/utils/functions/removeDuplicate.spec.js",
+    "framework": "jest",
+    "describes": [
+      "removeDuplicate"
+    ],
+    "tests": [
+      "should remove duplicate elements of an array",
+      "should return an empty array",
+      "should return an array with the same element",
+      "should return an array with only one element",
+      "should return an array with the unique elements in the same order as the original array"
+    ]
+  },
+  {
+    "path": "apps/dashboard/src/lib/utils/functions/showAppsSideBar.spec.js",
+    "framework": "jest",
+    "describes": [
+      "ShowAppSideBar"
+    ],
+    "tests": [
+      "should return true when path includes '/lessons/' and does not include 'landingpage'",
+      "should return false when path does not include '/lessons/'",
+      "should return false when path includes 'landingpage'",
+      "should return false when path is empty"
+    ]
+  },
+  {
+    "path": "apps/dashboard/src/lib/utils/functions/string.spec.ts",
+    "framework": "jest",
+    "describes": [
+      "capitalize first letter"
+    ],
+    "tests": [
+      "should return the same string with the first letter capitalized",
+      "should return an empty string when given an empty string",
+      "should return the same string when given a string with all uppercase letters",
+      "should return the same string when given a string with a non-alphabetical first character",
+      "should return the first letter of the first word capitalized when given a sentence"
+    ]
+  },
+  {
+    "path": "apps/dashboard/src/lib/utils/functions/validateEmail.spec.js",
+    "framework": "jest",
+    "describes": [
+      "validate email"
+    ],
+    "tests": [
+      "should return true for a valid email format",
+      "should return false for an empty email",
+      "should return true for a valid email with uppercase letters",
+      "should return false for an invalid email format",
+      "should return true for a valid email with special characters"
+    ]
+  },
+  {
+    "path": "packages/course-app/src/template/src/lib/utils/page.server.test.ts",
+    "framework": "vitest",
+    "describes": [
+      "+page.server load function"
+    ],
+    "tests": [
+      "loads data successfully",
+      "throws error when fetch fails"
+    ]
+  },
+  {
+    "path": "packages/course-app/src/template/src/lib/utils/page.test.ts",
+    "framework": "vitest",
+    "describes": [
+      "+page.svelte"
+    ],
+    "tests": [
+      "renders with correct class",
+      "passes data prop to Home component"
+    ]
+  },
+  {
+    "path": "packages/course-app/src/template/src/lib/utils/toggleMode.test.ts",
+    "framework": "vitest",
+    "describes": [
+      "toggleBodyByMode"
+    ],
+    "tests": [
+      "should add dark class when isDark is true",
+      "should remove dark class when isDark is false",
+      "should handle empty class name",
+      "should preserve existing classes when adding dark mode"
+    ]
+  },
+  {
+    "path": "packages/course-app/src/template/tests/course.spec.ts",
+    "framework": "vitest",
+    "describes": [
+      "Course Page"
+    ],
+    "tests": [
+      "loads initial lesson content correctly",
+      "sidebar navigation works correctly",
+      "toggles dark mode correctly",
+      "mobile sidebar toggle works",
+      "handles unpublished sections correctly",
+      "back to course page link works"
+    ]
+  }
+]

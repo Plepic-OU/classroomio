@@ -16,30 +16,30 @@ An **Abstract Syntax Tree (AST)** is a tree-shaped data structure that represent
 
 Used in diagram footnote labels as `(N)`. Each technology appears with its assigned number in the `techn` field of the relevant Container or Component node.
 
-| # | Technology | Description |
-|---|-----------|-------------|
-| 1 | **SvelteKit 1.x** | Full-stack Svelte framework with file-based routing, server-side rendering, server actions, and API endpoints. The Dashboard uses the Node.js adapter for deployment. |
-| 2 | **Svelte 4** | Reactive UI component compiler that outputs vanilla JavaScript with zero runtime overhead. Components use `$:` reactive declarations compiled away entirely at build time. |
-| 3 | **Hono 4** | Lightweight, edge-first HTTP framework for Node.js and Cloudflare Workers with a typed middleware chain, Zod validation helpers, and built-in OpenAPI support. |
-| 4 | **Node.js** | JavaScript runtime (v20) hosting the Hono API server as a long-running process on port 3002. Handles tasks too slow or stateful for SvelteKit server routes. |
-| 5 | **Supabase** | Open-source Firebase alternative providing managed PostgreSQL, Auth, Realtime subscriptions, and Storage in one platform. Both apps use `@supabase/supabase-js`. |
-| 6 | **PostgreSQL** | Open-source relational database backing all persistent data. Row-Level Security (RLS) policies enforce multi-tenant isolation per organisation at the database layer. |
-| 7 | **Supabase Auth** | JWT-based authentication supporting email/password, magic links, and OAuth. The API validates tokens in `middlewares/auth.ts`; the Dashboard manages sessions via the JS client. |
-| 8 | **Supabase Realtime** | WebSocket broadcast layer built on PostgreSQL logical replication. The Dashboard subscribes to row changes for live activity feeds and notifications. |
-| 9 | **TypeScript** | Statically typed superset of JavaScript used across the entire monorepo. The Dashboard imports `@cio/api/rpc-types` for compile-time type safety on all API calls. |
-| 10 | **Zod** | TypeScript-first schema validation library used in the API for env var parsing and request body validation. Schemas serve as runtime guards and TypeScript type generators simultaneously. |
-| 11 | **Redis (ioredis)** | In-memory key-value store used by the API for sliding-window rate limiting and response caching. `utils/redis` centralises key patterns and exposes a Hono middleware factory. |
-| 12 | **AWS S3 / Cloudflare R2** | Object storage for course media, lesson attachments, and generated PDF certificates. The API pre-signs URLs via `@aws-sdk/client-s3`; R2 is the preferred production backend. |
-| 13 | **OpenAI GPT-4** | Completions API for AI-powered exercise grading, custom prompts, and exercise generation. All calls originate from SvelteKit server routes — never the browser. |
-| 14 | **PostHog** | Product analytics SDK (`posthog-js`) for event tracking, session recording, and feature flags. Captures user flows without PII. |
-| 15 | **Sentry** | Error monitoring and performance tracing in both the Dashboard (browser SDK) and API (`@sentry/node`). Sends stack traces and breadcrumbs to Sentry cloud. |
-| 16 | **Nodemailer / ZeptoMail** | Dual-strategy email — Nodemailer is the local dev fallback, ZeptoMail (`zeptomail`) is the production provider. The API mail service selects the transport via env var. |
-| 17 | **Carbon Design System** | IBM open-source design system providing Svelte components (`carbon-components-svelte`) and data charts (`@carbon/charts-svelte`) used in org/analytics views. |
-| 18 | **Tailwind CSS** | Utility-first CSS framework for all Dashboard styling. Configured with `@tailwindcss/forms` and `@tailwindcss/typography` plugins. |
-| 19 | **Polar** | Open-source billing platform for course subscriptions. The Dashboard integrates via `@polar-sh/sveltekit` for checkout, webhooks, and the customer portal. |
-| 20 | **KaTeX** | Fast server-side LaTeX math renderer. The API's `routes/course/katex.ts` endpoint converts LaTeX strings to HTML for lesson content display. |
-| 21 | **pnpm** | Fast, workspace-aware package manager using a content-addressable store and symlinked `node_modules`. Links local packages (`@cio/api`, `shared`) across the monorepo. |
-| 22 | **Turborepo** | Build orchestrator that caches and parallelises workspace tasks. The Dashboard build depends on the API build to ensure `rpc-types.ts` is compiled first. |
+| #  | Technology                 | Description                                                                                                                                                                                |
+|----|----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1  | **SvelteKit 1.x**          | Full-stack Svelte framework with file-based routing, server-side rendering, server actions, and API endpoints. The Dashboard uses the Node.js adapter for deployment.                      |
+| 2  | **Svelte 4**               | Reactive UI component compiler that outputs vanilla JavaScript with zero runtime overhead. Components use `$:` reactive declarations compiled away entirely at build time.                 |
+| 3  | **Hono 4**                 | Lightweight, edge-first HTTP framework for Node.js and Cloudflare Workers with a typed middleware chain, Zod validation helpers, and built-in OpenAPI support.                             |
+| 4  | **Node.js**                | JavaScript runtime (v20) hosting the Hono API server as a long-running process on port 3002. Handles tasks too slow or stateful for SvelteKit server routes.                               |
+| 5  | **Supabase**               | Open-source Firebase alternative providing managed PostgreSQL, Auth, Realtime subscriptions, and Storage in one platform. Both apps use `@supabase/supabase-js`.                           |
+| 6  | **PostgreSQL**             | Open-source relational database backing all persistent data. Row-Level Security (RLS) policies enforce multi-tenant isolation per organisation at the database layer.                      |
+| 7  | **Supabase Auth**          | JWT-based authentication supporting email/password, magic links, and OAuth. The API validates tokens in `middlewares/auth.ts`; the Dashboard manages sessions via the JS client.           |
+| 8  | **Supabase Realtime**      | WebSocket broadcast layer built on PostgreSQL logical replication. The Dashboard subscribes to row changes for live activity feeds and notifications.                                      |
+| 9  | **TypeScript**             | Statically typed superset of JavaScript used across the entire monorepo. The Dashboard imports `@cio/api/rpc-types` for compile-time type safety on all API calls.                         |
+| 10 | **Zod**                    | TypeScript-first schema validation library used in the API for env var parsing and request body validation. Schemas serve as runtime guards and TypeScript type generators simultaneously. |
+| 11 | **Redis (ioredis)**        | In-memory key-value store used by the API for sliding-window rate limiting and response caching. `utils/redis` centralises key patterns and exposes a Hono middleware factory.             |
+| 12 | **AWS S3 / Cloudflare R2** | Object storage for course media, lesson attachments, and generated PDF certificates. The API pre-signs URLs via `@aws-sdk/client-s3`; R2 is the preferred production backend.              |
+| 13 | **OpenAI GPT-4**           | Completions API for AI-powered exercise grading, custom prompts, and exercise generation. All calls originate from SvelteKit server routes — never the browser.                            |
+| 14 | **PostHog**                | Product analytics SDK (`posthog-js`) for event tracking, session recording, and feature flags. Captures user flows without PII.                                                            |
+| 15 | **Sentry**                 | Error monitoring and performance tracing in both the Dashboard (browser SDK) and API (`@sentry/node`). Sends stack traces and breadcrumbs to Sentry cloud.                                 |
+| 16 | **Nodemailer / ZeptoMail** | Dual-strategy email — Nodemailer is the local dev fallback, ZeptoMail (`zeptomail`) is the production provider. The API mail service selects the transport via env var.                    |
+| 17 | **Carbon Design System**   | IBM open-source design system providing Svelte components (`carbon-components-svelte`) and data charts (`@carbon/charts-svelte`) used in org/analytics views.                              |
+| 18 | **Tailwind CSS**           | Utility-first CSS framework for all Dashboard styling. Configured with `@tailwindcss/forms` and `@tailwindcss/typography` plugins.                                                         |
+| 19 | **Polar**                  | Open-source billing platform for course subscriptions. The Dashboard integrates via `@polar-sh/sveltekit` for checkout, webhooks, and the customer portal.                                 |
+| 20 | **KaTeX**                  | Fast server-side LaTeX math renderer. The API's `routes/course/katex.ts` endpoint converts LaTeX strings to HTML for lesson content display.                                               |
+| 21 | **pnpm**                   | Fast, workspace-aware package manager using a content-addressable store and symlinked `node_modules`. Links local packages (`@cio/api`, `shared`) across the monorepo.                     |
+| 22 | **Turborepo**              | Build orchestrator that caches and parallelises workspace tasks. The Dashboard build depends on the API build to ensure `rpc-types.ts` is compiled first.                                  |
 
 ---
 

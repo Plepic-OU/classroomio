@@ -129,3 +129,5 @@ All other keys (OpenAI, Unsplash, Lemon Squeezy, Cloudflare, Sentry) are optiona
 @docs/c4/layer3-api.md
 
 Database schema (load on demand): [docs/c4/database.md](docs/c4/database.md)
+
+Test coverage (functional, load on demand): [docs/test-coverage.md](docs/test-coverage.md)
