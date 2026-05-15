@@ -42,3 +42,6 @@ vite.config.ts*.mjs
 
 # Claude Code tool-input snapshots
 .claude/tool-inputs/
+
+# GitHub CLI token (never commit)
+.devcontainer/github-token
