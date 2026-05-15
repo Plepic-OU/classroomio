@@ -120,3 +120,12 @@ PORT=3002
 ```
 
 All other keys (OpenAI, Unsplash, Lemon Squeezy, Cloudflare, Sentry) are optional for local development.
+
+## Architecture maps (C4)
+
+@docs/c4/layer1-context.md
+@docs/c4/layer2-containers.md
+@docs/c4/layer3-dashboard.md
+@docs/c4/layer3-api.md
+
+Database schema (load on demand): [docs/c4/database.md](docs/c4/database.md)
