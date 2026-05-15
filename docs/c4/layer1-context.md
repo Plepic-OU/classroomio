@@ -1,0 +1,38 @@
+# C4 Layer 1 — System Context
+
+ClassroomIO from the outside: who uses it and which third-party systems it depends on.
+
+```mermaid
+C4Context
+  title ClassroomIO — System Context
+
+  Person(teacher, "Teacher / Admin", "Creates and manages courses; grades work; manages organisations")
+  Person(student, "Student", "Takes courses; submits work; joins via invite links")
+
+  System(classroomio, "ClassroomIO", "Open-source LMS — dashboard; API; marketing; docs; standalone course viewer")
+
+  System_Ext(supabase, "Supabase", "Postgres database; auth; realtime; storage; edge functions")
+  System_Ext(r2, "Cloudflare R2", "Object storage for uploads (S3 API)")
+  System_Ext(smtp, "SMTP / Zeptomail", "Transactional email delivery")
+  System_Ext(openai, "OpenAI", "AI completions for lesson generation")
+  System_Ext(stripe, "Stripe", "Legacy subscription billing")
+  System_Ext(polar, "Polar", "Current subscription billing")
+  System_Ext(posthog, "PostHog", "Product analytics")
+  System_Ext(redis, "Redis", "Rate-limit state for API")
+  System_Ext(sentry, "Sentry", "Error monitoring")
+  System_Ext(senja, "Senja", "Embedded testimonials widget")
+
+  Rel(teacher, classroomio, "Authors courses; manages org", "HTTPS")
+  Rel(student, classroomio, "Learns; submits work", "HTTPS")
+
+  Rel(classroomio, supabase, "Reads/writes; auth; realtime", "HTTPS")
+  Rel(classroomio, r2, "Stores uploads", "S3 API")
+  Rel(classroomio, smtp, "Sends email", "SMTP")
+  Rel(classroomio, openai, "AI completions", "HTTPS")
+  Rel(classroomio, stripe, "Legacy subscriptions", "HTTPS / webhook")
+  Rel(classroomio, polar, "Subscriptions", "HTTPS / webhook")
+  Rel(classroomio, posthog, "Analytics events", "HTTPS")
+  Rel(classroomio, redis, "Rate limiting", "RESP")
+  Rel(classroomio, sentry, "Error reports", "HTTPS")
+  Rel(classroomio, senja, "Testimonials widget", "HTTPS / embed")
+```

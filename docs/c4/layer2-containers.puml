@@ -1,0 +1,58 @@
+@startuml ClassroomIO-L2-Containers
+!include <C4/C4_Container>
+
+LAYOUT_WITH_LEGEND()
+title ClassroomIO — Container view
+
+Person(teacher, "Teacher / Admin", "Authors courses; manages org")
+Person(student, "Student", "Learns; submits work")
+
+System_Boundary(cio, "ClassroomIO") {
+  Container(dashboard, "Dashboard", "SvelteKit 4", "Main LMS UI. Talks to Supabase directly for reads/writes; delegates long-running work to the API")
+  Container(api, "API", "Hono 4 on Node", "Async tasks — PDFs; uploads; KaTeX; course cloning; email")
+  Container(marketing, "Marketing site", "SvelteKit 2", "Landing / marketing pages")
+  Container(docs, "Docs site", "React Start (TanStack Router)", "Documentation")
+  Container(course_app, "Course App", "SvelteKit 5", "Standalone public course viewer")
+  ContainerDb(db, "Supabase Postgres", "Postgres + RLS", "Core data store — ~39 tables; 37 migrations; RLS-protected")
+  Container(edge_fns, "Supabase Edge Functions", "Deno", "notify; grades-tmp")
+}
+
+System_Ext(supabase_auth, "Supabase Auth", "Sessions and user auth")
+System_Ext(r2, "Cloudflare R2", "Object storage (S3 API)")
+System_Ext(smtp, "SMTP / Zeptomail", "Transactional email")
+System_Ext(openai, "OpenAI", "AI completions")
+System_Ext(stripe, "Stripe", "Legacy billing")
+System_Ext(polar, "Polar", "Current billing")
+System_Ext(posthog, "PostHog", "Product analytics")
+System_Ext(redis, "Redis", "Rate-limit state")
+System_Ext(sentry, "Sentry", "Error monitoring")
+System_Ext(senja, "Senja", "Testimonials widget")
+
+Rel(teacher, dashboard, "Uses", "HTTPS")
+Rel(student, dashboard, "Uses", "HTTPS")
+Rel(student, course_app, "Views public courses", "HTTPS")
+Rel(teacher, marketing, "Reads", "HTTPS")
+Rel(teacher, docs, "Reads", "HTTPS")
+
+Rel(dashboard, db, "Reads/writes", "Supabase JS / RLS")
+Rel(dashboard, supabase_auth, "Sign in / session", "HTTPS")
+Rel(dashboard, api, "Async tasks; typed RPC", "HTTPS / JSON")
+Rel(dashboard, openai, "AI completions (server routes)", "HTTPS")
+Rel(dashboard, stripe, "Subscriptions (legacy)", "HTTPS / webhook")
+Rel(dashboard, polar, "Subscriptions", "HTTPS / webhook")
+Rel(dashboard, posthog, "Analytics events", "HTTPS")
+Rel(dashboard, senja, "Testimonials embed", "HTTPS")
+
+Rel(api, db, "Reads/writes", "service role")
+Rel(api, supabase_auth, "Validates bearer tokens", "HTTPS")
+Rel(api, r2, "Presigns / stores uploads", "S3 API")
+Rel(api, smtp, "Sends email", "SMTP")
+Rel(api, redis, "Rate-limit counters", "RESP")
+Rel(api, sentry, "Error reports", "HTTPS")
+
+Rel(marketing, posthog, "Analytics events", "HTTPS")
+Rel(course_app, posthog, "Analytics events", "HTTPS")
+
+Rel(edge_fns, db, "Reads/writes", "Postgres")
+
+@enduml
