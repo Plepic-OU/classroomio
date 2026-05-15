@@ -39,3 +39,7 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+
+# c4-model skill: AST extractor output + isolated deps
+.claude/skills/*/.out/
+.claude/skills/*/node_modules/

@@ -1,0 +1,9 @@
+{
+  "name": "c4-model-skill",
+  "private": true,
+  "type": "module",
+  "description": "Local deps for the c4-model skill's AST extractor. Isolated from the workspace.",
+  "dependencies": {
+    "ts-morph": "^24.0.0"
+  }
+}
