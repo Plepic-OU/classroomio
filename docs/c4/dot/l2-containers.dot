@@ -2,7 +2,7 @@
 // Render: dot -Tsvg <file> -o out.svg
 
 digraph L2 {
-  graph [label="ClassroomIO — Containers", labelloc=t, fontsize=14, fontname="Helvetica", rankdir=TB, splines=ortho, pad=0.6, nodesep=0.8, ranksep=1.2, compound=true]
+  graph [label="ClassroomIO — Containers", labelloc=t, fontsize=14, fontname="Helvetica", rankdir=TB, pad=0.6, nodesep=0.8, ranksep=1.2, compound=true]
   edge [fontname="Helvetica", fontsize=9, color="#555555"]
 
   // Users

@@ -2,7 +2,7 @@
 // Render: dot -Tsvg <file> -o out.svg
 
 digraph L3_dashboard {
-  graph [label="Dashboard (SvelteKit) — Components", labelloc=t, fontsize=14, fontname="Helvetica", rankdir=LR, splines=ortho, pad=0.6, nodesep=0.5, ranksep=1.5, compound=true]
+  graph [label="Dashboard (SvelteKit) — Components", labelloc=t, fontsize=14, fontname="Helvetica", rankdir=LR, pad=0.6, nodesep=0.5, ranksep=1.5, compound=true]
   edge [fontname="Helvetica", fontsize=8, color="#555555"]
 
   // External systems
