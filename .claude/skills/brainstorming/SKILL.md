@@ -39,6 +39,12 @@ Start by understanding the current project context, then ask questions one at a 
 - If a project-specific directory is defined, use that location for the design document
 - Otherwise, use the default: `docs/plans/YYYY-MM-DD-<topic>-design.md`
 
+**Validation (automatic — do not skip):**
+- Immediately after writing the design document, invoke the `validate-design-document` skill on it via the Skill tool, passing the document's absolute path as the argument.
+- This runs the expert validator subagents in parallel and produces Critical / Warning / Note findings.
+- Work through the validator results with the user (auto-apply mechanical fixes, surface conflicts and judgment calls) before considering the design "done."
+- Do NOT ask the user whether to validate — validation is part of the brainstorming-skill contract. The only acceptable reason to skip is if the user explicitly says "skip validation" in this turn.
+
 ~~**Implementation:**
 - Ask user: "Ready to set up for implementation?"
 - Act depending on the answer~~
