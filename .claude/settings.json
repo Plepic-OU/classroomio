@@ -16,7 +16,18 @@
         "hooks": [
           {
             "type": "command",
-            "command": "input=$(cat); if printf '%s' \"$input\" | grep -qE 'github-token'; then printf 'Blocked by token-block hook: tool input references a protected credential filename. Refusing to read, write, or otherwise expose secrets. If you need a token, use an env var or secret manager — never inline the literal filename in a tool call.\\n' >&2; exit 2; fi; exit 0"
+            "command": "input=$(cat); if printf '%s' \"$input\" | grep -qE 'github-token'; then ts=$(date -u +\"%Y-%m-%dT%H:%M:%SZ\") && mkdir -p .claude/audit && printf '%s\\t%s\\n' \"$ts\" \"$input\" >> .claude/audit/blocked-calls.log; printf 'Blocked by token-block hook: tool input references a protected credential filename. Refusing to read, write, or otherwise expose secrets. If you need a token, use an env var or secret manager — never inline the literal filename in a tool call.\\n' >&2; exit 2; fi; exit 0"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p .claude/tool-outputs && input=$(cat) && name=$(printf '%s' \"$input\" | jq -r '.tool_name // \"unknown\"') && printf '%s' \"$input\" | jq '.tool_response // .tool_output // .' > \".claude/tool-outputs/${name}.json\" || true"
           }
         ]
       }

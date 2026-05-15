@@ -51,6 +51,10 @@ vite.config.ts*.mjs
 
 # Claude Code captured tool inputs (observability hook output)
 .claude/tool-inputs/
+.claude/tool-outputs/
+
+# Claude Code audit log for blocked tool calls
+.claude/audit/
 
 # C4 model extractor caches (regenerated on demand by the c4-model skill)
 docs/c4/.cache/
