@@ -353,6 +353,53 @@ C4Container
 `;
 }
 
+// ---------------------------------------------------------------------------
+// Grouped component table — readable in plain text / context
+// ---------------------------------------------------------------------------
+
+interface Group { label: string; match: (key: string) => boolean }
+
+const DASHBOARD_GROUPS: Group[] = [
+  { label: 'UI Components (`lib/components/`)',  match: k => k.startsWith('lib/components/') },
+  { label: 'Utilities (`lib/utils/`)',            match: k => k.startsWith('lib/utils/') },
+  { label: 'Server Routes (`routes/api/`)',       match: k => k.startsWith('routes/api/') },
+  { label: 'Page Routes (`routes/`)',             match: k => k.startsWith('routes/') && !k.startsWith('routes/api/') },
+  { label: 'Other',                               match: () => true },
+];
+
+const API_GROUPS: Group[] = [
+  { label: 'Route Handlers (`routes/`)',          match: k => k.startsWith('routes') },
+  { label: 'Services',                            match: k => k.startsWith('services') },
+  { label: 'Utils',                               match: k => k.startsWith('utils') },
+  { label: 'Types',                               match: k => k.startsWith('types') },
+  { label: 'Middleware',                          match: k => k.startsWith('middlewares') },
+  { label: 'Other',                               match: () => true },
+];
+
+function buildComponentTable(app: AppData): string {
+  const groups = app.name === 'dashboard' ? DASHBOARD_GROUPS : API_GROUPS;
+  const assigned = new Set<string>();
+  const sections: string[] = [];
+
+  for (const group of groups) {
+    const members = app.components.filter(c => !assigned.has(c.key) && group.match(c.key));
+    if (members.length === 0) continue;
+    members.forEach(c => assigned.add(c.key));
+
+    const rows = members.map(c => {
+      const files = c.svelteCount > 0 ? `${c.svelteCount} svelte + ${c.fileCount} ts` : `${c.fileCount} ts`;
+      const desc = c.description || '—';
+      return `| \`${c.key}\` | ${files} | ${desc} |`;
+    });
+
+    sections.push(
+      `### ${group.label}\n\n| Path | Files | Description |\n|------|-------|-------------|\n${rows.join('\n')}`
+    );
+  }
+
+  return `## Components\n\n${sections.join('\n\n')}`;
+}
+
 function l3Component(app: AppData): string {
   const titleMap: Record<string, string> = {
     dashboard: 'Dashboard (SvelteKit)',
@@ -413,10 +460,15 @@ Regenerate with \`/c4-model\` after adding new routes or services.`,
   };
 
   const description = descriptionMap[app.name] ?? '';
+  const table = buildComponentTable(app);
 
   return `# C4 L3 — ${title} Components
 
 ${description}
+
+${table}
+
+## Diagram
 
 \`\`\`mermaid
 C4Component

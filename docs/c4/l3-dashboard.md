@@ -6,6 +6,77 @@ Components are grouped from the source tree at depth 2 (e.g. `lib/components`, `
 
 Regenerate with `/c4-model` after adding routes or refactoring `lib/`.
 
+## Components
+
+### UI Components (`lib/components/`)
+
+| Path | Files | Description |
+|------|-------|-------------|
+| `lib/components/Analytics` | 3 svelte + 1 ts | UI components (Svelte) |
+| `lib/components/Apps` | 9 svelte + 6 ts | UI components (Svelte) |
+| `lib/components/Confetti` | 1 svelte + 1 ts | UI components (Svelte) |
+| `lib/components/Course` | 68 svelte + 23 ts | UI components (Svelte) |
+| `lib/components/CourseLandingPage` | 15 svelte + 4 ts | UI components (Svelte) |
+| `lib/components/Courses` | 7 svelte + 3 ts | UI components (Svelte) |
+| `lib/components/Navigation` | 7 svelte + 1 ts | UI components (Svelte) |
+| `lib/components/Org` | 44 svelte + 2 ts | UI components (Svelte) |
+| `lib/components/Page` | 5 svelte + 1 ts | UI components (Svelte) |
+| `lib/components/PrimaryButton` | 1 svelte + 1 ts | UI components (Svelte) |
+| `lib/components/Question` | 6 svelte + 1 ts | UI components (Svelte) |
+| `lib/components/Snackbar` | 1 svelte + 2 ts | UI components (Svelte) |
+| `lib/components/TextEditor` | 2 svelte + 1 ts | UI components (Svelte) |
+| `lib/components/UploadWidget` | 1 svelte + 1 ts | UI components (Svelte) |
+| `lib/components/WelcomeModal` | 1 svelte + 1 ts | UI components (Svelte) |
+
+### Utilities (`lib/utils/`)
+
+| Path | Files | Description |
+|------|-------|-------------|
+| `lib/utils/constants` | 9 ts | Utility functions |
+| `lib/utils/functions` | 38 ts | Utility functions |
+| `lib/utils/services` | 21 ts | Data access & business logic |
+| `lib/utils/store` | 5 ts | Reactive state stores |
+| `lib/utils/types` | 9 ts | Utility functions |
+
+### Server Routes (`routes/api/`)
+
+| Path | Files | Description |
+|------|-------|-------------|
+| `routes/api/admin` | 2 ts | Route handlers |
+| `routes/api/analytics` | 2 ts | Route handlers |
+| `routes/api/completion` | 4 ts | Route handlers |
+| `routes/api/courses` | 7 ts | Route handlers |
+| `routes/api/domain` | 1 ts | Route handlers |
+| `routes/api/email` | 11 ts | Route handlers |
+| `routes/api/org` | 2 ts | Route handlers |
+| `routes/api/polar` | 3 ts | Route handlers |
+| `routes/api/unsplash` | 1 ts | Route handlers |
+| `routes/api/verify` | 1 ts | Route handlers |
+
+### Page Routes (`routes/`)
+
+| Path | Files | Description |
+|------|-------|-------------|
+| `routes/course/[slug]` | 1 svelte + 1 ts | Route handlers |
+| `routes/courses/[id]` | 14 svelte + 13 ts | Route handlers |
+| `routes/csp-report` | 1 ts | Route handlers |
+| `routes/invite/s` | 1 svelte + 1 ts | Route handlers |
+| `routes/invite/t` | 1 svelte + 1 ts | Route handlers |
+| `routes/lms/community` | 3 svelte + 1 ts | Route handlers |
+| `routes/org/[slug]` | 15 svelte + 7 ts | Route handlers |
+| `routes/profile/[id]` | 1 svelte + 1 ts | Route handlers |
+
+### Other
+
+| Path | Files | Description |
+|------|-------|-------------|
+| `lib` | 1 ts | — |
+| `mail` | 1 ts | Email handling |
+| `root` | 1 ts | — |
+| `routes` | 3 svelte + 2 ts | Route handlers |
+
+## Diagram
+
 ```mermaid
 C4Component
   title Dashboard (SvelteKit) — Components

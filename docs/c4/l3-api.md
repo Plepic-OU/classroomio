@@ -6,6 +6,48 @@ The API follows a standard layered structure: **routes** (Hono handlers), **serv
 
 Regenerate with `/c4-model` after adding new routes or services.
 
+## Components
+
+### Route Handlers (`routes/`)
+
+| Path | Files | Description |
+|------|-------|-------------|
+| `routes` | 6 ts | Route handlers |
+
+### Services
+
+| Path | Files | Description |
+|------|-------|-------------|
+| `services` | 2 ts | Data access & business logic |
+
+### Utils
+
+| Path | Files | Description |
+|------|-------|-------------|
+| `utils` | 15 ts | Utility functions |
+
+### Types
+
+| Path | Files | Description |
+|------|-------|-------------|
+| `types` | 5 ts | Type definitions |
+
+### Middleware
+
+| Path | Files | Description |
+|------|-------|-------------|
+| `middlewares` | 2 ts | Request middleware |
+
+### Other
+
+| Path | Files | Description |
+|------|-------|-------------|
+| `config` | 1 ts | App configuration |
+| `constants` | 3 ts | Shared constants |
+| `root` | 3 ts | — |
+
+## Diagram
+
 ```mermaid
 C4Component
   title API (Hono) — Components
