@@ -58,6 +58,14 @@ Migrations live in `supabase/migrations/`, seed data in `supabase/seed.sql`.
 
 ## Architecture
 
+C4 model (Mermaid; regenerate via `/c4-model`):
+- @docs/c4/layer1-context.md — system context
+- @docs/c4/layer2-containers.md — container view
+- @docs/c4/layer3-api.md — API container components
+- @docs/c4/layer3-dashboard.md — dashboard container components
+
+Database schema (load on demand): `docs/c4/database.md`
+
 ```
 apps/
   dashboard/          SvelteKit 4 LMS UI (port 5173)

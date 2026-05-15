@@ -52,3 +52,8 @@ vite.config.ts*.mjs
 
 # GitHub auth token for devcontainer — never commit
 .devcontainer/github-token
+# c4-model skill — regenerated AST output and self-installed tooling
+docs/c4/components.json
+.claude/skills/c4-model/node_modules/
+.claude/skills/c4-model/package.json
+.claude/skills/c4-model/package-lock.json
