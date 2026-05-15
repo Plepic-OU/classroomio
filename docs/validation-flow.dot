@@ -1,0 +1,106 @@
+digraph validation_flow {
+  rankdir=TB
+  fontname="Helvetica"
+  node [fontname="Helvetica" fontsize=12]
+  edge [fontname="Helvetica" fontsize=10]
+
+  // ── Entry ──────────────────────────────────────────────────────────
+  user [label="User" shape=ellipse style=filled fillcolor="#e8f4fd"]
+
+  subgraph cluster_brainstorm {
+    label="brainstorming skill"
+    style=dashed color="#999999"
+    brainstorm_dialogue [label="Q&A dialogue\n(one question at a time)" shape=box style=filled fillcolor="#fff9e6"]
+    design_sections    [label="Present design\nin sections" shape=box style=filled fillcolor="#fff9e6"]
+  }
+
+  design_doc [label="docs/plans/\nYYYY-MM-DD-<topic>-design.md" shape=note style=filled fillcolor="#f0fff0"]
+
+  // ── Validate entry ─────────────────────────────────────────────────
+  subgraph cluster_validate {
+    label="validate-design-document skill"
+    style=dashed color="#999999"
+
+    read_doc   [label="Read design doc" shape=box style=filled fillcolor="#fff9e6"]
+    select_val [label="Select relevant\nvalidators (4–9)" shape=diamond style=filled fillcolor="#ffe6cc"]
+
+    // ── Validators ─────────────────────────────────────────────────
+    subgraph cluster_agents {
+      label="Parallel general-purpose agents"
+      style=filled fillcolor="#f5f5f5" color="#aaaaaa"
+
+      // always-run
+      simplifier [label="Simplifier\n● always" shape=box style=filled fillcolor="#ffe6e6"]
+      general    [label="General Design Quality\n● always" shape=box style=filled fillcolor="#ffe6e6"]
+
+      // conditional
+      supabase   [label="Supabase & Database" shape=box style=filled fillcolor="#e6eeff"]
+      auth       [label="Auth & Permissions"  shape=box style=filled fillcolor="#e6eeff"]
+      svelte     [label="SvelteKit Frontend"  shape=box style=filled fillcolor="#e6eeff"]
+      api        [label="API Contract"        shape=box style=filled fillcolor="#e6eeff"]
+      monorepo   [label="Monorepo & Integration" shape=box style=filled fillcolor="#e6eeff"]
+      devcon     [label="Devcontainer"        shape=box style=filled fillcolor="#e6eeff"]
+      e2e        [label="E2E Tests"           shape=box style=filled fillcolor="#e6eeff"]
+    }
+
+    // ── Triage ──────────────────────────────────────────────────────
+    triage [label="Triage findings" shape=diamond style=filled fillcolor="#ffe6cc"]
+
+    subgraph cluster_buckets {
+      label="Buckets"
+      style=filled fillcolor="#fafafa" color="#aaaaaa"
+      bucket_a [label="Bucket A\nAuto-apply\n(clear, unambiguous,\nno conflicts)" shape=box style=filled fillcolor="#ccffcc"]
+      bucket_b [label="Bucket B\nConflicts\n(validators disagree)" shape=box style=filled fillcolor="#ffcccc"]
+      bucket_c [label="Bucket C\nUser input\n(uncertain / significant)" shape=box style=filled fillcolor="#ffffcc"]
+    }
+
+    apply_a  [label="Apply changes\nto design doc" shape=box style=filled fillcolor="#ccffcc"]
+    present  [label="Present to user:\nconflicts + decisions" shape=box style=filled fillcolor="#fff9e6"]
+  }
+
+  updated_doc [label="Updated\ndesign document" shape=note style=filled fillcolor="#f0fff0"]
+
+  // ── Edges ──────────────────────────────────────────────────────────
+
+  user -> brainstorm_dialogue
+  brainstorm_dialogue -> design_sections [label="refine"]
+  design_sections -> brainstorm_dialogue [label="section\nfeedback" style=dashed]
+  design_sections -> design_doc [label="write"]
+
+  design_doc -> read_doc [label="auto-triggers\n(no user prompt)"]
+  read_doc -> select_val
+
+  // selector fans out to all agents
+  select_val -> simplifier  [label="always"]
+  select_val -> general     [label="always"]
+  select_val -> supabase    [label="if touches\ndata/schema" style=dashed]
+  select_val -> auth        [label="if touches\naccess control" style=dashed]
+  select_val -> svelte      [label="if touches\nUI/routing" style=dashed]
+  select_val -> api         [label="if touches\nHono API" style=dashed]
+  select_val -> monorepo    [label="if touches\nbuild/packages" style=dashed]
+  select_val -> devcon      [label="if touches\ndev env" style=dashed]
+  select_val -> e2e         [label="if touches\ntests" style=dashed]
+
+  // all agents report to triage
+  simplifier -> triage
+  general    -> triage
+  supabase   -> triage
+  auth       -> triage
+  svelte     -> triage
+  api        -> triage
+  monorepo   -> triage
+  devcon     -> triage
+  e2e        -> triage
+
+  triage -> bucket_a
+  triage -> bucket_b
+  triage -> bucket_c
+
+  bucket_a -> apply_a
+  apply_a  -> updated_doc
+
+  bucket_b -> present
+  bucket_c -> present
+  present  -> user [label="decisions\nrequested"]
+  user     -> apply_a [label="accepted\nchanges"]
+}
