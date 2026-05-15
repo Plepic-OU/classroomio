@@ -280,6 +280,29 @@ ClassroomIO sits between two types of users — **Teachers/Admins** who create a
 
 This diagram treats ClassroomIO as a single black box. See [L2 Containers](l2-containers.md) to zoom into its internal structure.
 
+## Elements
+
+### Users
+
+| Person | Role |
+|--------|------|
+| Teacher / Admin | Creates and manages courses, exercises, and students |
+| Student | Enrols in courses, submits exercises, earns certificates |
+
+### External Systems
+
+| System | Purpose |
+|--------|---------|
+| Supabase | PostgreSQL database, row-level auth, and file storage |
+| Cloudflare Stream | Video upload presigning and adaptive streaming |
+| AWS S3 | Course asset and file storage |
+| ZeptoMail / SMTP | Transactional email (invites, submissions, welcome) |
+| Redis | API rate-limiting and caching |
+| Polar.sh / Lemon Squeezy | Subscription billing and plan management |
+| PostHog | Product analytics and event tracking |
+
+## Diagram
+
 \`\`\`mermaid
 C4Context
   title ClassroomIO — System Context
@@ -318,6 +341,34 @@ ClassroomIO is composed of three deployable containers. The **Dashboard** (Svelt
 Key architectural decision: the API does **not** own the database. Both the Dashboard and the API use the Supabase SDK; the difference is that the Dashboard operates under user-scoped RLS policies while the API uses the service-role key for privileged operations.
 
 See [L3 Dashboard](l3-dashboard.md) and [L3 API](l3-api.md) for the internal component structure.
+
+## Elements
+
+### Internal Containers
+
+| Container | Tech | Port | Purpose |
+|-----------|------|------|---------|
+| Dashboard | SvelteKit 2 / Svelte 4 | 5173 | Primary LMS UI for teachers and students |
+| API | Hono / Node.js | 3002 | Async operations: PDF certs, video presigning, email dispatch |
+| Course App | Svelte 5 | — | Embeddable course viewer, published to npm |
+
+### Data & Auth
+
+| System | Type | Purpose |
+|--------|------|---------|
+| PostgreSQL | Database | All LMS data: orgs, courses, lessons, exercises, submissions, users |
+| Supabase Auth | Auth service | JWT-based session management and RLS policy enforcement |
+| Redis | Cache | API rate-limiting via ioredis |
+
+### External Services
+
+| Service | Used by | Purpose |
+|---------|---------|---------|
+| Cloudflare Stream | API | Video upload presigning and streaming |
+| AWS S3 | API | Course asset storage |
+| ZeptoMail / SMTP | API | Email delivery via Nodemailer |
+
+## Diagram
 
 \`\`\`mermaid
 C4Container
