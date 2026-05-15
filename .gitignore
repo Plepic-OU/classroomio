@@ -8,6 +8,13 @@ node_modules
 # testing
 coverage
 
+# Playwright BDD generated tests
+tests/e2e/.features-gen/
+
+# Playwright artifacts
+playwright-report/
+test-results/
+
 # next.js
 .next/
 out/
