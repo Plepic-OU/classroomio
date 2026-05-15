@@ -9,7 +9,7 @@
  * Output: .claude/skills/c4-model/output/structure.json
  *
  * Config:
- *   DASHBOARD_DEPTH  override depth for dashboard (default 3)
+ *   DASHBOARD_DEPTH  override depth for dashboard (default 4)
  *   API_DEPTH        override depth for api (default 2)
  */
 
@@ -32,7 +32,7 @@ const APPS: AppConfig[] = [
     name: 'dashboard',
     root: path.join(REPO_ROOT, 'apps/dashboard'),
     srcDir: 'src',
-    depth: Number(process.env.DASHBOARD_DEPTH ?? 3),
+    depth: Number(process.env.DASHBOARD_DEPTH ?? 4),
   },
   {
     name: 'api',

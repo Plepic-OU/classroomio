@@ -41,7 +41,7 @@ cd /workspaces/classroomio
 This writes `.claude/skills/c4-model/output/structure.json` (gitignored).
 
 **Inspect the output** — check component counts and warnings:
-- If any component has >50 TS files → increase depth: `DASHBOARD_DEPTH=4 ./apps/api/node_modules/.bin/tsx .claude/skills/c4-model/extract.ts`
+- If any component has >50 TS files → increase depth: `DASHBOARD_DEPTH=5 ./apps/api/node_modules/.bin/tsx .claude/skills/c4-model/extract.ts`
 - Good targets: dashboard ~30–60 components, api ~8–15 components
 
 ### Step 3 — Generate diagrams
@@ -102,9 +102,9 @@ Component granularity is controlled per app:
 
 | App | Default depth | Example keys at that depth |
 |-----|--------------|---------------------------|
-| dashboard | 3 | `lib/components/Course`, `lib/utils/store`, `routes/api/courses` |
+| dashboard | 4 | `lib/components/Course`, `lib/utils/store`, `routes/api/courses` |
 | api | 2 | `routes/course`, `services/course`, `utils/redis` |
 
-Override via env vars: `DASHBOARD_DEPTH=4` or `API_DEPTH=3`.
+Override via env vars: `DASHBOARD_DEPTH=5` or `API_DEPTH=3`.
 
 Rule: if any single component key contains >50 TS files, the depth is too shallow.
