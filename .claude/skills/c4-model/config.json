@@ -1,0 +1,80 @@
+{
+  "$schema": "./config.schema.json",
+  "outputDir": "docs/c4",
+  "cacheDir": "docs/c4/.cache",
+  "fileLimitPerComponent": 50,
+  "apps": {
+    "dashboard": {
+      "displayName": "Dashboard",
+      "rootDir": "apps/dashboard",
+      "tsconfig": "apps/dashboard/tsconfig.json",
+      "srcDir": "apps/dashboard/src",
+      "componentGroups": {
+        "src/lib/components/Course/components": 1,
+        "src/lib/components/Course": 1,
+        "src/lib/components": 1,
+        "src/lib/utils/services": 1,
+        "src/lib/utils/store": 0,
+        "src/lib/utils/functions": 0,
+        "src/lib/utils/constants": 0,
+        "src/lib/utils/types": 0,
+        "src/lib/utils": 1,
+        "src/lib": 1,
+        "src/routes/api": 1,
+        "src/routes": 1,
+        "src/mail": 0
+      },
+      "defaultDepth": 1,
+      "exclude": [
+        "**/__mocks__/**",
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "**/node_modules/**",
+        "**/.svelte-kit/**",
+        "**/build/**",
+        "src/lib/mocks/**"
+      ]
+    },
+    "api": {
+      "displayName": "API",
+      "rootDir": "apps/api",
+      "tsconfig": "apps/api/tsconfig.json",
+      "srcDir": "apps/api/src",
+      "componentGroups": {
+        "src/routes": 1,
+        "src/services": 1,
+        "src/middlewares": 0,
+        "src/utils": 1,
+        "src/config": 0,
+        "src/constants": 0,
+        "src/types": 0
+      },
+      "defaultDepth": 0,
+      "exclude": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "**/node_modules/**",
+        "**/dist/**"
+      ]
+    }
+  },
+  "externalSystems": {
+    "@supabase/": { "name": "Supabase", "kind": "db", "tech": "PostgreSQL + Auth + Storage" },
+    "openai-edge": { "name": "OpenAI", "kind": "external", "tech": "LLM API" },
+    "openai": { "name": "OpenAI", "kind": "external", "tech": "LLM API" },
+    "ai": { "name": "OpenAI", "kind": "external", "tech": "Vercel AI SDK" },
+    "ioredis": { "name": "Redis", "kind": "db", "tech": "Redis" },
+    "redis": { "name": "Redis", "kind": "db", "tech": "Redis" },
+    "@aws-sdk/client-s3": { "name": "S3 / Cloudflare R2", "kind": "external", "tech": "Object storage" },
+    "@aws-sdk/s3-request-presigner": { "name": "S3 / Cloudflare R2", "kind": "external", "tech": "Object storage" },
+    "posthog-js": { "name": "PostHog", "kind": "external", "tech": "Product analytics" },
+    "posthog-node": { "name": "PostHog", "kind": "external", "tech": "Product analytics" },
+    "resend": { "name": "Resend", "kind": "external", "tech": "Email" },
+    "@sendgrid/": { "name": "SendGrid", "kind": "external", "tech": "Email" },
+    "nodemailer": { "name": "SMTP", "kind": "external", "tech": "Email" },
+    "@polar-sh/": { "name": "Polar", "kind": "external", "tech": "Payments" },
+    "stripe": { "name": "Stripe", "kind": "external", "tech": "Payments" },
+    "puppeteer": { "name": "Headless Chromium", "kind": "external", "tech": "PDF rendering" },
+    "@cio/api": { "name": "API service", "kind": "container" }
+  }
+}

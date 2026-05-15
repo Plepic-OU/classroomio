@@ -1,0 +1,12 @@
+{
+  "name": "c4-model-extractor",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "extract": "tsx extract.ts"
+  },
+  "dependencies": {
+    "ts-morph": "^24.0.0",
+    "tsx": "^4.19.2"
+  }
+}
