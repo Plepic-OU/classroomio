@@ -1,0 +1,10 @@
+{
+  "name": "@cio-internal/c4-skill",
+  "version": "1.0.0",
+  "private": true,
+  "description": "C4 model diagram generator for ClassroomIO",
+  "dependencies": {
+    "ts-morph": "^23.0.0",
+    "tsx": "^4.19.0"
+  }
+}

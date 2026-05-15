@@ -33,6 +33,21 @@ pnpm ci                         # Cypress E2E tests
 
 ## Architecture
 
+### C4 Architecture Diagrams
+
+| Layer | Diagram |
+|-------|---------|
+| L1 | [System Context](docs/c4/system-context.md) |
+| L2 | [Containers](docs/c4/containers.md) |
+| L3 | [Dashboard Components](docs/c4/dashboard-components.md) |
+| L3 | [API Components](docs/c4/api-components.md) |
+| DB | [Database Schema](docs/c4/database.md) _(reference only)_ |
+
+@docs/c4/system-context.md
+@docs/c4/containers.md
+@docs/c4/dashboard-components.md
+@docs/c4/api-components.md
+
 ### Apps
 
 | App | Package | Framework | Port | Purpose |

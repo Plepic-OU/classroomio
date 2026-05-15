@@ -9,10 +9,10 @@ RUN npm install -g turbo@1.13.4
 
 # Install Supabase CLI from GitHub releases (pinned version to avoid GitHub API rate limits)
 RUN ARCH=$(dpkg --print-architecture) \
- && VER=2.75.0 \
- && curl -fsSL "https://github.com/supabase/cli/releases/download/v${VER}/supabase_${VER}_linux_${ARCH}.deb" -o /tmp/supabase.deb \
- && dpkg -i /tmp/supabase.deb \
- && rm /tmp/supabase.deb
+    && VER=2.75.0 \
+    && curl -fsSL "https://github.com/supabase/cli/releases/download/v${VER}/supabase_${VER}_linux_${ARCH}.deb" -o /tmp/supabase.deb \
+    && dpkg -i /tmp/supabase.deb \
+    && rm /tmp/supabase.deb
 
 # Install Claude Code globally via npm (avoids native installer's paths outside CLAUDE_CONFIG_DIR)
 # This plays nicer with devcontainer's
