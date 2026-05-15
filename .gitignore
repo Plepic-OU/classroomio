@@ -53,3 +53,6 @@ vite.config.ts*.mjs
 
 # GitHub auth token (never commit)
 .devcontainer/github-token
+
+# C4 model intermediate JSON (diagrams are committed; raw JSON is AI context only)
+docs/c4/components.json

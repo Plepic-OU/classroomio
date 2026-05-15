@@ -74,6 +74,15 @@ The **dashboard** is the primary frontend (SvelteKit). It connects directly to *
 
 `@cio/dashboard#build` depends on `@cio/api#build` (Turbo enforces this). The API exports RPC types consumed by the dashboard.
 
+### C4 Architecture Maps
+
+@docs/c4/l1-system-context.md
+@docs/c4/l2-containers.md
+@docs/c4/l3-dashboard.md
+@docs/c4/l3-api.md
+
+Database schema (load on demand): `docs/c4/database.md`
+
 ## Tech Stack
 
 - **Frontend:** SvelteKit 1.x/2.x, Svelte 4.x/5.x, TailwindCSS, Vite
