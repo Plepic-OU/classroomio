@@ -31,7 +31,7 @@ C4Component
       Component(u_auth,        "Auth helpers",       "TS", "Validate Supabase JWT")
       Component(u_supabase,    "Supabase client",    "TS", "Server-side supabase-js")
       Component(u_s3,          "S3 client",          "TS", "Cloudflare R2 via @aws-sdk")
-      Component(u_redis,       "Redis client",       "TS", "ioredis connection + keys")
+      Component(u_redis,       "Redis client",       "TS", "ioredis connection + keys (3 TS)")
       Component(u_certificate, "Certificate utils",  "TS", "PDF certificate rendering")
       Component(u_cloudflare,  "Cloudflare utils",   "TS", "Image CDN helpers")
       Component(u_email,       "Email helpers",      "TS", "Nodemailer wrapper")

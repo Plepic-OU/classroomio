@@ -12,30 +12,30 @@ C4Component
   Container_Boundary(dashboard, "Dashboard container") {
 
     Boundary(b_routes, "Routes — SvelteKit") {
-      Component(r_courses,    "Teacher courses",  "Svelte routes", "/courses/*  4 TS + 14 Svelte")
-      Component(r_org,        "Org dashboard",    "Svelte routes", "/org/*      3 TS + 15 Svelte")
-      Component(r_lms,        "Student LMS",      "Svelte routes", "/lms/*      9 Svelte")
+      Component(r_courses,    "Teacher courses",  "Svelte routes", "/courses/*  4 TS + 9 JS + 14 Svelte")
+      Component(r_org,        "Org dashboard",    "Svelte routes", "/org/*      3 TS + 4 JS + 15 Svelte")
+      Component(r_lms,        "Student LMS",      "Svelte routes", "/lms/*      1 JS + 9 Svelte")
       Component(r_invite,     "Invite flow",      "Svelte routes", "/invite     2 TS + 2 Svelte")
     }
 
     Boundary(b_api, "Internal /api endpoints — SvelteKit server") {
-      Component(api_courses,    "Courses API",    "TS",  "/api/courses    11 endpoints")
-      Component(api_email,      "Email API",      "TS",  "/api/email      11 endpoints")
-      Component(api_completion, "Completion API", "TS",  "/api/completion AI streaming")
-      Component(api_polar,      "Polar API",      "TS",  "/api/polar      subscriptions")
-      Component(api_analytics,  "Analytics API",  "TS",  "/api/analytics")
-      Component(api_admin,      "Admin API",      "TS",  "/api/admin")
-      Component(api_org,        "Org API",        "TS",  "/api/org")
+      Component(api_courses,    "Courses API",    "TS",  "/api/courses    7 TS endpoints")
+      Component(api_email,      "Email API",      "TS",  "/api/email      11 TS endpoints")
+      Component(api_completion, "Completion API", "TS",  "/api/completion 4 TS (AI streaming)")
+      Component(api_polar,      "Polar API",      "TS",  "/api/polar      3 TS (subscriptions)")
+      Component(api_analytics,  "Analytics API",  "TS",  "/api/analytics  2 TS")
+      Component(api_admin,      "Admin API",      "TS",  "/api/admin      2 TS")
+      Component(api_org,        "Org API",        "TS",  "/api/org        2 TS")
     }
 
     Boundary(b_ui, "UI components") {
-      Component(ui_lesson,   "Lesson UI",   "Svelte", "9 TS + 34 Svelte — lesson player/editor")
-      Component(ui_org,      "Org UI",      "Svelte", "44 Svelte — org settings, audience, members")
-      Component(ui_question, "Question UI", "Svelte", "6 Svelte — quiz/exercise rendering")
+      Component(ui_lesson,   "Lesson UI",   "Svelte", "9 TS + 3 JS + 34 Svelte — lesson player/editor")
+      Component(ui_org,      "Org UI",      "Svelte", "2 TS + 44 Svelte — org settings, audience, members")
+      Component(ui_question, "Question UI", "Svelte", "1 TS + 6 Svelte — quiz/exercise rendering")
     }
 
     Boundary(b_svc, "Services — src/lib/utils/services") {
-      Component(svc_api,      "API client",       "TS", "Wrapper around @cio/api typed RPC")
+      Component(svc_api,      "API client",       "TS", "Wrapper around @cio/api typed RPC (4 TS)")
       Component(svc_courses,  "Course service",   "TS", "Course/lesson CRUD against Supabase")
       Component(svc_org,      "Org service",      "TS", "Org members, settings, invites")
       Component(svc_lms,      "LMS service",      "TS", "Student-side queries")
@@ -44,11 +44,11 @@ C4Component
     }
 
     Boundary(b_util, "Shared utilities — src/lib/utils") {
-      Component(utils_functions,    "Shared functions",  "TS", "Central business-logic hub  44 TS + JS")
+      Component(utils_functions,    "Shared functions",  "TS", "Central business-logic hub  28 TS + 16 JS")
       Component(utils_types,        "Types",             "TS", "9 TS files — referenced by ~everyone")
-      Component(utils_constants,    "Constants",         "TS")
-      Component(utils_store,        "Stores",            "TS", "Svelte stores")
-      Component(utils_translations, "Translations",      "TS")
+      Component(utils_constants,    "Constants",         "TS", "5 TS + 4 JS")
+      Component(utils_store,        "Stores",            "TS", "4 TS + 1 JS — Svelte stores")
+      Component(utils_translations, "Translations",      "JSON", "i18n message bundles (da/de/en/es/fr/hi/pl/pt/ru/vi)")
     }
 
     Boundary(b_mail, "Email templates") {
