@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Filename assembled from pieces to avoid tripping local secret-scanning tooling.
-TOKEN_FILE_NAME="github""-token"
+TOKEN_FILE_NAME="github-token"
 TOKEN_FILE="$(dirname "$0")/${TOKEN_FILE_NAME}"
 
 if [ ! -f "$TOKEN_FILE" ]; then
