@@ -31,8 +31,7 @@
     "9323": { "label": "Playwright Report" },
     "9324": { "label": "Playwright UI" }
   },
-  "postCreateCommand": "bash .devcontainer/setup.sh",
-  "postStartCommand": "bash .devcontainer/gh-auth.sh && echo '✅ ClassroomIO devcontainer is ready. Run: pnpm dev:container'",
+  "postStartCommand": "bash .devcontainer/setup.sh && bash .devcontainer/gh-auth.sh && echo '✅ ClassroomIO devcontainer is ready. Run: pnpm dev:container'",
   "remoteUser": "node",
   "customizations": {}
 }
