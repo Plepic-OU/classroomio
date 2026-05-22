@@ -1,7 +1,5 @@
-import { createBdd } from 'playwright-bdd';
+import { Given, When, Then } from '../../fixtures';
 import { waitForHydration } from '../../helpers/hydration';
-
-const { Given, When, Then } = createBdd();
 
 Given('I am on the login page', async ({ page }) => {
   await page.goto('/login');
@@ -25,5 +23,5 @@ Then('I should be redirected to the org dashboard', async ({ page }) => {
 });
 
 Then('I should see an error message', async ({ page }) => {
-  await page.locator('.text-red-500').waitFor();
+  await page.getByText(/invalid|incorrect|wrong|error/i).waitFor();
 });

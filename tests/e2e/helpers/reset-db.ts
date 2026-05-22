@@ -16,6 +16,10 @@ const PRESERVE_TABLES = [
   'question_type',
   'submissionstatus',
   'currency',
+  // Seeded courses and groups are preserved so enrollment / lesson scenarios
+  // have a course to work with without re-creating one each test.
+  'course',
+  'group',
 ];
 
 const RESET_SQL = `
