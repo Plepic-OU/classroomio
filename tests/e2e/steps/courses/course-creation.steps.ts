@@ -1,7 +1,5 @@
-import { createBdd } from 'playwright-bdd';
+import { Given, When, Then } from '../fixtures';
 import { loginAs } from '../../helpers/login';
-
-const { Given, When, Then } = createBdd();
 
 Given('I am logged in as {string}', async ({ page }, email: string) => {
   await loginAs(page, email);
@@ -17,8 +15,6 @@ When('I click the create course button', async ({ page }) => {
 });
 
 When('I select a course type and proceed', async ({ page }) => {
-  // The NewCourseModal has two steps: step 0 = type selection, step 1 = title entry
-  // Default type (Live Class) is pre-selected, click Next to proceed
   await page.getByRole('button', { name: /next/i }).click();
 });
 

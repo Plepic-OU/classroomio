@@ -36,7 +36,12 @@ async function waitForService(svc: { name: string; url: string }, deadline: numb
     console.log(`  Waiting for ${svc.name} (${svc.url})...`);
     await new Promise((r) => setTimeout(r, RETRY_INTERVAL));
   }
-  throw new Error(`${svc.name} (${svc.url}) did not become ready within timeout`);
+  throw new Error(
+    `${svc.name} (${svc.url}) did not become ready within ${WARMUP_TIMEOUT / 1000}s.\n` +
+    `Start the service before running tests:\n` +
+    `  supabase start\n` +
+    `  pnpm dev:container`
+  );
 }
 
 export default async function globalSetup() {

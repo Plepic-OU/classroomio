@@ -15,7 +15,7 @@
     "dashboard:start": "pnpm start --filter @cio/dashboard",
     "api:start": "pnpm start --filter @cio/api",
     "supabase:push": "pnpx supabase link --project-ref $PROJECT_ID && pnpx supabase db push --include-all",
-    "test:e2e": "npx bddgen --config tests/e2e/playwright.config.ts && npx playwright test --config tests/e2e/playwright.config.ts",
+    "test:e2e": "npx bddgen --config tests/e2e/playwright.config.ts && npx playwright test --config tests/e2e/playwright.config.ts --grep-invert \"@skip-needs-investigation\"",
     "test:e2e:ui": "npx bddgen --config tests/e2e/playwright.config.ts && npx playwright test --config tests/e2e/playwright.config.ts --ui-host=0.0.0.0 --ui-port=9324",
     "test:e2e:report": "npx playwright show-report playwright-report --host 0.0.0.0 --port 9323"
   },

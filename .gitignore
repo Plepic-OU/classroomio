@@ -57,3 +57,6 @@ docs/c4/components-*.json
 
 # Validator benchmark results
 docs/benchmarks/
+
+# Project starter template (standalone tool, has its own git repo)
+claude-project-starter/

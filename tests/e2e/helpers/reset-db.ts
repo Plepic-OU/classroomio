@@ -34,7 +34,7 @@ BEGIN
 END $$;
 `;
 
-export function resetTestData() {
+export async function resetTestData(): Promise<void> {
   execSync(`docker exec -i ${CONTAINER} psql -U postgres`, {
     input: RESET_SQL,
     stdio: ['pipe', 'pipe', 'pipe'],
