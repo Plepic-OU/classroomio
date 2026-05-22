@@ -56,6 +56,28 @@ pnpm test:e2e:ui        # interactive Playwright UI on :9324
 pnpm test:e2e:report    # serve last HTML report on :9323
 ```
 
+### Performance Harness (Lighthouse)
+
+A second gate alongside the BDD suite. Runs Lighthouse against the dashboard **production build** (never `pnpm dev` — Vite-dev ships ~27 MB of JS/page and code-level wins disappear in the noise), saves per-route JSON to `perf/results/`, and compares to `perf/baseline.json`. Gates on JS bytes (+1%) and LCP (+100ms AND +5%); crash detection (null LCP vs non-null baseline) also trips the gate. See `perf/README.md` for the full workflow.
+
+```bash
+pnpm seed:perf                                         # idempotent bulk seed (500 students, 50 courses, 5050 enrollments)
+pnpm seed:perf -- --clean                              # wipe perf data and reseed
+pnpm seed:perf -- --clean-only                         # wipe without reseed
+
+# Build + serve prod build (PUBLIC_IS_SELFHOSTED on both build AND start; node build does not auto-load .env)
+PUBLIC_IS_SELFHOSTED=true NODE_OPTIONS="--max-old-space-size=6144" pnpm build --filter=@cio/dashboard
+cd apps/dashboard && set -a; source .env; set +a && PUBLIC_IS_SELFHOSTED=true PORT=3000 node build &
+
+PERF_BASE_URL=http://127.0.0.1:3000 pnpm perf:baseline # write perf/baseline.json (gitignored), exit 0
+PERF_BASE_URL=http://127.0.0.1:3000 pnpm perf          # measure + gate; exit 0=pass, 1=regression, 2=harness error
+PERF_BASE_URL=http://127.0.0.1:3000 pnpm perf -- --no-gate  # measure + print, always exit 0
+```
+
+Env: `PERF_BASE_URL` (default `http://localhost:3000`), `PERF_CHROME_PATH` (override Chrome binary; otherwise Playwright's bundled Chromium, then `chrome-launcher` default).
+
+`/lms/mylearning` is **expected to PAGE_HUNG** in the initial baseline under simulated throttling + 100 enrollments — this is workshop content that later workshops fix. Recorded with null metrics; null-vs-null is not a regression.
+
 ### Database
 
 ```bash
