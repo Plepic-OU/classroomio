@@ -28,6 +28,10 @@
     "clean": { "cache": false },
     "db:generate": { "cache": false },
     "db:push": { "cache": false },
-    "db:format": { "cache": false }
+    "db:format": { "cache": false },
+    "test:e2e": {
+      "cache": false,
+      "dependsOn": ["@cio/api#build", "@cio/dashboard#build"]
+    }
   }
 }
