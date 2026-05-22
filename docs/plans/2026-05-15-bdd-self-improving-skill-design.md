@@ -59,10 +59,10 @@ The current `loginAs()` helper performs a full browser login every scenario. Rep
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
     await page.goto('http://localhost:5173/login');
-    await page.getByPlaceholder(/email/i).fill(email);
-    await page.getByPlaceholder(/password/i).fill('123456');
-    await page.getByRole('button', { name: /sign in/i }).click();
-    await page.waitForURL(/\/org\//);
+    await page.getByPlaceholder(/you@domain/i).fill(email);
+    await page.getByPlaceholder(/\*{4,}/).fill('123456');
+    await page.getByRole('button', { name: /log\s*in/i }).click();
+    await page.waitForURL(/\/(org|lms)\//); // student lands at /lms, admin/teacher at /org
     await ctx.storageState({ path });
     await ctx.close();
   }
@@ -92,7 +92,7 @@ The current `loginAs()` helper performs a full browser login every scenario. Rep
 
   export const { Given, When, Then, Before, After } = createBdd(test);
 
-  Before(() => { resetTestData(); }); // execSync is synchronous — no await needed
+  Before(() => { resetTestData(); }); // resetTestData uses execSync internally; any Docker/psql error throws here and fails the Before hook
   ```
   Step files receive `ctx` as a fixture argument: `Given('...', async ({ page, ctx }) => { ctx.courseId = await createCourseFixture(...); })`.
 
@@ -111,7 +111,9 @@ Key insertion requirements for `course-fixture.ts`:
 - Use the `PRIVATE_SUPABASE_SERVICE_ROLE` env var (the well-known local dev key can be hardcoded as a fallback constant for local use)
 - `group.organization_id` = the Udemy Test org UUID (visible in `seed.sql` — the org created for all e2e tests)
 - `course.title` must be unique per invocation (timestamp suffix); `course.description` is NOT NULL and must be supplied
+- `course.is_published = true` — required for the course to appear in `/lms/explore` results (the `get_explore_courses` RPC filters on this)
 - `course.metadata.allowNewStudent = true` so students can self-enrol via the invite link
+- The `groupmember` row for the teacher must use `role_id = 2` (TUTOR at course level, distinct from the org-level `organizationmember.role_id`)
 - Returns only `{ courseId }` — `groupId` is an internal detail callers don't need
 - Unique timestamped names (Rule 2) prevent conflicts across retries
 
@@ -254,15 +256,15 @@ At most **two new feature files** per invocation (keeps feedback cycles short). 
 
 **RUN**
 ```bash
-# Generate test files from feature files
-pnpm exec bddgen --config tests/e2e/playwright.config.ts
+# Generate test files from feature files (use npx to match project's test:e2e script convention)
+npx bddgen --config tests/e2e/playwright.config.ts
 
-# Run only the new scenarios, capture JSON output
-# Use env var (not stdout redirect) so --reporter=json doesn't suppress the HTML reporter
+# Run only the new scenarios, capture JSON output.
+# Set PLAYWRIGHT_JSON_OUTPUT_FILE (env var) rather than --reporter=json (CLI flag):
+# the CLI flag replaces all reporters (killing the HTML reporter); the env var adds JSON output alongside them.
 PLAYWRIGHT_JSON_OUTPUT_FILE=tests/e2e/.results/latest.json \
 npx playwright test --config tests/e2e/playwright.config.ts \
-  --grep "lesson-management|student-enrollment" \
-  --reporter=json
+  --grep "lesson-management|student-enrollment"
 ```
 
 On the first run of a new feature, target only the new scenarios via `--grep` to avoid re-running passing tests.
@@ -321,23 +323,26 @@ The skill stops writing new features for that invocation when any of these is tr
 - [ ] **Add `tests/e2e/.auth/` and `tests/e2e/.results/` to `.gitignore`** — must be done before any other step to prevent session tokens being committed
 - [ ] Add `locale: 'en-US'` to the `use` block in `tests/e2e/playwright.config.ts` to pin translated labels to English
 - [ ] Extend `helpers/preflight.ts` to write `admin.json`, `teacher.json`, and `student.json` storageState after services are confirmed ready
-- [ ] Add `teacher@test.com` (org `role_id = 2`) to `supabase/seed.sql` — requires 4 rows: `auth.users` (match the 33-column schema of existing seed users), `auth.identities` (required for Supabase Auth email login), `public.profile`, and `public.organizationmember` with `role_id = 2` (TUTOR). Use a consistent UUID across all 4 rows. Insert before the `setval` call at the end of `seed.sql`.
+- [ ] Add `teacher@test.com` (org `role_id = 2`) to `supabase/seed.sql` — requires 4 rows: `auth.users` (match the 33-column schema of existing seed users; set `raw_app_meta_data = '{"provider":"email","providers":["email"]}'` to match Supabase Auth expectations; reuse an existing bcrypt hash from seed.sql for password `123456`), `auth.identities` (required for Supabase Auth email login), `public.profile`, and `public.organizationmember` with `role_id = 2` (TUTOR). Use an explicit consistent UUID across all 4 rows (not `DEFAULT` for `organizationmember.id` — pick a literal to avoid sequence collision with the `setval` at end of `seed.sql`). Insert before the `setval` call.
 - [ ] Add `teacher@test.com` to `helpers/test-users.ts`
-- [ ] Create `helpers/course-fixture.ts` — inserts `group` + `course` + `groupmember` via Supabase service-role client; returns `{ courseId }`. Use `process.env.PRIVATE_SUPABASE_SERVICE_ROLE` with the well-known local dev key (`eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hj04zWl196z2-SB5I`) hardcoded as a fallback constant — this is not a real secret in local dev. Required fields: `course.title` (timestamped), `course.description` (NOT NULL), `course.metadata.allowNewStudent = true`, `group.organization_id` = Udemy Test org UUID from `seed.sql`.
+- [ ] Create `helpers/course-fixture.ts` — inserts **in FK order** (`group` → `course` → `groupmember`) via Supabase service-role client; returns `{ courseId }`. Use `process.env.PRIVATE_SUPABASE_SERVICE_ROLE` falling back to the well-known local dev key — add a runtime guard: `if (!key && !url.includes('localhost')) throw new Error(...)`. Required fields: `group.organization_id` = Udemy Test org UUID from `seed.sql`; `course.title` (timestamped), `course.description` (NOT NULL), `course.is_published = true`, `course.metadata.allowNewStudent = true`; `groupmember.role_id = 2` (TUTOR, course-level teacher role). Auth.users `raw_app_meta_data` must be `{"provider":"email","providers":["email"]}` in `seed.sql` to match Supabase Auth expectations.
 - [ ] Create `tests/e2e/fixtures.ts` with `storageState` override (`@noauth`/`@student`/`@teacher`/admin default) and `Before` hook
-- [ ] Update `login.steps.ts` and `course-creation.steps.ts` to import `{ Given, When, Then }` from `../../fixtures` — not directly from `playwright-bdd`
+- [ ] Update `login.steps.ts` and `course-creation.steps.ts` to import `{ Given, When, Then }` from `../../fixtures` — not directly from `playwright-bdd`. **All step files must import from `../../fixtures`** — `bddgen` will silently use a default fixture if any step file imports `createBdd()` directly.
+- [ ] Fix prohibited selectors in `login.steps.ts`: replace `.first()` with a specific locator; replace `.locator('.text-red-500')` with `getByRole('alert')` or a `data-testid` selector (Rule 3)
+- [ ] Tag all scenarios in `login.feature` with `@noauth` — without it, storageState defaults to `admin.json` and the login form is never shown (user is immediately redirected), making the test a no-op
 - [ ] Remove the `Given I am logged in as "admin@test.com"` step from `course-creation.feature` — storageState handles auth before the scenario starts
 - [ ] Create `tests/e2e/steps/shared/navigation.steps.ts` with common navigation `Given` steps; use `page.goto('/org/udemy-test/courses')` for the courses page (no "Courses" UI link exists in the nav); use `page.goto('http://localhost:5173/lms/explore')` for student-facing LMS scenarios (all `lms/` features target the dashboard at port 5173, not a separate app)
+- [ ] If Phase 1 breaks existing tests, revert `helpers/preflight.ts` and `fixtures.ts` to their pre-change state — existing tests continue to use `loginAs()` until the storageState block is fixed. Commit each Phase 1 step independently to enable targeted rollback.
 - [ ] Verify existing tests still pass: `pnpm test:e2e`
 
 ### Phase 2 — P1 feature files
 - [ ] `auth/logout.feature` + steps
 - [ ] `courses/lesson-management.feature` + steps
-- [ ] `lms/student-enrollment.feature` + steps — enrollment flow: student navigates to `/lms/explore` (dashboard port 5173) → `getByRole('button', { name: /learn more/i })` → `/course/[slug]` → `getByRole('button', { name: /enroll/i })` → `/invite/s/[hash]` → confirm join. Requires `createCourseFixture()` with `metadata.allowNewStudent = true` called in `Given` step. Use `@student` tag.
+- [ ] `lms/student-enrollment.feature` + steps — enrollment flow: student navigates to `/lms/explore` (dashboard port 5173) → `getByRole('button', { name: /learn more/i })` → `/course/[slug]` → `getByRole('button', { name: /enroll now/i })` → `/invite/s/[hash]` → confirm join. Requires `createCourseFixture()` with `metadata.allowNewStudent = true` called in `Given` step. Use `@student` tag.
 
 ### Phase 3 — Self-improving skill scaffold
 - [ ] Create `.claude/skills/bdd-coverage/SKILL.md` with: flow registry table, loop instructions (READ/GAP/WRITE/RUN/LEARN), `find`/`grep` commands for gap analysis, direct JSON-read instructions for LEARN phase, stopping conditions
-- [ ] Seed `knowledge/known-selectors.md` with verified selectors from existing step files (sanitise — exclude CSS class selectors and `.first()` calls). Include known caveats: `waitForHydration` only works on `/login` page; for LMS/dashboard authenticated pages use `page.waitForSelector('aside', { state: 'visible' })`; TextField inputs use `<p>` not `<label>` — use `getByPlaceholder` not `getByLabel`; Modal uses `role="presentation"` not `role="dialog"` — wait on `data-testid="modal"`.
+- [ ] Seed `knowledge/known-selectors.md` with verified selectors from existing step files (sanitise — exclude CSS class selectors and `.first()` calls). Include known caveats: `waitForHydration` only works on `/login` page; for LMS/dashboard authenticated pages use `page.waitForSelector('aside', { state: 'visible' })`; TextField inputs use `<p>` not `<label>` — use `getByPlaceholder` not `getByLabel`; Modal uses `role="presentation"` not `role="dialog"` — `data-testid="modal"` does not exist in the source today (see Bucket C: Modal wait strategy).
 - [ ] `brittle-flows.md` and `failure-patterns.md` are created lazily by the skill when first needed — do not pre-create them.
 
 ### Phase 4 — P2 feature files (driven by skill)

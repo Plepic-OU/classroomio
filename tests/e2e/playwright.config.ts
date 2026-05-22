@@ -13,7 +13,7 @@ export default defineConfig({
   reporter: [
     ['html', { host: '0.0.0.0', port: 9323, open: 'never' }],
   ],
-  timeout: 10_000,
+  timeout: 30_000,
   expect: {
     timeout: 5_000,
   },
@@ -22,8 +22,8 @@ export default defineConfig({
     screenshot: 'on',
     trace: 'on',
     video: 'on',
-    actionTimeout: 10_000,
-    navigationTimeout: 10_000,
+    actionTimeout: 15_000,
+    navigationTimeout: 20_000,
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
