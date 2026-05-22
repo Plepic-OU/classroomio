@@ -200,12 +200,16 @@ export async function getProfile({
       }
     } else {
       if (isStudentAccount) {
-        // Check if the student logged into the dashboard.
-        console.log('Student logged into dashboard');
-        if (dev) {
-          goto('/lms');
-        } else {
-          window.location.replace(`${currentOrgDomainStore}/lms`);
+        // Student account — send to LMS unless already on an LMS route, otherwise
+        // the post-redirect page load triggers INITIAL_SESSION → redirect → reload loop.
+        const onLMS = path === 'lms' || path.startsWith('lms/');
+        if (!onLMS) {
+          console.log('Student logged into dashboard');
+          if (dev) {
+            goto('/lms');
+          } else {
+            window.location.replace(`${currentOrgDomainStore}/lms`);
+          }
         }
       } else if (isEmpty(orgRes.orgs) && !path.includes('invite')) {
         // Not on invite page or no org, go to onboarding

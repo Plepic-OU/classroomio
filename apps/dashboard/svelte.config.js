@@ -14,7 +14,7 @@ const config = {
   preprocess: [vitePreprocess({})],
 
   kit: {
-    adapter: useNodeAdapter ? adapterNode() : adapterVercel(),
+    adapter: useNodeAdapter ? adapterNode({ precompress: true }) : adapterVercel(),
     alias: {
       $lib: path.resolve('./src/lib'),
       $mail: path.resolve('./src/mail')
