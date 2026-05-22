@@ -1,4 +1,6 @@
 import http from 'node:http';
+import { mkdirSync } from 'node:fs';
+import { chromium } from 'playwright';
 
 const SERVICES = [
   { name: 'Dashboard', url: 'http://localhost:5173/login' },
@@ -71,4 +73,28 @@ export default async function globalSetup() {
   await Promise.all(SERVICES.map((svc) => waitForService(svc, deadline)));
   await warmupDashboard(deadline);
   console.log('Pre-flight: all services ready.');
+
+  // Write storageState for each test role so scenarios can skip the login UI
+  mkdirSync('tests/e2e/.auth', { recursive: true });
+  const browser = await chromium.launch();
+  for (const [email, path] of [
+    ['admin@test.com',   'tests/e2e/.auth/admin.json'],
+    ['teacher@test.com', 'tests/e2e/.auth/teacher.json'],
+    ['student@test.com', 'tests/e2e/.auth/student.json'],
+  ] as const) {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    await page.goto('http://localhost:5173/login');
+    // Wait for Svelte hydration: use:typeAction changes input type from "text" to "email"
+    await page.locator('input[type="email"]').waitFor({ timeout: 15_000 });
+    await page.getByPlaceholder(/you@domain/i).fill(email);
+    await page.getByPlaceholder(/\*{4,}/).fill('123456');
+    await page.locator('button[type="submit"]').click();
+    // Wait for redirect — student lands on /lms, admin/teacher on /org/*
+    await page.waitForURL(/\/(org|lms)/, { timeout: 60_000 });
+    await ctx.storageState({ path });
+    await ctx.close();
+    console.log(`Pre-flight: saved storageState for ${email}`);
+  }
+  await browser.close();
 }

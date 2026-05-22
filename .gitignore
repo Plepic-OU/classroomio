@@ -15,6 +15,11 @@ tests/e2e/.features-gen/
 playwright-report/
 test-results/
 
+# Playwright auth state — contains session tokens, must never be committed
+tests/e2e/.auth/
+# Playwright BDD coverage skill results
+tests/e2e/.results/
+
 # next.js
 .next/
 out/

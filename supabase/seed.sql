@@ -11,7 +11,8 @@
 INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encrypted_password", "email_confirmed_at", "invited_at", "confirmation_token", "confirmation_sent_at", "recovery_token", "recovery_sent_at", "email_change_token_new", "email_change", "email_change_sent_at", "last_sign_in_at", "raw_app_meta_data", "raw_user_meta_data", "is_super_admin", "created_at", "updated_at", "phone", "phone_confirmed_at", "phone_change", "phone_change_token", "phone_change_sent_at", "email_change_token_current", "email_change_confirm_status", "banned_until", "reauthentication_token", "reauthentication_sent_at", "is_sso_user", "deleted_at") VALUES
 	('00000000-0000-0000-0000-000000000000', '0c256e75-aa40-4f62-8d30-0217ca1c60d9', 'authenticated', 'authenticated', 'student@test.com', '$2a$10$dgxySj.k12gDKhLx7X4x6./J.Nzhz7WQrwh5lkjLKwIwWW4o5GJcW', '2023-12-18 17:08:57.413996+00', NULL, '', NULL, '', NULL, '', '', NULL, '2023-12-19 18:22:55.359055+00', '{"provider": "email", "providers": ["email"]}', '{}', NULL, '2023-12-18 17:08:57.399895+00', '2024-01-22 19:48:40.922563+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL),
 	('00000000-0000-0000-0000-000000000000', '7ac00503-8519-43c8-a5ea-b79aeca900b1', 'authenticated', 'authenticated', 'admin@test.com', '$2a$10$n8vBI6.pyE0W/RO9DcJDseLKF/CRwsU4X4Lc2MaQogt8pQgnJavTa', '2023-12-16 14:04:38.311724+00', NULL, '', NULL, '', NULL, '', '', NULL, '2023-12-19 18:21:06.60122+00', '{"provider": "email", "providers": ["email"]}', '{}', NULL, '2023-12-16 14:04:38.281783+00', '2024-01-22 19:48:43.852203+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL),
-	('00000000-0000-0000-0000-000000000000', '01676a50-bb56-4c5e-8a61-fb9e9190fb10', 'authenticated', 'authenticated', 'test@test.com', '$2a$10$WmfPO84h.8SbkZWSzXAygead77QQQXdeO5XIMd8iXk8SFQKB3Udy2', '2023-11-22 10:09:32.250231+00', NULL, '', NULL, '', NULL, '', '', NULL, '2023-12-04 12:57:34.337219+00', '{"provider": "email", "providers": ["email"]}', '{}', NULL, '2023-11-22 10:09:32.171201+00', '2023-12-16 14:00:35.986845+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL);
+	('00000000-0000-0000-0000-000000000000', '01676a50-bb56-4c5e-8a61-fb9e9190fb10', 'authenticated', 'authenticated', 'test@test.com', '$2a$10$WmfPO84h.8SbkZWSzXAygead77QQQXdeO5XIMd8iXk8SFQKB3Udy2', '2023-11-22 10:09:32.250231+00', NULL, '', NULL, '', NULL, '', '', NULL, '2023-12-04 12:57:34.337219+00', '{"provider": "email", "providers": ["email"]}', '{}', NULL, '2023-11-22 10:09:32.171201+00', '2023-12-16 14:00:35.986845+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL),
+	('00000000-0000-0000-0000-000000000000', 'd0d0d0d0-0000-4000-8000-000000000001', 'authenticated', 'authenticated', 'teacher@test.com', '$2a$10$n8vBI6.pyE0W/RO9DcJDseLKF/CRwsU4X4Lc2MaQogt8pQgnJavTa', '2024-01-01 10:00:00.000000+00', NULL, '', NULL, '', NULL, '', '', NULL, '2024-01-01 10:00:00.000000+00', '{"provider": "email", "providers": ["email"]}', '{}', NULL, '2024-01-01 10:00:00.000000+00', '2024-01-01 10:00:00.000000+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL);
 
 
 
@@ -22,7 +23,8 @@ INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encryp
 INSERT INTO "auth"."identities" ("provider_id", "user_id", "identity_data", "provider", "last_sign_in_at", "created_at", "updated_at") VALUES
 	('01676a50-bb56-4c5e-8a61-fb9e9190fb10', '01676a50-bb56-4c5e-8a61-fb9e9190fb10', '{"sub": "01676a50-bb56-4c5e-8a61-fb9e9190fb10", "email": "test@test.com"}', 'email', '2023-11-22 10:09:32.225444+00', '2023-11-22 10:09:32.225521+00', '2023-11-22 10:09:32.225521+00'),
 	('7ac00503-8519-43c8-a5ea-b79aeca900b1', '7ac00503-8519-43c8-a5ea-b79aeca900b1', '{"sub": "7ac00503-8519-43c8-a5ea-b79aeca900b1", "email": "admin@test.com"}', 'email', '2023-12-16 14:04:38.302264+00', '2023-12-16 14:04:38.302326+00', '2023-12-16 14:04:38.302326+00'),
-	('0c256e75-aa40-4f62-8d30-0217ca1c60d9', '0c256e75-aa40-4f62-8d30-0217ca1c60d9', '{"sub": "0c256e75-aa40-4f62-8d30-0217ca1c60d9", "email": "student@test.com"}', 'email', '2023-12-18 17:08:57.410285+00', '2023-12-18 17:08:57.410344+00', '2023-12-18 17:08:57.410344+00');
+	('0c256e75-aa40-4f62-8d30-0217ca1c60d9', '0c256e75-aa40-4f62-8d30-0217ca1c60d9', '{"sub": "0c256e75-aa40-4f62-8d30-0217ca1c60d9", "email": "student@test.com"}', 'email', '2023-12-18 17:08:57.410285+00', '2023-12-18 17:08:57.410344+00', '2023-12-18 17:08:57.410344+00'),
+	('d0d0d0d0-0000-4000-8000-000000000001', 'd0d0d0d0-0000-4000-8000-000000000001', '{"sub": "d0d0d0d0-0000-4000-8000-000000000001", "email": "teacher@test.com"}', 'email', '2024-01-01 10:00:00.000000+00', '2024-01-01 10:00:00.000000+00', '2024-01-01 10:00:00.000000+00');
 
 
 --
@@ -176,7 +178,8 @@ Through a carefully crafted curriculum, you''ll learn the core concepts of MVC, 
 INSERT INTO "public"."profile" ("id", "fullname", "username", "avatar_url", "created_at", "updated_at", "email", "can_add_course", "role", "goal", "source", "metadata", "telegram_chat_id", "is_email_verified") VALUES
 	('01676a50-bb56-4c5e-8a61-fb9e9190fb10', 'Alice', 'alice1700647772421', 'https://pgrest.classroomio.com/storage/v1/object/public/avatars/avatar.png', '2023-11-22 10:09:32.429935+00', '2023-11-22 10:09:32.429935+00', 'test@test.com', true, NULL, 'explore', 'friends-family', NULL, NULL, true),
 	('7ac00503-8519-43c8-a5ea-b79aeca900b1', 'Elon Gates', 'admin1702735478395', 'https://pgrest.classroomio.com/storage/v1/object/public/avatars/avatar.png', '2023-12-16 14:04:38.401211+00', '2023-12-16 14:04:38.401211+00', 'admin@test.com', true, NULL, 'sell-online', 'articles', NULL, NULL, true),
-	('0c256e75-aa40-4f62-8d30-0217ca1c60d9', 'John Doe', 'student1702919337513', 'https://pgrest.classroomio.com/storage/v1/object/public/avatars/avatar.png', '2023-12-18 17:08:57.517768+00', '2023-12-18 17:08:57.517768+00', 'student@test.com', true, NULL, NULL, NULL, NULL, NULL, true);
+	('0c256e75-aa40-4f62-8d30-0217ca1c60d9', 'John Doe', 'student1702919337513', 'https://pgrest.classroomio.com/storage/v1/object/public/avatars/avatar.png', '2023-12-18 17:08:57.517768+00', '2023-12-18 17:08:57.517768+00', 'student@test.com', true, NULL, NULL, NULL, NULL, NULL, true),
+	('d0d0d0d0-0000-4000-8000-000000000001', 'Jane Teacher', 'teacher1704067200000', 'https://pgrest.classroomio.com/storage/v1/object/public/avatars/avatar.png', '2024-01-01 10:00:00.000000+00', '2024-01-01 10:00:00.000000+00', 'teacher@test.com', true, NULL, 'sell-online', 'articles', NULL, NULL, true);
 
 
 
@@ -227,7 +230,8 @@ INSERT INTO "public"."organizationmember" ("id", "organization_id", "role_id", "
 	(10, '6719ea10-fb1a-4c94-b087-79714134a496', 1, '01676a50-bb56-4c5e-8a61-fb9e9190fb10', NULL, false, '2023-12-04 10:07:15.927134+00'),
 	(11, '1cfdac36-a1da-4ef9-8421-7af3fd1ee089', 1, '01676a50-bb56-4c5e-8a61-fb9e9190fb10', NULL, false, '2023-12-04 12:58:02.530536+00'),
 	(12, '1a1dcddd-1abc-4f72-b644-0bd18191a289', 1, '7ac00503-8519-43c8-a5ea-b79aeca900b1', NULL, false, '2023-12-16 14:05:03.978453+00'),
-	(13, '1a1dcddd-1abc-4f72-b644-0bd18191a289', 3, '0c256e75-aa40-4f62-8d30-0217ca1c60d9', NULL, false, '2023-12-18 17:08:57.537093+00');
+	(13, '1a1dcddd-1abc-4f72-b644-0bd18191a289', 3, '0c256e75-aa40-4f62-8d30-0217ca1c60d9', NULL, false, '2023-12-18 17:08:57.537093+00'),
+	(14, '1a1dcddd-1abc-4f72-b644-0bd18191a289', 2, 'd0d0d0d0-0000-4000-8000-000000000001', NULL, false, '2024-01-01 10:00:00.000000+00');
 
 
 --

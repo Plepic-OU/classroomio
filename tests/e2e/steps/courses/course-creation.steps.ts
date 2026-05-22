@@ -1,16 +1,4 @@
-import { createBdd } from 'playwright-bdd';
-import { loginAs } from '../../helpers/login';
-
-const { Given, When, Then } = createBdd();
-
-Given('I am logged in as {string}', async ({ page }, email: string) => {
-  await loginAs(page, email);
-});
-
-Given('I am on the courses page', async ({ page }) => {
-  await page.getByRole('link', { name: /courses/i }).click();
-  await page.waitForURL(/\/courses/);
-});
+import { When, Then } from '../../fixtures';
 
 When('I click the create course button', async ({ page }) => {
   await page.getByRole('button', { name: /create course/i }).click();
