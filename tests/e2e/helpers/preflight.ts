@@ -1,24 +1,23 @@
 import http from 'node:http';
 
 const SERVICES = [
-  { name: 'Dashboard', url: 'http://localhost:5173/login' },
+  { name: 'Dashboard Login', url: 'http://localhost:5173/login' },
+  { name: 'Dashboard Forgot', url: 'http://localhost:5173/forgot' },
+  { name: 'Dashboard Org Dashboard', url: 'http://localhost:5173/org/udemy-test' },
+  { name: 'Dashboard Courses', url: 'http://localhost:5173/org/udemy-test/courses' },
   { name: 'API', url: 'http://localhost:3002' },
   { name: 'Supabase API', url: 'http://localhost:54321' },
+  { name: 'Inbucket', url: 'http://localhost:54324' },
 ];
 
 /** Max time to wait for all services to become ready (ms) */
-const WARMUP_TIMEOUT = 120_000;
+const WARMUP_TIMEOUT = 180_000;
 /** Delay between retries (ms) */
 const RETRY_INTERVAL = 3_000;
 
-/**
- * Make a real HTTP GET and check for a non-error response.
- * This triggers Vite/SvelteKit compilation on first hit (warmup).
- */
 function check(url: string): Promise<boolean> {
   return new Promise((resolve) => {
     const req = http.get(url, { timeout: 10_000 }, (res) => {
-      // Consume the response body so the socket is freed
       res.resume();
       resolve(res.statusCode !== undefined && res.statusCode < 500);
     });
@@ -43,7 +42,6 @@ export default async function globalSetup() {
   console.log('Pre-flight: waiting for services to be ready...');
   const deadline = Date.now() + WARMUP_TIMEOUT;
 
-  // Quick check — if nothing is reachable at all, fail fast
   const initial = await Promise.all(
     SERVICES.map(async (svc) => ({ ...svc, ok: await check(svc.url) }))
   );
@@ -59,7 +57,6 @@ export default async function globalSetup() {
     );
   }
 
-  // Wait for all services (including Vite compilation warmup)
   await Promise.all(SERVICES.map((svc) => waitForService(svc, deadline)));
   console.log('Pre-flight: all services ready.');
 }

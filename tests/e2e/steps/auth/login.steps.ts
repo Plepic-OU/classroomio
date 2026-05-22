@@ -1,11 +1,10 @@
-import { createBdd } from 'playwright-bdd';
-import { waitForHydration } from '../../helpers/hydration';
-
-const { Given, When, Then } = createBdd();
+import { Given, When, Then } from '../fixtures';
+import { waitForLoginHydration } from '../../helpers/hydration';
+import { expect } from '@playwright/test';
 
 Given('I am on the login page', async ({ page }) => {
   await page.goto('/login');
-  await waitForHydration(page);
+  await waitForLoginHydration(page);
 });
 
 When('I enter email {string}', async ({ page }, email: string) => {
@@ -21,9 +20,9 @@ When('I click the login button', async ({ page }) => {
 });
 
 Then('I should be redirected to the org dashboard', async ({ page }) => {
-  await page.waitForURL(/\/org\//);
+  await expect(page).toHaveURL(/\/org\//, { timeout: 15_000 });
 });
 
 Then('I should see an error message', async ({ page }) => {
-  await page.locator('.text-red-500').waitFor();
+  await expect(page.locator('.text-red-500')).toBeVisible();
 });

@@ -1,3 +1,4 @@
+@p0 @noauth
 Feature: Login
 
   Scenario: Successful login with valid credentials

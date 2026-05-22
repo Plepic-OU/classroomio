@@ -2,11 +2,6 @@ import { execSync } from 'node:child_process';
 
 const CONTAINER = 'supabase_db_classroomio';
 
-/**
- * Tables to preserve during reset — these contain foundational/seed data
- * that tests depend on (auth users, profiles, orgs, roles, etc.).
- * Everything else in the public schema gets truncated.
- */
 const PRESERVE_TABLES = [
   'profile',
   'organization',
@@ -16,9 +11,12 @@ const PRESERVE_TABLES = [
   'question_type',
   'submissionstatus',
   'currency',
+  'groupmember',
 ];
 
 const RESET_SQL = `
+BEGIN;
+
 DO $$
 DECLARE
   tbl TEXT;
@@ -29,9 +27,27 @@ BEGIN
     WHERE schemaname = 'public'
       AND tablename != ALL(preserve)
   LOOP
-    EXECUTE format('TRUNCATE TABLE %I CASCADE', tbl);
+    EXECUTE format('TRUNCATE TABLE public.%I CASCADE', tbl);
   END LOOP;
 END $$;
+
+DELETE FROM analytics_login_events
+WHERE user_id IN (
+  SELECT id FROM auth.users
+  WHERE email LIKE '%@test.com'
+    AND email NOT IN ('admin@test.com', 'student@test.com', 'test@test.com')
+);
+DELETE FROM public.profile
+WHERE id IN (
+  SELECT id FROM auth.users
+  WHERE email LIKE '%@test.com'
+    AND email NOT IN ('admin@test.com', 'student@test.com', 'test@test.com')
+);
+DELETE FROM auth.users
+WHERE email LIKE '%@test.com'
+  AND email NOT IN ('admin@test.com', 'student@test.com', 'test@test.com');
+
+COMMIT;
 `;
 
 export function resetTestData() {

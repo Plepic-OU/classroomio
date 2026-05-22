@@ -1,11 +1,14 @@
+import path from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
 
 const testDir = defineBddConfig({
   features: 'features/**/*.feature',
-  steps: 'steps/**/*.steps.ts',
+  steps: 'steps/**/*.ts',
   outputDir: '.features-gen',
 });
+
+const STORAGE_STATE = path.join(__dirname, 'playwright/.auth/admin.json');
 
 export default defineConfig({
   testDir,
@@ -19,14 +22,22 @@ export default defineConfig({
   },
   use: {
     baseURL: 'http://localhost:5173',
-    screenshot: 'on',
-    trace: 'on',
-    video: 'on',
+    screenshot: 'only-on-failure',
+    trace: 'retain-on-failure',
+    video: 'retain-on-failure',
     actionTimeout: 10_000,
     navigationTimeout: 10_000,
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'setup', testDir: __dirname, testMatch: /.*\.setup\.ts/ },
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: STORAGE_STATE,
+      },
+      dependencies: ['setup'],
+    },
   ],
   retries: 0,
   workers: 1,
