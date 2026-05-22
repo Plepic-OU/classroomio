@@ -42,9 +42,9 @@ Phase 1 covers the **admin** persona (org owner / tutor). Phase 2 adds the **stu
 Each feature file carries a `Background` block whose first step calls `resetTestData()` before each scenario. In Gherkin, `Background` runs before **every** scenario, not once per feature — do not rely on state created in one scenario being available in the next; each scenario starts from seed state. Scenarios across feature files are fully independent.
 
 ```gherkin
-Feature: Lesson Management
 # covers: /courses/[id]/lessons
-# NOTE: # covers: pragma MUST be on line 1, before any @ tags, for scan-coverage to detect it
+# NOTE: pragma MUST be the absolute first line of the file; scan-coverage reads split('\n')[0]
+Feature: Lesson Management
 
   Background:
     Given the database is reset to seed state
@@ -72,13 +72,23 @@ The `Given the database is reset to seed state` step calls `resetTestData()` dir
 
 The current `loginAs` helper does a full UI login on every `Given I am logged in as` step. With per-feature DB reset keeping auth tables intact, sessions can be cached instead.
 
-**Integration with `globalSetup`**: Playwright 1.53 supports an array value for `globalSetup`. Add `setup-auth.ts` alongside the existing preflight in `playwright.config.ts`:
+**Integration with `globalSetup`**: Playwright's `globalSetup` accepts a single module path, not an array. To run both `preflight` and `setup-auth`, add a thin wrapper that calls them in sequence:
 
 ```ts
-globalSetup: [
-  require.resolve('./helpers/preflight'),
-  require.resolve('./helpers/setup-auth'),
-],
+// tests/e2e/helpers/global-setup.ts
+import preflight from './preflight';
+import { setupAuthStates } from './setup-auth';
+
+export default async function globalSetup() {
+  await preflight();
+  await setupAuthStates();
+}
+```
+
+Point `playwright.config.ts` at the wrapper:
+
+```ts
+globalSetup: require.resolve('./helpers/global-setup'),
 ```
 
 Perform one headless login per test user and write cached auth state files:
@@ -160,8 +170,9 @@ Given('the database is reset to seed state', async () => {
 tests/e2e/
   .auth/                          ← gitignored cached storageState files
   helpers/
-    preflight.ts                  ← existing (globalSetup array entry 1)
-    setup-auth.ts                 ← new (globalSetup array entry 2)
+    global-setup.ts               ← new wrapper (chains preflight → setup-auth)
+    preflight.ts                  ← existing
+    setup-auth.ts                 ← new
     hydration.ts                  ← existing
     login.ts                      ← keep for any direct login still needed
     reset-db.ts                   ← existing
@@ -284,7 +295,7 @@ The file has two zones: **[FROZEN]** (the skill must not change these) and **[LI
 - bddgen command:    `pnpm exec bddgen --config tests/e2e/playwright.config.ts`
 - Results JSON:      `playwright-report/results.json`
 - Auth cache dir:    `tests/e2e/.auth/`
-- Feature pragma:    first line of every generated feature must be `# covers: <route-pattern>`
+- Feature pragma:    absolute first line of every generated feature must be `# covers: <route-pattern>` (before `Feature:` and any `@` tags)
 - Supabase container: `supabase_db_classroomio`
 - Hydration signal (login page): `await page.locator('input[type="email"]').waitFor()`
 - Hydration signal (in-app):     `await page.waitForLoadState('networkidle')`
@@ -361,7 +372,7 @@ console.log('Uncovered routes:\n' + gaps.map(r => `  ${r}`).join('\n'));
 
 ### `generate-scenario.ts` — invoked with a flow name argument
 
-Writes the `.feature` file with a `# covers:` pragma (line 1, before any `@` tags), a `Background` block, a happy-path scenario, and one negative/edge scenario. Writes a matching `.steps.ts` that calls `createBdd()` directly from `playwright-bdd` and `// TODO` bodies for each step so the suite compiles immediately without passing.
+Writes the `.feature` file with a `# covers:` pragma on the absolute first line (before `Feature:` and any `@` tags), a `Background` block, a happy-path scenario, and one negative/edge scenario. Writes a matching `.steps.ts` that calls `createBdd()` directly from `playwright-bdd` and `// TODO` bodies for each step so the suite compiles immediately without passing.
 
 ### JSON reporter — add to `playwright.config.ts` upfront
 
