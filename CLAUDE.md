@@ -60,6 +60,11 @@ pnpm supabase:push
 
 # Deep clean (turbo cache + node_modules)
 pnpm clean
+
+# Performance harness (requires prod build running on :3000 — see perf/README.md)
+pnpm seed:perf                        # seed 500 students + 50 courses (idempotent)
+PERF_BASE_URL=http://localhost:3000 pnpm perf -- --save-baseline  # write baseline
+PERF_BASE_URL=http://localhost:3000 pnpm perf                     # compare + gate
 ```
 
 For devcontainer/Codespaces, use `pnpm dev:container` — it binds to `0.0.0.0` and sets up `.env` files automatically on first launch.
@@ -107,6 +112,30 @@ The API exports its Hono app type for **RPC-style type-safe calls** from the das
 Both `apps/dashboard` and `apps/api` need `.env` files created from their respective `.env.example` files. Supabase local dev credentials are output by `supabase start`.
 
 The Turborepo pipeline has `PUBLIC_IS_SELFHOSTED` as a global env variable that affects build output — the dashboard supports both Vercel and Node.js adapter deployment modes (configured in `apps/dashboard/svelte.config.js`).
+
+## Performance Testing
+
+The `perf/` workspace (`@cio/perf`) is a Lighthouse-based performance gate. It measures a fixed set of routes against the **production build** (never `pnpm dev` — Vite dev ships ~27 MB JS/page vs ~1.4 MB prod) and compares to `perf/baseline.json`.
+
+**Build + serve sequence** (required env vars — see `perf/README.md` for full gotcha list):
+
+```bash
+PUBLIC_IS_SELFHOSTED=true NODE_OPTIONS="--max-old-space-size=6144" \
+  pnpm build --filter=@cio/dashboard
+cd apps/dashboard && set -a; source .env; set +a
+PUBLIC_IS_SELFHOSTED=true PORT=3000 node build &
+```
+
+`PUBLIC_IS_SELFHOSTED=true` must be set at both build **and** serve time (switches `svelte.config.js` between adapter-node and adapter-vercel). The default 2 GB Node heap OOMs the build.
+
+**Gate thresholds** (exits 1 on regression):
+- JS bytes grew > +1% on any route
+- LCP grew > max(+100 ms, +5%) on any route
+- LCP was non-null in baseline but is null now (page crashed)
+
+**Authed routes** use Puppeteer-driven login. The admin route uses `perf-admin@workshop.local` (created by `pnpm seed:perf`) — `admin@test.com` cannot be used because `apps/dashboard/src/lib/utils/functions/appSetup.ts` auto-logouts `@test.com` emails in production mode.
+
+Routes and full documentation: `perf/routes.json`, `perf/README.md`.
 
 ## Architecture Maps
 
