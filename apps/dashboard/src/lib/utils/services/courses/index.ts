@@ -22,17 +22,21 @@ import { supabase, getAccessToken } from '$lib/utils/functions/supabase';
 export async function fetchCourses(profileId, orgId) {
   if (!orgId || !profileId) return;
 
+  // Filter by profile_id if role isn't admin within organization. Push the
+  // membership filter into the RPC so it doesn't compute per-course stats for
+  // courses the caller isn't enrolled in. The client-side .match keeps a final
+  // guard in case the RPC is reached via an older signature.
+  const memberOnly = !get(isOrgAdmin);
   const match: { member_profile_id?: string } = {};
-  // Filter by profile_id if role isn't admin within organization
-  if (!get(isOrgAdmin)) {
+  if (memberOnly) {
     match.member_profile_id = profileId;
   }
 
-  // Gets courses for a particular organisation where the current logged in user is a groupmember
   const { data: allCourses } = await supabase
     .rpc('get_courses', {
       org_id_arg: orgId,
-      profile_id_arg: profileId
+      profile_id_arg: profileId,
+      member_only_arg: memberOnly
     })
     .match(match);
 
