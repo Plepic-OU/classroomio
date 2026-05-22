@@ -35,8 +35,9 @@ END $$;
 `;
 
 export function resetTestData() {
-  execSync(`docker exec -i ${CONTAINER} psql -U postgres`, {
+  execSync(`docker exec -i ${CONTAINER} psql -U postgres -v ON_ERROR_STOP=1`, {
     input: RESET_SQL,
     stdio: ['pipe', 'pipe', 'pipe'],
+    timeout: 25_000,
   });
 }

@@ -12,3 +12,15 @@ export async function loginAs(page: Page, email: string) {
   await page.getByRole('button', { name: /log\s*in/i }).first().click();
   await page.waitForURL(/\/org\//);
 }
+
+// Students are redirected to /lms (not /org/) after login in dev mode
+export async function loginAsStudent(page: Page, email: string) {
+  const user = Object.values(TEST_USERS).find(u => u.email === email);
+  if (!user) throw new Error(`Unknown test user: ${email}`);
+  await page.goto('/login');
+  await waitForHydration(page);
+  await page.getByPlaceholder('you@domain.com').fill(user.email);
+  await page.getByPlaceholder('************').fill(user.password);
+  await page.getByRole('button', { name: /log\s*in/i }).first().click();
+  await page.waitForURL(/\/lms/);
+}

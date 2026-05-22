@@ -25,5 +25,5 @@ Then('I should be redirected to the org dashboard', async ({ page }) => {
 });
 
 Then('I should see an error message', async ({ page }) => {
-  await page.locator('.text-red-500').waitFor();
+  await page.locator('p.text-red-500').waitFor({ timeout: 5_000 });
 });
