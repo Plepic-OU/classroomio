@@ -1,0 +1,12 @@
+{
+  "users": {
+    "admin":   { "email": "perf-admin-1@workshop.local", "password": "123456" },
+    "student": { "email": "perf-student-1@workshop.local", "password": "123456" }
+  },
+  "routes": [
+    "/login",
+    "/course/perf-course-1",
+    { "path": "/lms/mylearning", "as": "student" },
+    { "path": "/org/udemy-test",  "as": "admin" }
+  ]
+}
