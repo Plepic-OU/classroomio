@@ -28,6 +28,12 @@ pnpm test --filter=@cio/dashboard -- --testPathPattern=MyComponent # Single test
 pnpm test --filter=@cio/api                                        # Vitest (API)
 pnpm test --filter=@cio/api -- src/path/to/file.test.ts            # Single API test
 pnpm ci                                                            # Cypress e2e
+pnpm test:e2e                                                      # Playwright BDD (behavioural gate)
+
+# Perf harness (Lighthouse — second gate; see perf/README.md for full workflow)
+pnpm seed:perf                                                     # Bulk-seed local Supabase (500 students, 50 courses)
+pnpm perf -- --save-baseline                                       # Write perf/baseline.json
+PERF_BASE_URL=http://localhost:3000 pnpm perf                      # Compare to baseline, exit 1 on regression
 
 # Supabase (requires Docker)
 supabase start       # Start local instance
@@ -148,3 +154,20 @@ Prettier config (`.prettierrc`): 100-char print width, single quotes, no trailin
 - **Railway:** `railway.json` builds dashboard, starts with `pnpm dashboard:start`
 - **Vercel:** Dashboard with Vercel adapter (default cloud path)
 - **Docker:** Multi-stage Dockerfiles in `docker/`; `docker-compose.yaml` for full stack
+
+## Perf harness (`perf/`)
+
+Second gate alongside `test:e2e`. Lighthouse runs against routes in `perf/routes.json`, compares to a (gitignored) baseline, exits 1 on regression. Full workflow in `perf/README.md`.
+
+- **Must measure the prod build, never `pnpm dev`.** Vite-dev ships ~27 MB JS/page (vs ~1.4 MB prod), masking any code-level perf signal.
+- **Build/serve sequence** (load-bearing flags):
+  ```bash
+  PUBLIC_IS_SELFHOSTED=true NODE_OPTIONS="--max-old-space-size=6144" \
+    pnpm build --filter=@cio/dashboard            # 2 GB default heap OOMs
+  cd apps/dashboard && set -a; source .env; set +a   # node build doesn't auto-load .env
+  PUBLIC_IS_SELFHOSTED=true PORT=3000 node build &   # flag needed at start too (switches adapter-node ↔ adapter-vercel)
+  ```
+  **`pnpm dev` must not be running** — `apps/docs` also uses port 3000.
+- **Gate rules:** JS bytes +1 % or LCP +100 ms-or-+5 % triggers exit 1. TBT/FCP/CLS shown with deltas but not gated. Crash detection: baseline real LCP → null LCP this run is a regression.
+- **`/lms/mylearning` PAGE_HUNG is expected** under the seed-loaded prod build — workshop content fixed in later sessions. Null-vs-null is not a regression; don't widen `maxWaitForLoad` to mask it.
+- **Chrome resolution:** `PERF_CHROME_PATH` → Playwright's bundled Chromium (`~/.cache/ms-playwright/chromium-*/chrome-linux/chrome`) → `chrome-launcher` default.
