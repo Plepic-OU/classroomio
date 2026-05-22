@@ -1,14 +1,6 @@
 import type { Handle } from '@sveltejs/kit';
 import { validateUser } from '$lib/utils/services/middlewares';
-
-const PUBLIC_API_ROUTES = [
-  '/api/completion',
-  'student_prove_payment',
-  'teacher_student_buycourse',
-  '/api/polar',
-  '/api/lmz',
-  '/api/verify'
-];
+import { PUBLIC_API_ROUTES } from '$lib/auth/public-api-routes';
 
 function isPublicRoute(pathname: string) {
   return PUBLIC_API_ROUTES.some((route) => pathname.includes(route));

@@ -7,5 +7,5 @@ import type { Page } from '@playwright/test';
  * is a reliable, CSP-safe signal that component-level hydration is complete.
  */
 export async function waitForHydration(page: Page) {
-  await page.locator('input[type="email"]').waitFor({ timeout: 15_000 });
+  await page.locator('input[type="email"]').waitFor({ timeout: 10_000 });
 }

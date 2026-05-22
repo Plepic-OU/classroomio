@@ -15,6 +15,11 @@ tests/e2e/.features-gen/
 playwright-report/
 test-results/
 
+# E2E run artifacts (design 2026-05-15 §5)
+tests/e2e/.auth/
+tests/e2e/results.json
+tests/e2e/.bdd-snapshot.sql
+
 # next.js
 .next/
 out/

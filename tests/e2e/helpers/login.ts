@@ -10,5 +10,7 @@ export async function loginAs(page: Page, email: string) {
   await page.getByPlaceholder('you@domain.com').fill(user.email);
   await page.getByPlaceholder('************').fill(user.password);
   await page.getByRole('button', { name: /log\s*in/i }).first().click();
-  await page.waitForURL(/\/org\//);
+  // Admin lands on /org/<slug>/, student on /lms (with or without trailing path) —
+  // match either post-login landing.
+  await page.waitForURL(/\/(org|lms)(\/|$)/);
 }

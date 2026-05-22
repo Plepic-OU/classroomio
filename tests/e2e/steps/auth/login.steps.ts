@@ -1,7 +1,5 @@
-import { createBdd } from 'playwright-bdd';
+import { Given, When, Then } from '../../fixtures/test';
 import { waitForHydration } from '../../helpers/hydration';
-
-const { Given, When, Then } = createBdd();
 
 Given('I am on the login page', async ({ page }) => {
   await page.goto('/login');
