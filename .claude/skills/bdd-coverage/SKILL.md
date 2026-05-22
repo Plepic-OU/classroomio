@@ -5,7 +5,7 @@ _Self-improving agent that produces, runs, and extends BDD test coverage for Cla
 
 ## Loop
 
-Execute these steps in order. After step 7, return to step 1 unless a STOP condition is met.
+Execute these steps in order. After step 7, return to step 3 unless a STOP condition is met.
 
 ```
 1. SCAN     — read existing .feature files; build a covered-flow map
@@ -13,9 +13,9 @@ Execute these steps in order. After step 7, return to step 1 unless a STOP condi
 3. PLAN     — pick the highest-priority uncovered flow (see priority table below)
 4. WRITE    — create the .feature file and matching .steps.ts file
 5. RUN      — pnpm test:e2e
-6. EVALUATE — if PASS: note flow as covered
+6. EVALUATE — if PASS: mark flow as covered in priority table + update MEMORY.md
               if FAIL: diagnose → fix → retry once → append to ## Learned Failures
-7. REPEAT   — go to step 1
+7. REPEAT   — go to step 3
 
 STOP when either:
   (a) all 7 priority areas below have at least one passing scenario, or

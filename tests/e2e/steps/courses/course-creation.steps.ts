@@ -1,9 +1,4 @@
 import { Given, When, Then } from '../../fixtures';
-import { loginAs } from '../../helpers/login';
-
-Given('I am logged in as {string}', async ({ page }, email: string) => {
-  await loginAs(page, email);
-});
 
 Given('I am on the courses page', async ({ page }) => {
   await page.getByRole('link', { name: /courses/i }).click();
