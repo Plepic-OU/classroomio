@@ -4,6 +4,10 @@ import path from 'path';
 
 export default defineConfig(({ mode }) => ({
   plugins: [sveltekit()],
+  server: {
+    host: true,
+    port: 5177
+  },
   resolve: {
     conditions: mode === 'test' ? ['browser'] : []
   },

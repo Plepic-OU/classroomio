@@ -80,7 +80,7 @@
       errorMessage={$t(errors.password)}
     />
     {#if submitError}
-      <p class="text-sm text-red-500">{submitError}</p>
+      <p class="text-sm text-red-500" role="alert" data-testid="login-error">{submitError}</p>
     {/if}
     <div class="w-full text-right">
       <a class="text-md text-primary-700" href="/forgot"> {$t('login.forgot')} </a>

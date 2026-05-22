@@ -1,10 +1,16 @@
+import { config as dotenv } from 'dotenv';
+import { resolve } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
 import { defineBddConfig } from 'playwright-bdd';
+
+dotenv({ path: resolve(__dirname, '.env') });
 
 const testDir = defineBddConfig({
   features: 'features/**/*.feature',
   steps: 'steps/**/*.steps.ts',
   outputDir: '.features-gen',
+  importTestFrom: 'helpers/fixtures.ts',
+  // auth.setup.ts is a plain Playwright test file, not a BDD step file
 });
 
 export default defineConfig({
@@ -19,14 +25,19 @@ export default defineConfig({
   },
   use: {
     baseURL: 'http://localhost:5173',
-    screenshot: 'on',
-    trace: 'on',
-    video: 'on',
+    screenshot: 'only-on-failure',
+    trace: 'on-first-retry',
+    video: 'on-first-retry',
     actionTimeout: 10_000,
     navigationTimeout: 10_000,
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'auth-setup', testMatch: /auth\.setup\.ts/, testDir: '.' },
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+      dependencies: ['auth-setup'],
+    },
   ],
   retries: 0,
   workers: 1,

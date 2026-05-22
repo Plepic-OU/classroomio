@@ -5,6 +5,11 @@ import path from 'path';
 export default defineConfig({
 	plugins: [sveltekit()],
 
+	server: {
+		host: true,
+		port: 5176
+	},
+
 	test: {
 		include: ['src/**/*.{test,spec}.{js,ts}']
 	},

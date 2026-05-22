@@ -1,12 +1,7 @@
-import { execSync } from 'node:child_process';
+import { Client } from 'pg';
 
-const CONTAINER = 'supabase_db_classroomio';
+const DB_URL = 'postgresql://postgres:postgres@localhost:54322/postgres';
 
-/**
- * Tables to preserve during reset — these contain foundational/seed data
- * that tests depend on (auth users, profiles, orgs, roles, etc.).
- * Everything else in the public schema gets truncated.
- */
 const PRESERVE_TABLES = [
   'profile',
   'organization',
@@ -34,9 +29,14 @@ BEGIN
 END $$;
 `;
 
-export function resetTestData() {
-  execSync(`docker exec -i ${CONTAINER} psql -U postgres`, {
-    input: RESET_SQL,
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
+export async function resetTestData(): Promise<void> {
+  const client = new Client({ connectionString: DB_URL });
+  try {
+    await client.connect();
+    await client.query(RESET_SQL);
+  } catch (err: any) {
+    throw new Error(`resetTestData failed: ${err.message}`);
+  } finally {
+    await client.end().catch(() => {});
+  }
 }

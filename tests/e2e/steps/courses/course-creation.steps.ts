@@ -1,13 +1,8 @@
-import { createBdd } from 'playwright-bdd';
-import { loginAs } from '../../helpers/login';
-
-const { Given, When, Then } = createBdd();
-
-Given('I am logged in as {string}', async ({ page }, email: string) => {
-  await loginAs(page, email);
-});
+import { Given, When, Then } from '../../helpers/fixtures';
 
 Given('I am on the courses page', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForURL(/\/org\//);
   await page.getByRole('link', { name: /courses/i }).click();
   await page.waitForURL(/\/courses/);
 });
@@ -17,12 +12,15 @@ When('I click the create course button', async ({ page }) => {
 });
 
 When('I select a course type and proceed', async ({ page }) => {
-  // The NewCourseModal has two steps: step 0 = type selection, step 1 = title entry
-  // Default type (Live Class) is pre-selected, click Next to proceed
   await page.getByRole('button', { name: /next/i }).click();
 });
 
 When('I enter the course title {string}', async ({ page }, title: string) => {
+  await page.getByPlaceholder(/course name/i).fill(title);
+});
+
+When('I enter the course title based on this scenario', async ({ page, $testInfo }) => {
+  const title = `Course_${$testInfo.title.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
   await page.getByPlaceholder(/course name/i).fill(title);
 });
 

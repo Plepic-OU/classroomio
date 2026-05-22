@@ -37,12 +37,14 @@ function getServer(params: any) {
   const { VITE_USE_HTTPS_ON_LOCALHOST } = params || {};
   if (VITE_USE_HTTPS_ON_LOCALHOST === 'true') {
     return {
+      host: true,
       https: {
         key: fs.readFileSync(`${__dirname}/cert/key.pem`),
         cert: fs.readFileSync(`${__dirname}/cert/cert.pem`)
       }
     };
   }
+  return { host: true, port: 5173 };
 }
 
 // function getSentryConfig(params: any) {

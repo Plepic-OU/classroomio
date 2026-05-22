@@ -1,5 +1,6 @@
 Feature: Login
 
+  @no-auth
   Scenario: Successful login with valid credentials
     Given I am on the login page
     When I enter email "admin@test.com"
@@ -7,6 +8,7 @@ Feature: Login
     And I click the login button
     Then I should be redirected to the org dashboard
 
+  @no-auth
   Scenario: Failed login with invalid password
     Given I am on the login page
     When I enter email "admin@test.com"
