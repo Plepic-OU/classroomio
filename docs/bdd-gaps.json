@@ -1,0 +1,248 @@
+[
+  {
+    "route": "courses/:param/analytics",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "courses/analytics.feature"
+  },
+  {
+    "route": "courses/:param/attendance",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "courses/attendance.feature"
+  },
+  {
+    "route": "courses/:param/certificates",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "courses/certificates.feature"
+  },
+  {
+    "route": "courses/:param/landingpage",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "courses/landingpage.feature"
+  },
+  {
+    "route": "courses/:param/lessons",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "courses/lessons.feature"
+  },
+  {
+    "route": "courses/:param/lessons/:params",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "courses/lessons.feature"
+  },
+  {
+    "route": "courses/:param/marks",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "courses/marks.feature"
+  },
+  {
+    "route": "courses/:param/people",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "courses/people.feature"
+  },
+  {
+    "route": "courses/:param/people/:param",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "courses/people.feature"
+  },
+  {
+    "route": "courses/:param/settings",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "courses/settings.feature"
+  },
+  {
+    "route": "courses/:param/submissions",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "courses/submissions.feature"
+  },
+  {
+    "route": "onboarding",
+    "persona": "any",
+    "priority": 1,
+    "suggestedFeatureFile": "onboarding/onboarding.feature"
+  },
+  {
+    "route": "org/:param/audience",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "org/audience.feature"
+  },
+  {
+    "route": "org/:param/audience/:params",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "org/audience.feature"
+  },
+  {
+    "route": "org/:param/community",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "org/community.feature"
+  },
+  {
+    "route": "org/:param/community/:param",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "org/community.feature"
+  },
+  {
+    "route": "org/:param/community/ask",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "org/ask.feature"
+  },
+  {
+    "route": "org/:param/quiz",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "org/quiz.feature"
+  },
+  {
+    "route": "org/:param/quiz/:param",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "org/quiz.feature"
+  },
+  {
+    "route": "org/:param/settings",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "org/settings.feature"
+  },
+  {
+    "route": "org/:param/settings/customize-lms",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "org/customize-lms.feature"
+  },
+  {
+    "route": "org/:param/settings/domains",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "org/domains.feature"
+  },
+  {
+    "route": "org/:param/settings/teams",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "org/teams.feature"
+  },
+  {
+    "route": "org/:param/setup",
+    "persona": "admin",
+    "priority": 1,
+    "suggestedFeatureFile": "org/setup.feature"
+  },
+  {
+    "route": "signup",
+    "persona": "any",
+    "priority": 1,
+    "suggestedFeatureFile": "signup/signup.feature"
+  },
+  {
+    "route": "invite/s/:param",
+    "persona": "student",
+    "priority": 2,
+    "suggestedFeatureFile": "invite/s.feature"
+  },
+  {
+    "route": "invite/t/:param",
+    "persona": "any",
+    "priority": 2,
+    "suggestedFeatureFile": "invite/t.feature"
+  },
+  {
+    "route": "lms",
+    "persona": "student",
+    "priority": 2,
+    "suggestedFeatureFile": "lms/lms.feature"
+  },
+  {
+    "route": "lms/community",
+    "persona": "student",
+    "priority": 2,
+    "suggestedFeatureFile": "lms/community.feature"
+  },
+  {
+    "route": "lms/community/:param",
+    "persona": "student",
+    "priority": 2,
+    "suggestedFeatureFile": "lms/community.feature"
+  },
+  {
+    "route": "lms/community/ask",
+    "persona": "student",
+    "priority": 2,
+    "suggestedFeatureFile": "lms/ask.feature"
+  },
+  {
+    "route": "lms/exercises",
+    "persona": "student",
+    "priority": 2,
+    "suggestedFeatureFile": "lms/exercises.feature"
+  },
+  {
+    "route": "lms/explore",
+    "persona": "student",
+    "priority": 2,
+    "suggestedFeatureFile": "lms/explore.feature"
+  },
+  {
+    "route": "lms/mylearning",
+    "persona": "student",
+    "priority": 2,
+    "suggestedFeatureFile": "lms/mylearning.feature"
+  },
+  {
+    "route": "lms/settings",
+    "persona": "student",
+    "priority": 2,
+    "suggestedFeatureFile": "lms/settings.feature"
+  },
+  {
+    "route": "forgot",
+    "persona": "any",
+    "priority": 3,
+    "suggestedFeatureFile": "forgot/forgot.feature"
+  },
+  {
+    "route": "home",
+    "persona": "any",
+    "priority": 3,
+    "suggestedFeatureFile": "home/home.feature"
+  },
+  {
+    "route": "profile/:param",
+    "persona": "any",
+    "priority": 3,
+    "suggestedFeatureFile": "profile/profile.feature"
+  },
+  {
+    "route": "reset",
+    "persona": "any",
+    "priority": 3,
+    "suggestedFeatureFile": "reset/reset.feature"
+  },
+  {
+    "route": "upgrade",
+    "persona": "any",
+    "priority": 3,
+    "suggestedFeatureFile": "upgrade/upgrade.feature"
+  },
+  {
+    "route": "verify-email-error",
+    "persona": "any",
+    "priority": 3,
+    "suggestedFeatureFile": "verify-email-error/verify-email-error.feature"
+  }
+]
