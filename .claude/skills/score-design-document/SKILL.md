@@ -13,7 +13,8 @@ table, per-category tallies, and a failures-only punch list.
 - **Read-only.** Never write, edit, or append to any file — not the design doc, not `attributes.md`, not anything.
 - **No subagents.** Single pass in the main context.
 - **No Context7 / library-docs lookups.** Tech currency is the validator's job, not the scorer's.
-- **No summary score** (no 1–5, no percentage, no letter grade). Output is per-attribute only, plus tallies.
+- **No coarse standalone grade** (no 1–5, no letter grade). The Summary block does include a derived percentage of
+  applicable attributes that are true — this is fine because it is computed from the table, not vibes.
 
 If the user asks for behaviour outside this contract (e.g. "score and fix the gaps," "rewrite the doc"), score
 first, then tell the user the editing step is outside this skill.
@@ -43,13 +44,41 @@ If `[path]` is omitted, pick the most recent `*.md` file in `docs/plans/` (sort 
      - For T: a short literal quote from the doc.
      - For F: a one-line reason (e.g. "no rollback section; only happy-path described").
      - For N/A: a one-line reason (e.g. "pure RFC, no implementation work").
-5. **Emit the output** in the format below. No file writes.
+5. **Compute the Summary** from the table: count applicable (T + F, excluding N/A), compute T / (T + F) as a whole
+   percent, pick strongest and weakest categories by the same per-category percent (ties broken by larger T + F), and
+   write a ≤3-sentence final word grounded in those numbers.
+6. **Emit the output** in the format below — Summary first, then table, then tallies, then punch list. No file writes.
 
 ## Output format
 
-Three blocks, in this order.
+Four blocks, in this order: Summary, per-attribute table, per-category tallies, F-only punch list.
 
-### Block 1 — Per-attribute table
+### Block 1 — Summary
+
+```markdown
+### Summary
+
+- **Applicable attributes:** 21 of 27 (N/A excluded: 6)
+- **Result:** 14 T / 7 F — **67 % true** of applicable
+- **Strongest category:** Concreteness (4 T / 0 F / 0 N/A)
+- **Weakest category:** Post-ship reconciliation (0 T / 4 F / 1 N/A)
+- **Final word:** Design is concrete and well-sequenced for implementation, but skips the "why" framing and has
+  drifted from shipped reality — the body still describes a design that is no longer accurate.
+```
+
+Rules:
+
+- **Result percentage = T / (T + F), rounded to whole percent.** N/A is never in the denominator.
+- **Strongest / weakest category** by the same per-category percentage. Ties broken by larger T + F (more evidence).
+  If every applicable category scores 100 % or 0 %, fall back to T + F count to break the tie.
+- **Final word** is at most three sentences. It must reference what the table shows (strongest dimension, weakest
+  dimension, one judgement like "near-final", "needs problem framing", "stale and needs reconciliation"). It is
+  **not** a grade. It is **not** a recommendation list — the punch list (Block 4) is the recommendation.
+- If every applicable attribute is N/A (no T or F at all), write `**Result:** no applicable attributes — nothing to
+  score`. Skip strongest/weakest. Final word should explain why (e.g. "doc is a pure RFC with no implementation
+  signal").
+
+### Block 2 — Per-attribute table
 
 ```markdown
 | Category | Attribute | Result | Evidence |
@@ -61,7 +90,7 @@ Three blocks, in this order.
 
 One row per attribute, in `attributes.md` order. Quotes in the Evidence column should be verbatim from the doc.
 
-### Block 2 — Per-category tallies
+### Block 3 — Per-category tallies
 
 ```markdown
 - **Problem framing:** 2 T / 1 F / 0 N/A
@@ -75,7 +104,7 @@ One row per attribute, in `attributes.md` order. Quotes in the Evidence column s
 
 One bullet per category, in `attributes.md` order. Count exactly — the totals must match the table.
 
-### Block 3 — F-only punch list
+### Block 4 — F-only punch list
 
 ```markdown
 **Gaps to fix (failures only):**
@@ -100,5 +129,5 @@ List every F from Block 1 with `Category — Attribute: reason`. If there are no
 
 ## When you finish
 
-End the response with the three output blocks. No summary. No recommendation about what to fix next — the punch list
-is the recommendation.
+End the response with the four output blocks, in order. The Summary's final word is the qualitative judgement; the
+punch list is the recommendation list. Nothing else.

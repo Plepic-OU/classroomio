@@ -26,7 +26,9 @@ The two skills cover different lifecycle stages — the score skill never replac
 
 ### Non-goals
 
-- No automatic 1–5 / 0–100 % summary score. The user explicitly rejected coarse single-number scores.
+- No coarse standalone grade — no 1–5, no letter grade, no "this doc gets a B+". A single number ungrounded in the
+  per-attribute table was explicitly rejected. (A *derived* percentage of applicable attributes that are true is fine
+  — see §4 Summary block — because it is computed from the table, not from vibes.)
 - **No edits to any file. Ever.** Not the design doc, not `attributes.md`. Pure read-only scorer.
 - Concepts like "lessons captured" or "post-mortem written" are attributes the doc is checked *against*, not actions
   the skill performs.
@@ -99,9 +101,33 @@ no separate machine-readable applicability filter.
 
 ## 4. Output format
 
-Markdown report with three blocks:
+Markdown report with four blocks, in the order shown. The Summary appears first so a reader can skim the headline
+without scrolling the table.
 
-**1. Per-attribute table**
+**1. Summary**
+
+```markdown
+### Summary
+
+- **Applicable attributes:** 21 of 27 (N/A excluded: 6)
+- **Result:** 14 T / 7 F — **67 % true** of applicable
+- **Strongest category:** Concreteness (4 T / 0 F / 0 N/A)
+- **Weakest category:** Post-ship reconciliation (0 T / 4 F / 1 N/A)
+- **Final word:** Design is concrete and well-sequenced for implementation, but skips the "why" framing and has
+  drifted from shipped reality — the body still describes a design that is no longer accurate.
+```
+
+Rules for the Summary block:
+
+- "**Result**" percentage = `T / (T + F)` rounded to a whole number. **Never** include N/A in the denominator.
+- Strongest / weakest category is decided by the same percentage applied per-category. If multiple categories tie,
+  pick the one with the larger T+F (more evidence).
+- "**Final word**" is **at most three sentences**. It must reference what the table actually shows — strongest
+  dimension, weakest dimension, and one judgement (e.g. "doc is near-final", "doc needs problem framing before
+  review", "doc is stale and needs reconciliation"). It is not a grade and not a recommendation list; the punch
+  list (Block 4) is the recommendation.
+
+**2. Per-attribute table**
 
 ```markdown
 | Category | Attribute | Result | Evidence |
@@ -113,7 +139,7 @@ Markdown report with three blocks:
 
 Evidence is ≤15 words: a short quote from the doc for T, a short reason for F or N/A.
 
-**2. Per-category tallies**
+**3. Per-category tallies**
 
 ```markdown
 - **Problem framing:** 2 T / 1 F / 0 N/A
@@ -124,7 +150,7 @@ Evidence is ≤15 words: a short quote from the doc for T, a short reason for F 
 - **Implementation plan:** 2 T / 1 F / 0 N/A
 ```
 
-**3. F-only punch list**
+**4. F-only punch list**
 
 ```markdown
 **Gaps to fix (failures only):**
@@ -134,7 +160,7 @@ Evidence is ≤15 words: a short quote from the doc for T, a short reason for F 
 - ...
 ```
 
-The skill outputs only the three blocks above. No other artifacts; no file writes.
+The skill outputs only the four blocks above, in order. No other artifacts; no file writes.
 
 ---
 
@@ -145,8 +171,10 @@ The skill outputs only the three blocks above. No other artifacts; no file write
 3. Read the design doc.
 4. In a single pass, for each attribute: assign T / F / N/A and capture ≤15-word evidence (quote for T; reason for F or
    N/A).
-5. Emit table + tallies + F-only punch list (§4).
-6. **No file writes.** Ever.
+5. Compute the Summary block from the table: applicable count, T / (T+F) percentage, strongest and weakest category,
+   and a ≤3-sentence final word grounded in those numbers.
+6. Emit the four blocks in order — Summary, per-attribute table, per-category tallies, F-only punch list (§4).
+7. **No file writes.** Ever.
 
 ---
 
