@@ -28,7 +28,10 @@ type Probe = (page: Page) => Promise<void>;
 const ROUTE_PROBES: Array<{ match: RegExp; probe: Probe }> = [
   {
     match: /^\/login\/?$/,
-    probe: (page) => page.locator('input[type="email"]').waitFor({ timeout: 15_000 }),
+    // Bumped from 15s to 30s for cold-cache consistency with waitForHydration
+    // (line 14) and playwright.config.ts actionTimeout/navigationTimeout. Same
+    // SvelteKit cold-bundle reason; surfaced by validator on HEAD 9b2b8099.
+    probe: (page) => page.locator('input[type="email"]').waitFor({ timeout: 30_000 }),
   },
   {
     match: /^\/org\/[^/]+\/?$/,
