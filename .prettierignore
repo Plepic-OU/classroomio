@@ -5,3 +5,5 @@ build
 _template
 supabase
 static
+perf/results
+perf/baseline.json

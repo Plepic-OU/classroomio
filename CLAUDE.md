@@ -54,6 +54,17 @@ Supabase (CLI must be installed; Docker required):
 - Start local stack: `supabase start` (API :54321, DB :54322, Studio :54323, Inbucket :54324)
 - Push schema to a linked remote: `pnpm supabase:push` (requires `PROJECT_ID` env)
 
+Performance gate (the second gate alongside the behavioural `pnpm test:e2e`). Full
+details — including the exact build/serve sequence — are in `perf/README.md`.
+
+- `pnpm perf` runs Lighthouse against a fixed route list, compares to `perf/baseline.json`, and gates. `pnpm perf -- --save-baseline` (re)writes the baseline; `--no-gate` measures without failing.
+- `pnpm seed:perf` seeds the perf-specific test data (idempotent; `--clean` / `--clean-only` to wipe / wipe-only).
+- It measures the **production build**, never `pnpm dev` (dev ships ~27 MB JS/page — code wins are invisible). Build + serve on `:3000` per `perf/README.md` before running.
+- Gates on deterministic metrics only: **JS bytes > +1%**, or **LCP > +100ms or +5%** (whichever is larger). TBT/FCP/CLS/score are shown but don't gate. Full spec in `perf/README.md`.
+- Exit codes: **0** pass, **1** regression, **2** harness error (server unreachable, Chrome crash, login failure).
+- Known: `/lms/mylearning` is expected to `PAGE_HUNG` (null metrics) in the initial baseline — that's workshop content a later step (W3) fixes, not a harness bug; the run still exits 0.
+- Perf personas use `*@workshop.local` emails, **not** `@test.com`: the prod build force-logs-out `@test.com` accounts (`apps/dashboard/src/lib/utils/functions/appSetup.ts:79`, guarded by `!dev`), so a `@test.com` admin can't hold a session under `node build`.
+
 ## Architecture notes that aren't obvious from a single file
 
 - **Two apps in one SvelteKit project.** The dashboard codebase serves teachers (`/courses`, `/org`, `/home`, ...) and students (`/lms/*`) from the same SvelteKit app. Layout files at `src/routes/+layout.*` and `src/routes/lms/+layout.svelte` partition the experiences. Don't assume new student features go in a separate app.
