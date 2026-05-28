@@ -1,7 +1,7 @@
 import { test as base, createBdd } from 'playwright-bdd';
 import { resetTestData } from './helpers/reset-db';
 
-type Ctx = { courseId?: string };
+type Ctx = { courseId?: string; courseTitle?: string };
 
 export const test = base.extend<{ ctx: Ctx }>({
   ctx: async ({}, use) => { await use({}); },
