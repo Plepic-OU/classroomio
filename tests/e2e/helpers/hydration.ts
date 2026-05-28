@@ -7,7 +7,11 @@ import type { Page } from '@playwright/test';
  * is a reliable, CSP-safe signal that component-level hydration is complete.
  */
 export async function waitForHydration(page: Page) {
-  await page.locator('input[type="email"]').waitFor({ timeout: 15_000 });
+  // Bumped from 15s to 30s for cold-cache consistency with playwright.config.ts
+  // actionTimeout/navigationTimeout (also 30s, set in commit e18ac92f). Playwright's
+  // fresh browser context has no Vite cache, and hydration of the SvelteKit login
+  // bundle exceeds 15s on cold start (observed 2026-05-28 during step-5 verification).
+  await page.locator('input[type="email"]').waitFor({ timeout: 30_000 });
 }
 
 /**

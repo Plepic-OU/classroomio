@@ -5,7 +5,8 @@
  * Design refs:
  *   §2 — Reset boundary: @mutating BeforeScenario truncates non-preserved
  *        public tables, then re-applies test-fixtures.sql.
- *   §2 — AfterScenario reset on failure so the next scenario starts clean.
+ *   §2 — AfterScenario reset on every @mutating scenario regardless of
+ *        outcome, so the next scenario starts clean.
  *   §3 — Registration order: reset must run before the hydration probe.
  *   §8 risk #6 — @mutating:fresh-user cleanup for invite-accept-style flows
  *        that create new auth.users + profile rows. Captured-email teardown.
