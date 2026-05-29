@@ -46,7 +46,7 @@ For more on this hook: https://code.claude.com/docs/en/hooks#decision-control
 - The `--dangerously-skip-permissions` flag (`cskip`) lets Claude run commands without asking for approval. This is fine when running inside an isolated environment.
 - When claude is working you can log in with a 3rd bash and inspect "git worktree list" to see what's going on.
 
-## Step 1: Start [#13 — E2E test](https://github.com/Plepic-OU/classroomio/issues/13) on your branch (no worktree)
+## ✓ Step 1: Start [#13 — E2E test](https://github.com/Plepic-OU/classroomio/issues/13) on your branch (no worktree)
 
 Issue #13 (E2E test) runs directly on your student branch. It needs the shared running environment, which makes it a bad fit for a worktree — this is heavy local state you don't want to duplicate. Start it first because it's the longest-running task.
 
@@ -57,7 +57,7 @@ cskip
 
 Paste the issue URL and order Claude to implement this.
 
-## Step 2: Start worktree tasks
+## ✓ Step 2: Start worktree tasks
 
 While Issue #13 is running, open new terminal and start implementing these issues one by one. Do at least one of the tasks or more.
 For each one start claude with new worktree: `cskip -w <name>`
@@ -79,7 +79,7 @@ cskip --worktree task-plan-permissions
 
 In each session, paste the corresponding issue URL and let Claude work. Each worktree gets its own isolated branch — no conflicts between sessions.
 
-## Step 3: Merge everything
+## ✓ Step 3: Merge everything
 
 Once all worktree tasks are complete and their tests pass, merge the branches back into your student branch. Issue #13 is already on your branch — only Issues #14–17 need merging.
 
