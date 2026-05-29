@@ -3,6 +3,7 @@ import { ALLOWED_CONTENT_TYPES, ALLOWED_DOCUMENT_TYPES } from '$src/constants/up
 import { z } from 'zod';
 
 export * from './lesson';
+export * from './review';
 
 export const ZCourseDownloadContent = z.object({
   courseTitle: z.string(),
