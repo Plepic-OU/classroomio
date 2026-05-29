@@ -1,11 +1,13 @@
-import { createBdd } from 'playwright-bdd';
-import { waitForHydration } from '../../helpers/hydration';
-
-const { Given, When, Then } = createBdd();
+import { expect } from '@playwright/test';
+import { Given, When, Then } from '../../fixtures/test';
 
 Given('I am on the login page', async ({ page }) => {
   await page.goto('/login');
-  await waitForHydration(page);
+  // Hydration signal per design §4.4: `input[type="email"]` is set by
+  // Svelte's `use:typeAction` after CSR hydration (SSR renders type="text").
+  // Waiting on `getByRole('textbox')` is insufficient — both SSR and post-
+  // hydration states have role=textbox.
+  await expect(page.locator('input[type="email"]')).toBeVisible();
 });
 
 When('I enter email {string}', async ({ page }, email: string) => {
