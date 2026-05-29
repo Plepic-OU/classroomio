@@ -62,3 +62,7 @@ vite.config.ts*.mjs
 # C4 model extractor caches (regenerated on demand by the c4-model skill)
 docs/c4/.cache/
 .claude/skills/c4-model/scripts/node_modules/
+
+# Catch hook telemetry at any nesting depth (Day 1 catch-all observability)
+**/.claude/tool-inputs/
+**/.claude/tool-outputs/
