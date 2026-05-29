@@ -16,67 +16,60 @@ describe('FEATURE_LIMITS', () => {
 });
 
 describe('canAccessFeature', () => {
-  // free plan
-  it('free: can access community', () => {
-    expect(canAccessFeature('free', 'community')).toBe(true);
+  describe('free plan', () => {
+    it('allows certificates and community', () => {
+      expect(canAccessFeature('free', 'certificates')).toBe(true);
+      expect(canAccessFeature('free', 'community')).toBe(true);
+    });
+
+    it('denies custom_domain, analytics, api_access', () => {
+      expect(canAccessFeature('free', 'custom_domain')).toBe(false);
+      expect(canAccessFeature('free', 'analytics')).toBe(false);
+      expect(canAccessFeature('free', 'api_access')).toBe(false);
+    });
+
+    it('allows max_courses and max_students (limits > 0)', () => {
+      expect(canAccessFeature('free', 'max_courses')).toBe(true);
+      expect(canAccessFeature('free', 'max_students')).toBe(true);
+    });
   });
 
-  it('free: cannot access custom_domain', () => {
-    expect(canAccessFeature('free', 'custom_domain')).toBe(false);
+  describe('basic plan', () => {
+    it('allows analytics, certificates, community', () => {
+      expect(canAccessFeature('basic', 'analytics')).toBe(true);
+      expect(canAccessFeature('basic', 'certificates')).toBe(true);
+      expect(canAccessFeature('basic', 'community')).toBe(true);
+    });
+
+    it('denies custom_domain and api_access', () => {
+      expect(canAccessFeature('basic', 'custom_domain')).toBe(false);
+      expect(canAccessFeature('basic', 'api_access')).toBe(false);
+    });
   });
 
-  it('free: cannot access analytics', () => {
-    expect(canAccessFeature('free', 'analytics')).toBe(false);
+  describe('pro plan', () => {
+    it('allows all features', () => {
+      expect(canAccessFeature('pro', 'max_courses')).toBe(true);
+      expect(canAccessFeature('pro', 'max_students')).toBe(true);
+      expect(canAccessFeature('pro', 'custom_domain')).toBe(true);
+      expect(canAccessFeature('pro', 'analytics')).toBe(true);
+      expect(canAccessFeature('pro', 'certificates')).toBe(true);
+      expect(canAccessFeature('pro', 'community')).toBe(true);
+      expect(canAccessFeature('pro', 'api_access')).toBe(true);
+    });
   });
 
-  it('free: cannot access certificates', () => {
-    expect(canAccessFeature('free', 'certificates')).toBe(false);
-  });
+  describe('unknown plan (falls back to free tier)', () => {
+    it('denies premium features', () => {
+      expect(canAccessFeature('enterprise', 'analytics')).toBe(false);
+      expect(canAccessFeature('enterprise', 'api_access')).toBe(false);
+      expect(canAccessFeature('enterprise', 'custom_domain')).toBe(false);
+    });
 
-  it('free: cannot access api_access', () => {
-    expect(canAccessFeature('free', 'api_access')).toBe(false);
-  });
-
-  it('free: can access max_courses (limit > 0)', () => {
-    expect(canAccessFeature('free', 'max_courses')).toBe(true);
-  });
-
-  it('free: can access max_students (limit > 0)', () => {
-    expect(canAccessFeature('free', 'max_students')).toBe(true);
-  });
-
-  // basic plan
-  it('basic: can access analytics', () => {
-    expect(canAccessFeature('basic', 'analytics')).toBe(true);
-  });
-
-  it('basic: can access certificates', () => {
-    expect(canAccessFeature('basic', 'certificates')).toBe(true);
-  });
-
-  it('basic: cannot access custom_domain', () => {
-    expect(canAccessFeature('basic', 'custom_domain')).toBe(false);
-  });
-
-  it('basic: cannot access api_access', () => {
-    expect(canAccessFeature('basic', 'api_access')).toBe(false);
-  });
-
-  // pro plan
-  it('pro: can access all features', () => {
-    expect(canAccessFeature('pro', 'custom_domain')).toBe(true);
-    expect(canAccessFeature('pro', 'analytics')).toBe(true);
-    expect(canAccessFeature('pro', 'certificates')).toBe(true);
-    expect(canAccessFeature('pro', 'community')).toBe(true);
-    expect(canAccessFeature('pro', 'api_access')).toBe(true);
-    expect(canAccessFeature('pro', 'max_courses')).toBe(true);
-    expect(canAccessFeature('pro', 'max_students')).toBe(true);
-  });
-
-  // edge cases
-  it('returns false for unknown plan', () => {
-    expect(canAccessFeature('enterprise', 'analytics')).toBe(false);
-    expect(canAccessFeature('', 'analytics')).toBe(false);
+    it('allows free-tier features', () => {
+      expect(canAccessFeature('unknown', 'certificates')).toBe(true);
+      expect(canAccessFeature('unknown', 'community')).toBe(true);
+    });
   });
 
   it('returns false for unknown feature', () => {
@@ -86,45 +79,53 @@ describe('canAccessFeature', () => {
 });
 
 describe('getFeatureLimit', () => {
-  it('free: max_courses is 3', () => {
-    expect(getFeatureLimit('free', 'max_courses')).toBe(3);
+  describe('free plan', () => {
+    it('returns numeric limits for max_courses and max_students', () => {
+      expect(getFeatureLimit('free', 'max_courses')).toBe(3);
+      expect(getFeatureLimit('free', 'max_students')).toBe(30);
+    });
+
+    it('returns false for disabled boolean features', () => {
+      expect(getFeatureLimit('free', 'custom_domain')).toBe(false);
+      expect(getFeatureLimit('free', 'analytics')).toBe(false);
+      expect(getFeatureLimit('free', 'api_access')).toBe(false);
+    });
+
+    it('returns true for enabled boolean features', () => {
+      expect(getFeatureLimit('free', 'certificates')).toBe(true);
+      expect(getFeatureLimit('free', 'community')).toBe(true);
+    });
   });
 
-  it('free: max_students is 30', () => {
-    expect(getFeatureLimit('free', 'max_students')).toBe(30);
+  describe('basic plan', () => {
+    it('returns correct numeric limits', () => {
+      expect(getFeatureLimit('basic', 'max_courses')).toBe(25);
+      expect(getFeatureLimit('basic', 'max_students')).toBe(200);
+    });
+
+    it('returns true for enabled features', () => {
+      expect(getFeatureLimit('basic', 'analytics')).toBe(true);
+    });
   });
 
-  it('free: custom_domain is false', () => {
-    expect(getFeatureLimit('free', 'custom_domain')).toBe(false);
+  describe('pro plan', () => {
+    it('returns Infinity for unlimited numeric features', () => {
+      expect(getFeatureLimit('pro', 'max_courses')).toBe(Infinity);
+      expect(getFeatureLimit('pro', 'max_students')).toBe(Infinity);
+    });
+
+    it('returns true for all boolean features', () => {
+      expect(getFeatureLimit('pro', 'custom_domain')).toBe(true);
+      expect(getFeatureLimit('pro', 'api_access')).toBe(true);
+    });
   });
 
-  it('basic: max_courses is 25', () => {
-    expect(getFeatureLimit('basic', 'max_courses')).toBe(25);
-  });
-
-  it('basic: max_students is 200', () => {
-    expect(getFeatureLimit('basic', 'max_students')).toBe(200);
-  });
-
-  it('basic: analytics is true', () => {
-    expect(getFeatureLimit('basic', 'analytics')).toBe(true);
-  });
-
-  it('pro: max_courses is Infinity', () => {
-    expect(getFeatureLimit('pro', 'max_courses')).toBe(Infinity);
-  });
-
-  it('pro: max_students is Infinity', () => {
-    expect(getFeatureLimit('pro', 'max_students')).toBe(Infinity);
-  });
-
-  it('pro: api_access is true', () => {
-    expect(getFeatureLimit('pro', 'api_access')).toBe(true);
-  });
-
-  // edge cases
-  it('returns false for unknown plan', () => {
-    expect(getFeatureLimit('enterprise', 'analytics')).toBe(false);
+  describe('unknown plan (falls back to free tier)', () => {
+    it('returns free-tier limits', () => {
+      expect(getFeatureLimit('unknown', 'max_courses')).toBe(3);
+      expect(getFeatureLimit('unknown', 'max_students')).toBe(30);
+      expect(getFeatureLimit('unknown', 'analytics')).toBe(false);
+    });
   });
 
   it('returns false for unknown feature', () => {
