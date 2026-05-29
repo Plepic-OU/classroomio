@@ -9,7 +9,7 @@ Complete 2-5 GitHub issues in parallel using git worktrees and Claude Code. You 
 - Devcontainer is running
 - `cskip` alias is available (runs Claude Code with `--dangerously-skip-permissions`)
 
-## ✓ Step 0: Configure the WorktreeCreate hook
+## Step 0: Configure the WorktreeCreate hook
 
 Inside a devcontainer, the project folder is synced between your host machine and the container. If worktrees are created inside this synced folder, every file operation triggers a sync — and `pnpm install` in a worktree becomes painfully slow.
 
