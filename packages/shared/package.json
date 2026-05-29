@@ -1,6 +1,9 @@
 {
   "name": "shared",
   "version": "1.0.0",
+  "scripts": {
+    "test": "../../apps/api/node_modules/.bin/vitest run"
+  },
   "dependencies": {
     "tsconfig": "workspace:*"
   }
