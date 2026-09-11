@@ -46,3 +46,12 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+# Claude Code catch-all hook output (workshop: observability)
+.claude/tool-log/
+
+# GitHub PAT used by .devcontainer/gh-auth.sh — NEVER commit
+.devcontainer/github-token
+
+# Personal Claude Code settings / devcontainer CLI feature lockfile
+.claude/settings.local.json
+.devcontainer/devcontainer-lock.json
