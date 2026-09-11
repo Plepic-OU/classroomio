@@ -22,6 +22,10 @@ pnpm workspaces + Turborepo. Packages live in `apps/*`, `packages/*`, and `packa
 - `tests/e2e` — Playwright + Cucumber/BDD end-to-end tests (`playwright-bdd`), feature files in `tests/e2e/features`, step defs in `tests/e2e/steps`, targets the dashboard at `localhost:5173`.
 - `cypress/` — legacy Cypress e2e tests (being superseded by `tests/e2e`).
 
+## Architecture diagrams
+
+C4 model docs (generated/maintained by the `c4-model` skill): @docs/c4/level1-system-context.md, @docs/c4/level2-container.md, @docs/c4/level3-dashboard.md, @docs/c4/level3-api.md, and a database schema summary at [docs/c4/database.md](docs/c4/database.md).
+
 ## Commands
 
 Run from repo root unless noted. Turbo fans most of these out per-package.

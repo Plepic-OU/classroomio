@@ -52,3 +52,6 @@ vite.config.ts*.mjs
 
 # GitHub CLI token (devcontainer)
 .devcontainer/github-token
+
+# C4 model skill: intermediate AST extraction output (regenerate, don't commit)
+docs/c4/.data/
