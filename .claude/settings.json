@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(.devcontainer/github-token)",
+      "Read(./.devcontainer/github-token)",
+      "Read(//workspaces/classroomio/.devcontainer/github-token)",
+      "Read(**/.devcontainer/github-token)",
+      "Grep(.devcontainer/github-token)",
+      "Grep(//workspaces/classroomio/.devcontainer/github-token)",
+      "Grep(**/.devcontainer/github-token)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p \"$CLAUDE_PROJECT_DIR/.claude/hook-logs\"; input=$(cat); name=$(echo \"$input\" | jq -r '.tool_name'); echo \"$input\" | jq '.tool_input' > \"$CLAUDE_PROJECT_DIR/.claude/hook-logs/${name}.json\""
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Bash|Grep|Glob|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/block-github-token.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
