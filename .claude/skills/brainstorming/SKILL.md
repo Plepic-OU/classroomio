@@ -40,10 +40,10 @@ Start by understanding the current project context, then ask questions one at a 
 - Otherwise, use the default: `docs/plans/YYYY-MM-DD-<topic>-design.md`
 
 **Validation:**
-- Immediately after writing the design document, if the `validate-design-document` skill is available (check the available-skills listing), ask the user whether to run it on the just-written file before doing so.
-- If `validate-design-document` isn't available but `generic-design-review` is, offer that instead.
+- Immediately after writing the design document, if the `validate-design-document` skill is available (check the available-skills listing), invoke it automatically on the just-written file — no need to ask first.
+- If `validate-design-document` isn't available but `generic-design-review` is, invoke that instead.
 - If neither is available, skip this step silently (not every project has these installed).
-- If the user says yes, let that skill run its own process (validator selection, triage into auto-applied/conflicts/needs-input) and present its results to the user as normal — brainstorming's job here is just to trigger it, not to duplicate its logic.
+- Let the invoked skill run its own process (validator selection, triage into auto-applied/conflicts/needs-input) and present its results to the user as normal — brainstorming's job here is just to trigger it, not to duplicate its logic.
 
 ~~**Implementation:**
 - Ask user: "Ready to set up for implementation?"
