@@ -49,18 +49,23 @@ New `tests/e2e/fixtures.ts` centralizes the worker-scoped `storageState` fixture
 import { test as base, createBdd } from 'playwright-bdd';
 import path from 'node:path';
 import { TEST_USERS } from './helpers/test-users';
+import { loginAs } from './helpers/login';
 
 export const test = base.extend<{}, { workerStorageState: Record<string, string> }>({
   workerStorageState: [async ({ browser }, use) => {
     const states: Record<string, string> = {};
+    // Cache dir stays in the source tree (tests/e2e/.auth/, gitignored) so repeated local
+    // runs skip two real UI logins. Safety against Supabase's refresh-token rotation
+    // (supabase/config.toml jwt_expiry) comes from checking each file's expires_at before
+    // reuse (isStorageStateFresh in helpers/auth-state.ts), not from wiping the cache every
+    // run — wiping it forces a cold two-login + reset-db path on every single invocation,
+    // which is enough on its own to blow past the 10s scenario timeout.
+    const authDir = path.resolve(__dirname, '.auth');
     for (const [role, user] of Object.entries(TEST_USERS)) {
       const page = await browser.newPage();
-      await page.goto('/login');
-      await page.getByPlaceholder('you@domain.com').fill(user.email);
-      await page.getByPlaceholder('************').fill(user.password);
-      await page.getByRole('button', { name: /log\s*in/i }).first().click();
-      await page.waitForURL(/\/org\//);
-      const file = path.resolve(__dirname, `.auth/${role}-${base.info().parallelIndex}.json`);
+      await loginAs(page, user.email); // waits for navigation away from /login, not a
+                                        // hardcoded /org/ — the student account lands on /lms
+      const file = path.resolve(authDir, `${role}-${test.info().parallelIndex}.json`);
       await page.context().storageState({ path: file });
       states[role] = file;
       await page.close();
@@ -71,6 +76,8 @@ export const test = base.extend<{}, { workerStorageState: Record<string, string>
 
 export const { Given, When, Then, BeforeAll, AfterAll } = createBdd(test);
 ```
+
+Note: `bddgen` needs the file exporting `test` inside its `steps` glob (`playwright-bdd/dist/generate/importTest.js` requires it) — `playwright.config.ts`'s `defineBddConfig({ steps: ['fixtures.ts', 'steps/**/*.ts'] })`, not just `steps/**/*.steps.ts`, and `steps/**/*.ts` (not `*.steps.ts`) so it also picks up `steps/hooks.ts`.
 
 ```ts
 // tests/e2e/steps/hooks.ts
@@ -99,7 +106,7 @@ tests/e2e/features/
 tests/e2e/steps/    mirrors features/ 1:1
 ```
 
-No changes needed to root `package.json` scripts or `playwright.config.ts` — `bddgen` picks up `fixtures.ts` automatically since it's just where `createBdd()` now lives.
+No changes needed to root `package.json` scripts. `playwright.config.ts`'s `defineBddConfig` **does** need updating — see the note under the `fixtures.ts` snippet above.
 
 ## Part 2 — `bdd-extend` skill
 
@@ -137,9 +144,9 @@ Mirrors the existing `c4-model` skill's shape (`SKILL.md` + `scripts/` + `refere
 ```bash
 npx bddgen --config tests/e2e/playwright.config.ts
 npx playwright test --config tests/e2e/playwright.config.ts \
-  --grep "<scenario name>" --reporter=list
+  --grep "<scenario name>" --reporter=list --timeout=10000
 ```
-`--reporter=list` layers on top of the existing `html` reporter so failures are parseable from stdout without opening the HTML report.
+`--reporter=list` layers on top of the existing `html` reporter so failures are parseable from stdout without opening the HTML report. Keep `--timeout` small (10s) and debug one scenario at a time while iterating — it surfaces a hung/misfiring step fast. Only widen it temporarily if you suspect a one-time cold-start cost (e.g. `workerStorageState` building its cache for the first time this session, which already gets its own larger fixture-level timeout — see `tests/e2e/fixtures.ts`) rather than a real bug.
 
 **6. Diagnose failures.** Read the stdout error first. If ambiguous, read the failure screenshot Playwright already writes to `test-results/**/test-failed-1.png` (config already sets `screenshot: 'on'`) via the Read tool. Classify each failure as:
 - **Selector/step bug** → fix the step def, retry.

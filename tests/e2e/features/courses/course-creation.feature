@@ -1,3 +1,4 @@
+@resets-db
 Feature: Course Creation
 
   Scenario: Create a new course with a title

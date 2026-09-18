@@ -1,10 +1,16 @@
-import { createBdd } from 'playwright-bdd';
-import { loginAs } from '../../helpers/login';
+import { Given, When, Then } from '../../fixtures';
+import { restoreStorageState } from '../../helpers/auth-state';
+import { TEST_USERS } from '../../helpers/test-users';
 
-const { Given, When, Then } = createBdd();
+Given('I am logged in as {string}', async ({ page, workerStorageState }, email: string) => {
+  const role = (Object.keys(TEST_USERS) as (keyof typeof TEST_USERS)[]).find(
+    (key) => TEST_USERS[key].email === email
+  );
+  if (!role) throw new Error(`Unknown test user: ${email}`);
 
-Given('I am logged in as {string}', async ({ page }, email: string) => {
-  await loginAs(page, email);
+  await restoreStorageState(page, workerStorageState[role]);
+  // Admins land on /org/..., students on /lms — either confirms the session took.
+  await page.waitForURL(/\/(org|lms)/);
 });
 
 Given('I am on the courses page', async ({ page }) => {
@@ -23,7 +29,9 @@ When('I select a course type and proceed', async ({ page }) => {
 });
 
 When('I enter the course title {string}', async ({ page }, title: string) => {
-  await page.getByPlaceholder(/course name/i).fill(title);
+  // Reset only runs once per worker/file group (see steps/hooks.ts), so entity names must
+  // stay unique across scenarios sharing that baseline — append a per-run suffix.
+  await page.getByPlaceholder(/course name/i).fill(`${title} ${Date.now()}`);
 });
 
 When('I enter the course description {string}', async ({ page }, description: string) => {

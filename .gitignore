@@ -10,6 +10,7 @@ coverage
 
 # Playwright BDD generated tests
 tests/e2e/.features-gen/
+tests/e2e/.auth/
 
 # Playwright artifacts
 playwright-report/
