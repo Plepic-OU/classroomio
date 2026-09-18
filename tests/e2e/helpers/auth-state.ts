@@ -66,9 +66,17 @@ export function isStorageStateFresh(file: string): boolean {
  * init script keeps re-running on every later navigation in the scenario and would
  * clobber tokens supabase-js refreshes mid-scenario. In practice that's not a live risk
  * here: scenarios run against a 10s test timeout, far under the Supabase JWT's 1h expiry
- * (supabase/config.toml jwt_expiry), and no scenario navigates through a second login or
- * logout yet. Revisit (e.g. drop the init script once past the first navigation) if a
- * future scenario needs either of those.
+ * (supabase/config.toml jwt_expiry).
+ *
+ * A scenario *can* call this a second time on the same page to switch roles mid-scenario
+ * (see steps/courses/invite-student.steps.ts's admin→student switch) — each call adds
+ * another init script rather than replacing the previous one, but since both scripts
+ * target the same localStorage key (the Supabase session) and Playwright runs init scripts
+ * in registration order, the most-recently-added one's write always lands last and wins.
+ * This is deterministically correct, not accidental, but it does mean init scripts
+ * accumulate for the rest of the page's life — harmless for these short scenarios, but
+ * revisit (e.g. explicitly overwrite/remove the prior script's effect) if a future
+ * scenario switches roles many times or needs a real logout.
  */
 export async function restoreStorageState(page: Page, file: string) {
   const state: StorageState = JSON.parse(fs.readFileSync(file, 'utf-8'));

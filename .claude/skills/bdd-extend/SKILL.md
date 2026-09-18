@@ -39,9 +39,10 @@ diff stays reviewable.
 **4. Draft.**
 - `.feature` file goes in `tests/e2e/features/<area>/` (mirrors the app's audience split —
   `auth/`, `courses/`, `lms/`, `assessment/` — see the design doc's directory convention).
-  Tag it `@resets-db` at the top if it needs a clean DB baseline. If it shares that baseline
-  with another `@resets-db` file (reset only runs once per worker/file-group, not per
-  scenario — see `tests/e2e/steps/hooks.ts`), give entities unique names (e.g. a `Date.now()`
+  Tag it `@resets-db` at the top if it needs a clean DB baseline. Reset runs at most once
+  per *worker*, not once per `@resets-db` file — only the first such file to run in a given
+  worker actually triggers it (`tests/e2e/steps/hooks.ts`), every other one runs against
+  whatever that first file left behind. So give entities unique names (e.g. a `Date.now()`
   suffix, as in `steps/courses/course-creation.steps.ts`'s title step) so scenarios don't collide.
 - Matching `steps/<area>/*.steps.ts` file, importing `{ Given, When, Then }` from
   `tests/e2e/fixtures.ts` — never call `createBdd()` locally, that's what breaks the shared

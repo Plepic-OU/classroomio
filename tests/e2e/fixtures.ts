@@ -13,7 +13,17 @@ type WorkerStorageState = Record<Role, string>;
  * steps/*.steps.ts file calling createBdd() locally) is what lets the workerStorageState
  * fixture below be reused across every feature without repeating the login flow.
  */
-export const test = base.extend<{}, { workerStorageState: WorkerStorageState }>({
+export const test = base.extend<
+  { sharedState: Record<string, unknown> },
+  { workerStorageState: WorkerStorageState }
+>({
+  // Fresh empty object per scenario (test-scoped, not worker-scoped) — lets one step pass
+  // a value (e.g. a generated invite link) to a later step in the same scenario without
+  // module-level state, which would leak between scenarios sharing a worker process.
+  sharedState: async ({}, use) => {
+    await use({});
+  },
+
   workerStorageState: [
     async ({ browser }, use) => {
       // Cached in the source tree (not project.outputDir, which is wiped every run) so

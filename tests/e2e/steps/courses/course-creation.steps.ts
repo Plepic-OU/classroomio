@@ -29,8 +29,9 @@ When('I select a course type and proceed', async ({ page }) => {
 });
 
 When('I enter the course title {string}', async ({ page }, title: string) => {
-  // Reset only runs once per worker/file group (see steps/hooks.ts), so entity names must
-  // stay unique across scenarios sharing that baseline — append a per-run suffix.
+  // Reset runs at most once per worker, not once per @resets-db file (see steps/hooks.ts),
+  // so entity names must stay unique across every scenario that could share that one
+  // baseline — append a per-run suffix.
   await page.getByPlaceholder(/course name/i).fill(`${title} ${Date.now()}`);
 });
 

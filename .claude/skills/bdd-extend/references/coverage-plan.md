@@ -19,10 +19,11 @@ Ordered so each wave builds on scenarios/fixtures the previous wave already prov
 
 ## Determinism & isolation reminders (see design doc for full detail)
 
-- Tag any feature that needs a clean DB baseline `@resets-db` — reset runs once per
-  worker/file-group (see `tests/e2e/steps/hooks.ts`), not per scenario, so use unique
-  entity names within a tagged file (e.g. a timestamp suffix) rather than assuming a fresh
-  table.
+- Tag any feature that needs a clean DB baseline `@resets-db` — reset runs at most once per
+  *worker*, not once per tagged file or per scenario (`tests/e2e/steps/hooks.ts`): only the
+  first `@resets-db` file to run in a worker actually triggers it, every other one after it
+  runs against whatever that first file left behind. Use unique entity names (e.g. a
+  timestamp suffix) in every `@resets-db` scenario rather than assuming a fresh table.
 - Don't re-do UI login per scenario. Reuse the `workerStorageState` fixture
   (`tests/e2e/fixtures.ts`) via `Given I am logged in as "{email}"` — only `login.feature`
   itself exercises the real UI login flow.

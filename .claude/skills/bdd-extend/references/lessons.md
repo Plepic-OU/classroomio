@@ -37,3 +37,36 @@ rediscovering it (or hitting the same bug again).
   Don't raise `playwright.config.ts`'s `workers` count without redesigning the reset
   strategy first — a second worker's reset would wipe data an in-flight scenario in another
   worker still needs.
+
+- **The lessons/content sidebar's "+" and "menu" buttons need `{ force: true }`.** On a
+  course's Content tab (`courses/[id]/lessons`), each section's add-lesson ("+") and
+  overflow-menu buttons live inside an `svelte-dnd-action` drag-and-drop zone
+  (`role="list" aria-disabled="true" aria-describedby="dnd-zone-drag-disabled"`) that's
+  marked `aria-disabled` whenever dragging isn't active. The buttons themselves have no
+  `disabled` attribute and `pointer-events: auto` — a real mouse click works fine — but
+  Playwright's actionability check inherits the ancestor's `aria-disabled` and refuses a
+  plain `.click()`. Use `{ force: true }` (see `steps/courses/lessons.steps.ts`).
+
+- **Section/lesson title inputs have no placeholder, but are label-wrapped.** The "Add New
+  Section"/"Add New Lesson" forms render a single `<label><p>Section Title *</p><input
+  .../></label>` — `getByPlaceholder` won't work (placeholder is `""`), but `getByLabel`
+  resolves fine via the implicit wrapping association, no explicit `for`/`id` needed.
+
+- **Clicking a course's "Content" sidebar item navigates to `courses/[id]/lessons`.** The
+  UI label is "Content", not "Lessons" — it's a `<span>` inside a Carbon-style nav button,
+  not a plain `<a href>`, so target it with `getByText('Content', { exact: false })` (or
+  similar) rather than `getByRole('link', ...)`.
+
+- **The student invite link is generated client-side, not server-issued.** Under a course's
+  People tab → Add → "Invite Students", "Copy Link" writes `invite/s/<base64 JSON of {id,
+  name, description, orgSiteName}>` straight to the clipboard — there's no backend call to
+  fetch an existing invite token. To read it in a step, grant clipboard permissions on the
+  page's context *before* clicking Copy Link (`await page.context().grantPermissions([
+  'clipboard-read', 'clipboard-write'])`; the default `page` fixture has none), then
+  `await page.evaluate(() => navigator.clipboard.readText())`.
+
+- **Passing a value between steps in one scenario: use the `sharedState` fixture, not a
+  module-level variable.** `tests/e2e/fixtures.ts` exposes a test-scoped `sharedState`
+  object (fresh per scenario) for exactly this — e.g. stashing a generated invite link in
+  one step to `page.goto()` in a later one. A module-level `let` in a `*.steps.ts` file
+  would leak across scenarios that share a worker process.
