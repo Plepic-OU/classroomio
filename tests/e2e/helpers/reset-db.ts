@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process';
 
-const CONTAINER = 'supabase_db_classroomio';
+export const DB_CONTAINER = 'supabase_db_classroomio';
 
 /**
  * Truncates the whole public schema (minus PRESERVE_TABLES) globally, not per test/worker —
@@ -41,7 +41,7 @@ END $$;
 `;
 
 export function resetTestData() {
-  execSync(`docker exec -i ${CONTAINER} psql -U postgres`, {
+  execSync(`docker exec -i ${DB_CONTAINER} psql -U postgres`, {
     input: RESET_SQL,
     stdio: ['pipe', 'pipe', 'pipe']
   });

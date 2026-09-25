@@ -70,3 +70,30 @@ rediscovering it (or hitting the same bug again).
   object (fresh per scenario) for exactly this — e.g. stashing a generated invite link in
   one step to `page.goto()` in a later one. A module-level `let` in a `*.steps.ts` file
   would leak across scenarios that share a worker process.
+
+- **Org settings: go by URL, and wait for the name field to fill.** The sidebar's settings
+  links live inside collapsed dropdowns (profile menu, org switcher), so steps navigate
+  straight to `/org/<slug>/settings?tab=org` (slug parsed from the post-login URL) and
+  assert `getByRole('tab', { name: 'Organization', selected: true })`. The "Organization
+  Name" input (label-wrapped, `getByLabel` works) is bound to the `currentOrg` store and is
+  `""` for a moment after every load — `await expect(field).not.toHaveValue('')` before
+  reading or filling it (see `steps/org/settings.steps.ts`).
+
+- **Don't treat a success snackbar as proof of a save.** `OrgSettings.svelte`'s
+  `handleUpdate()` shows "Update successful" *before* checking the Supabase error. Wait on
+  the write itself instead: `page.waitForResponse` for the `PATCH /rest/v1/<table>` and
+  assert `.ok()`.
+
+- **Changes to PRESERVE_TABLES rows need their own cleanup.** `resetTestData()` never
+  touches `organization`, `profile`, etc., so a scenario that edits one of those rows and
+  fails midway leaves the edit behind for every later run. Pattern: record the original
+  value in `sharedState`, restore it in a final step, and add an `AfterScenario` hook
+  (exported from `fixtures.ts`) that writes it back via `docker exec ... psql` only when
+  that step didn't run. Pass values as `psql -v` variables (`:'name'`), not string-built
+  SQL.
+
+- **Per-scenario timeout: use the `@timeout:<ms>` tag, not the global config.**
+  playwright-bdd 8.5 supports `@timeout:20000` (and `@slow`) on a scenario. Use it only
+  when a step-duration breakdown (`--reporter=json`, `results[].steps[].duration`) shows
+  the time is spread across legitimately slow steps (e.g. full reloads in dev mode) rather
+  than one hung step.

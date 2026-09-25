@@ -62,3 +62,18 @@ it.
 - **Evidence:** `test-results/features-courses-invite-st-*-chromium/test-failed-1.png` and
   `trace.zip` from the repro run above (path suffix varies by run — re-run to regenerate;
   `test-results/` is gitignored so nothing is committed here).
+
+### Org settings shows "Update successful" even when the save fails
+
+- **Found:** 2026-09-25, drafting `tests/e2e/features/org/settings.feature` (by reading the
+  code, not from a failing run; the scenario passes, so there's no `@known-issue` tag)
+- **Repro:** make the `organization` UPDATE fail (e.g. revoke the admin's update rights
+  through RLS), then change the org name under Settings → Organization and click "Update
+  Organization".
+- **Expected:** only an error snackbar; the page keeps showing the old name.
+- **Actual (from code):** `apps/dashboard/src/lib/components/Org/Settings/OrgSettings.svelte`
+  `handleUpdate()` updates the `currentOrg` store, calls
+  `snackbar.success('...update_successful')` and sets `hasUnsavedChanges = false`, and only
+  *then* runs `if (error) throw error`. The user sees a success message, followed by an
+  error message, and the UI keeps showing a name that was never saved (until reload).
+- **Evidence:** code inspection, `OrgSettings.svelte` around lines 116-128.
