@@ -92,6 +92,42 @@ The repository also contains shared packages under `packages/` (for example `pac
 
 ## Development
 
+### Dev Container Setup
+
+Works with VS Code, IntelliJ, GitHub Codespaces, or any [devcontainer](https://containers.dev/)-compatible tool. Postgres and Redis run inside the container (Docker-in-Docker), so they don't need installing on the host. The host needs Docker plus one of those tools; the steps below use the devcontainer CLI, which is installed with npm (Node.js).
+
+1. Install the [devcontainer CLI](https://github.com/devcontainers/cli):
+
+   ```bash
+   npm install -g @devcontainers/cli
+   ```
+
+2. Build and start the container:
+
+   ```bash
+   devcontainer up --workspace-folder .
+   ```
+   If you change devcontainer itself
+   ```bash
+   devcontainer up --workspace-folder . --remove-existing-container
+   ```
+
+3. Open a shell inside the container:
+
+   ```bash
+   devcontainer exec --workspace-folder . bash
+   ```
+
+4. Start developing:
+
+   ```bash
+   pnpm dev:container    # API on :3002 + dashboard on :5173 (binds to 0.0.0.0 for host access)
+   ```
+
+   Then open [http://localhost:5173/login](http://localhost:5173/login) and log in as `admin@test.com` / `123456`.
+
+   The setup script runs automatically on first launch — it installs dependencies, creates the `.env` files (with generated secrets) as described in [`DEV_SETUP_NOTES.md`](DEV_SETUP_NOTES.md), builds the shared packages, starts Postgres + Redis, creates the schema and seeds demo data, and installs the Playwright browser. Postgres and Redis are started again every time the container starts; `bash .devcontainer/start-infra.sh` does the same by hand.
+
 ### Local Setup
 
 > **Before you start:** make sure **pnpm** and **Docker** are installed (see

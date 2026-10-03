@@ -5,6 +5,7 @@
     "build": "turbo run build",
     "start": "turbo run start",
     "dev": "turbo prepare --concurrency 13 && turbo run dev",
+    "dev:container": "cross-env HOST=0.0.0.0 pnpm concurrently -n api,dashboard -c green,blue \"pnpm api:dev\" \"pnpm dashboard:dev\"",
     "lint": "turbo run lint",
     "clean": "turbo clean && rimraf --glob \"**/node_modules\"",
     "clean:pnpm": "pnpm clean && pnpm store prune",

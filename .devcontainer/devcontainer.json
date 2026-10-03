@@ -1,0 +1,31 @@
+{
+  "name": "ClassroomIO",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2.16.1": {
+      "moby": false,
+      "version": "29.4.3"
+    }
+  },
+  "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude"
+  },
+  "mounts": [
+    "source=classroomio-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume",
+    "source=classroomio-claude-config,target=/home/node/.claude,type=volume"
+  ],
+  "appPort": [5173, 3002, 9323, 9324],
+  "forwardPorts": [5173, 3002, 9323, 9324],
+  "portsAttributes": {
+    "5173": { "label": "Dashboard" },
+    "3002": { "label": "API" },
+    "9323": { "label": "Playwright Report" },
+    "9324": { "label": "Playwright UI" }
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/start-infra.sh && echo '✅ ClassroomIO devcontainer is ready. Run: pnpm dev:container'",
+  "remoteUser": "node",
+  "customizations": {}
+}
