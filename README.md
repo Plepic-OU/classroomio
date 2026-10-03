@@ -128,6 +128,14 @@ Works with VS Code, IntelliJ, GitHub Codespaces, or any [devcontainer](https://c
 
    The setup script runs automatically on first launch — it installs dependencies, creates the `.env` files (with generated secrets) as described in [`DEV_SETUP_NOTES.md`](DEV_SETUP_NOTES.md), builds the shared packages, starts Postgres + Redis, creates the schema and seeds demo data, and installs the Playwright browser. Postgres and Redis are started again every time the container starts; `bash .devcontainer/start-infra.sh` does the same by hand.
 
+5. Run the end-to-end tests (Playwright + [playwright-bdd](https://vitalets.github.io/playwright-bdd/), in `tests/e2e`) while `pnpm dev:container` is running:
+
+   ```bash
+   pnpm test:e2e           # run the scenarios headless
+   pnpm test:e2e:report    # serve the last HTML report on :9323
+   pnpm test:e2e:ui        # Playwright UI mode on :9324
+   ```
+
 ### Local Setup
 
 > **Before you start:** make sure **pnpm** and **Docker** are installed (see

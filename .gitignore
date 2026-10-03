@@ -13,6 +13,9 @@ playwright-report/
 test-results/
 .github/demo-runs/pr-*.spec.ts
 
+# Playwright BDD generated tests
+tests/e2e/.features-gen/
+
 # next.js
 .next/
 out/
