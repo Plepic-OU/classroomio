@@ -1,19 +1,52 @@
-import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import {
   ZCourseDocumentPresignUrlUpload,
   ZCourseDownloadPresignedUrl,
   ZCoursePresignUrlUpload
-} from '$src/types/course';
+} from '@cio/utils/validation/course';
 import { describeRoute, validator } from 'hono-openapi';
+import {
+  generateDocumentDownloadPresignedUrls,
+  generateDocumentUploadPresignedUrl,
+  generateVideoDownloadPresignedUrls,
+  generateVideoUploadPresignedUrl
+} from '@cio/core/utils/s3';
 
-import { BUCKET_NAME } from '$src/constants/upload';
-import { CLOUDFLARE } from '$src/constants';
-import type { GetSignedUrlParameters } from '$src/utils/s3';
-import { Hono } from 'hono';
-import { authMiddleware } from '$src/middlewares/auth';
-import { generateFileKey } from '$src/utils/upload';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { s3Client } from '$src/utils/s3';
+import { Hono } from '@api/utils/hono';
+import { authMiddleware } from '@api/middlewares/auth';
+import { findUnauthorizedDownloadKeys, resolveUploadOrganizationId } from '@api/middlewares/presign-auth';
+import { generateFileKey } from '@cio/core/utils/upload';
+import { AppError, ErrorCodes } from '@api/utils/errors';
+import { MAX_DOCUMENT_SIZE, MAX_FILE_SIZE } from '@api/constants/upload';
+import type { Context } from 'hono';
+
+const PresignForbiddenResponse = {
+  description: 'One or more requested keys belong to an organization the caller is not a member of'
+};
+
+async function rejectUnauthorizedKeys(c: Context, keys: string[]) {
+  const unauthorizedKeys = await findUnauthorizedDownloadKeys(c, keys);
+  if (unauthorizedKeys.length === 0) return null;
+
+  return c.json(
+    {
+      success: false,
+      error: 'One or more requested keys do not belong to this organization',
+      code: ErrorCodes.FORBIDDEN
+    },
+    403
+  );
+}
+
+/**
+ * Advisory check on client-reported `fileSize`. Upload bytes go directly to object storage
+ * via the presigned PUT URL, so omitting `fileSize` (or understating it) bypasses this guard.
+ * Real enforcement requires storage-side policies (bucket max object size, etc.).
+ */
+function assertPresignFileSizeWithinLimit(fileSize: number | undefined, maxBytes: number): void {
+  if (fileSize != null && fileSize > maxBytes) {
+    throw new AppError(`File size exceeds maximum of ${maxBytes / 1024 / 1024}MB`, 'FILE_TOO_LARGE', 413);
+  }
+}
 
 // Response schemas for OpenAPI documentation
 const PresignUploadResponse = {
@@ -60,7 +93,8 @@ export const presignRouter = new Hono()
         },
         401: {
           description: 'Unauthorized'
-        }
+        },
+        403: PresignForbiddenResponse
       },
       tags: ['Presign']
     }),
@@ -68,18 +102,13 @@ export const presignRouter = new Hono()
     async (c) => {
       const body = c.req.valid('json');
 
-      const { fileName, fileType } = body;
-      const fileKey = generateFileKey(fileName);
+      const { fileName, fileType, fileSize } = body;
 
-      const command = new PutObjectCommand({
-        Bucket: BUCKET_NAME.VIDEOS,
-        Key: fileKey,
-        ContentType: fileType
-      }) as GetSignedUrlParameters[1];
+      assertPresignFileSizeWithinLimit(fileSize, MAX_FILE_SIZE);
 
-      const presignedUrl = await getSignedUrl(s3Client as GetSignedUrlParameters[0], command, {
-        expiresIn: CLOUDFLARE.R2.PRESIGN_EXPIRATION_TIME
-      });
+      const fileKey = generateFileKey(fileName, resolveUploadOrganizationId(c));
+
+      const presignedUrl = await generateVideoUploadPresignedUrl(fileKey, fileType);
 
       return c.json({
         success: true,
@@ -108,7 +137,8 @@ export const presignRouter = new Hono()
         },
         401: {
           description: 'Unauthorized'
-        }
+        },
+        403: PresignForbiddenResponse
       },
       tags: ['Presign']
     }),
@@ -116,18 +146,13 @@ export const presignRouter = new Hono()
     async (c) => {
       const body = c.req.valid('json');
 
-      const { fileName, fileType } = body;
-      const fileKey = generateFileKey(fileName);
+      const { fileName, fileType, fileSize } = body;
 
-      const command = new PutObjectCommand({
-        Bucket: BUCKET_NAME.DOCUMENTS,
-        Key: fileKey,
-        ContentType: fileType
-      }) as GetSignedUrlParameters[1];
+      assertPresignFileSizeWithinLimit(fileSize, MAX_DOCUMENT_SIZE);
 
-      const presignedUrl = await getSignedUrl(s3Client as GetSignedUrlParameters[0], command, {
-        expiresIn: CLOUDFLARE.R2.PRESIGN_EXPIRATION_TIME
-      });
+      const fileKey = generateFileKey(fileName, resolveUploadOrganizationId(c));
+
+      const presignedUrl = await generateDocumentUploadPresignedUrl(fileKey, fileType);
 
       return c.json({
         success: true,
@@ -156,7 +181,8 @@ export const presignRouter = new Hono()
         },
         401: {
           description: 'Unauthorized'
-        }
+        },
+        403: PresignForbiddenResponse
       },
       tags: ['Presign']
     }),
@@ -166,26 +192,10 @@ export const presignRouter = new Hono()
 
       const { keys } = body;
 
-      const signedUrls: Record<string, string> = {};
+      const forbidden = await rejectUnauthorizedKeys(c, keys);
+      if (forbidden) return forbidden;
 
-      const urlPromises = keys.map(async (key) => {
-        const command = new GetObjectCommand({
-          Bucket: BUCKET_NAME.VIDEOS,
-          Key: key
-        }) as GetSignedUrlParameters[1];
-
-        const presignedUrl = await getSignedUrl(s3Client as GetSignedUrlParameters[0], command, {
-          expiresIn: CLOUDFLARE.R2.DOWNLOAD_EXPIRATION_TIME
-        });
-
-        return { key, presignedUrl };
-      });
-
-      const results = await Promise.all(urlPromises);
-
-      results.forEach(({ key, presignedUrl }) => {
-        signedUrls[key] = presignedUrl;
-      });
+      const signedUrls = await generateVideoDownloadPresignedUrls(keys);
 
       return c.json({
         success: true,
@@ -213,7 +223,8 @@ export const presignRouter = new Hono()
         },
         401: {
           description: 'Unauthorized'
-        }
+        },
+        403: PresignForbiddenResponse
       },
       tags: ['Presign']
     }),
@@ -223,26 +234,10 @@ export const presignRouter = new Hono()
 
       const { keys } = body;
 
-      const signedUrls: Record<string, string> = {};
+      const forbidden = await rejectUnauthorizedKeys(c, keys);
+      if (forbidden) return forbidden;
 
-      const urlPromises = keys.map(async (key) => {
-        const command = new GetObjectCommand({
-          Bucket: BUCKET_NAME.DOCUMENTS,
-          Key: key
-        }) as GetSignedUrlParameters[1];
-
-        const presignedUrl = await getSignedUrl(s3Client as GetSignedUrlParameters[0], command, {
-          expiresIn: CLOUDFLARE.R2.DOWNLOAD_EXPIRATION_TIME
-        });
-
-        return { key, presignedUrl };
-      });
-
-      const results = await Promise.all(urlPromises);
-
-      results.forEach(({ key, presignedUrl }) => {
-        signedUrls[key] = presignedUrl;
-      });
+      const signedUrls = await generateDocumentDownloadPresignedUrls(keys);
 
       return c.json({
         success: true,

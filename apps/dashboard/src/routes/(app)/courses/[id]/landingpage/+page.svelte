@@ -1,0 +1,95 @@
+<script lang="ts">
+  import { fly } from 'svelte/transition';
+  import type { Component } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import { courseApi } from '$features/course/api';
+  import type { Course } from '$features/course/utils/types';
+  import { setLandingPageEditContext, type LandingSectionKey } from '@cio/ui/custom/org-landing-page';
+  import {
+    HeaderIcon,
+    GoalIcon,
+    LessonIcon,
+    ExerciseIcon,
+    CertificateIcon,
+    MoneyIcon,
+    ReviewIcon,
+    PersonIcon,
+    ContentIcon
+  } from '@cio/ui/custom/moving-icons';
+  import { t } from '$lib/utils/functions/translations';
+
+  import { CourseLandingPage } from '$features/ui';
+  import Editor from '$features/ui/course-landing-page/components/editor/editor.svelte';
+  import * as Sidebar from '@cio/ui/base/sidebar';
+
+  let { data } = $props();
+
+  const courseId = $derived(data.courseId);
+
+  let sidebarOpen = $state(true);
+  let selectedSectionKey = $state<LandingSectionKey | null>(null);
+
+  const sectionIcons: Partial<Record<LandingSectionKey, Component>> = {
+    header: HeaderIcon,
+    requirement: ExerciseIcon,
+    description: LessonIcon,
+    goals: GoalIcon,
+    certificate: CertificateIcon,
+    curriculum: ContentIcon,
+    chips: ContentIcon,
+    instructor: PersonIcon,
+    reviews: ReviewIcon,
+    pricing: MoneyIcon
+  };
+
+  setLandingPageEditContext({
+    selectedKey: () => (selectedSectionKey === 'header' ? 'hero' : selectedSectionKey),
+    selectKey: (key) => (selectedSectionKey = key === 'hero' ? 'header' : key),
+    labelFor: (key) => {
+      const sectionKey = key === 'hero' ? 'header' : key;
+      const translationKey = `course.navItem.landing_page.editor.title.${sectionKey}`;
+      const label = t.get(translationKey as never);
+
+      // svelte-i18n echoes the key path back when a translation is missing.
+      return label && label !== translationKey ? label : sectionKey;
+    },
+    iconFor: (key) => sectionIcons[key === 'hero' ? 'header' : key] ?? HeaderIcon
+  });
+
+  function syncCourseStore(_courseData: Course) {
+    if (courseApi.course) {
+      courseApi.course = { ...courseApi.course, ..._courseData };
+    }
+  }
+
+  function handleClose() {
+    goto(resolve(`/courses/${courseId}`, {}));
+  }
+</script>
+
+{#if courseApi.course}
+  <div
+    class="fixed inset-0 z-250 h-screen w-screen bg-white"
+    in:fly={{ y: 500, duration: 500 }}
+    out:fly={{ y: 500, duration: 500 }}
+  >
+    <Sidebar.Provider bind:open={sidebarOpen} style="--sidebar-width: 360px; --sidebar-width-icon: 4rem">
+      <Sidebar.Root side="left" collapsible="offcanvas" class="h-full">
+        <Editor
+          {courseId}
+          bind:course={courseApi.course}
+          bind:selectedSectionKey
+          {syncCourseStore}
+          onClose={handleClose}
+        />
+      </Sidebar.Root>
+      <Sidebar.Inset class="relative h-screen! min-w-0 overflow-y-auto">
+        <div class="absolute top-2 left-2 z-60">
+          <Sidebar.Trigger variant="secondary" />
+        </div>
+        <CourseLandingPage bind:courseData={courseApi.course} editMode={true} />
+      </Sidebar.Inset>
+    </Sidebar.Provider>
+  </div>
+{/if}

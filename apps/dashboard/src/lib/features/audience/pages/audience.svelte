@@ -1,0 +1,647 @@
+<script lang="ts">
+  import { goto } from '$app/navigation';
+  import { navigating, page } from '$app/state';
+  import UsersIcon from '@lucide/svelte/icons/users';
+  import SearchXIcon from '@lucide/svelte/icons/search-x';
+  import XIcon from '@lucide/svelte/icons/x';
+  import { Button } from '@cio/ui/base/button';
+  import { orgApi } from '$features/org/api/org.svelte';
+  import { t } from '$lib/utils/functions/translations';
+  import { Empty } from '@cio/ui/custom/empty';
+  import { onDestroy } from 'svelte';
+  import { TablePagination, UpgradeBanner } from '$features/ui';
+  import { currentOrg, currentOrgMaxAudience, isOrgAdmin } from '$lib/utils/store/org';
+  import type {
+    OrganizationAudience,
+    OrganizationAudienceMember,
+    OrganizationAudiencePagination,
+    OrganizationAudienceQuery
+  } from '$features/org/utils/types';
+  import AssignCoursesModal from '$features/audience/components/assign-courses-modal.svelte';
+  import AudienceDeleteConfirmation from '$features/audience/components/audience-delete-confirmation.svelte';
+  import AudienceTableToolbar from '$features/audience/components/audience-table-toolbar.svelte';
+  import { audienceExportHeaders, buildAudienceExportDocument } from '$features/audience/utils/audience-export-utils';
+  import type { AudienceSelectionControls } from '$features/audience/utils/types';
+  import AudienceTable from '$features/audience/components/audience-table.svelte';
+  import { SvelteSet } from 'svelte/reactivity';
+  import {
+    DEFAULT_ORG_AUDIENCE_QUERY,
+    applyAudienceView,
+    clearAudienceFilters,
+    countActiveAudienceFilters,
+    getAudienceSearchParams,
+    matchAudienceView,
+    toAudienceBulkFilterQuery
+  } from '$features/org/utils/audience-query-utils';
+  import AudienceBulkConfirmation from '$features/audience/components/audience-bulk-confirmation.svelte';
+  import { snackbar } from '$features/ui/snackbar/store';
+  import type {
+    AudienceBulkAction,
+    BulkAudienceActionOutcome,
+    BulkAudiencePreview,
+    OrganizationAudienceView
+  } from '$features/org/utils/types';
+
+  interface Course {
+    id: string;
+    title: string;
+  }
+
+  interface Props {
+    audience?: OrganizationAudience;
+    pagination?: OrganizationAudiencePagination | null;
+    query: OrganizationAudienceQuery;
+    courses?: Course[];
+    /** Reported upward so the page header's export can honour the selection. */
+    selectedMemberIds?: number[];
+    /**
+     * The selection bar lives in the route, beside `Page.Body`, because a
+     * sticky bar inside `Page.Body` has no travel and would also centre on the
+     * viewport rather than on the content column.
+     */
+    selectionControls?: AudienceSelectionControls | null;
+  }
+
+  let {
+    audience,
+    pagination = null,
+    query,
+    courses = [],
+    selectedMemberIds = $bindable([]),
+    selectionControls = $bindable(null)
+  }: Props = $props();
+
+  $effect(() => {
+    orgApi.audience = audience ?? [];
+    orgApi.audiencePagination = pagination;
+    // Selection is per-result-set: a new page or filter is a different
+    // population, and carrying a pending destructive selection across it is how
+    // people act on rows they never saw.
+    selectedIds.clear();
+    allMatchingSelected = false;
+  });
+
+  // Identity, then state, then stats, then dates. Order must match the cell
+  // order in `audience-member-row.svelte` — they are paired by position only.
+  const headers = $derived([
+    { key: 'name', value: $t('audience.name') },
+    { key: 'email', value: $t('audience.email') },
+    { key: 'status', value: $t('audience.status') },
+    { key: 'enrollment', value: $t('audience.filter.enrollment') },
+    { key: 'progress', value: $t('audience.progress') },
+    { key: 'last_login', value: $t('audience.filter.last_login') },
+    { key: 'last_activity', value: $t('audience.filter.last_activity') },
+    { key: 'date_joined', value: $t('audience.date_joined') }
+  ]);
+
+  // Filters, sort and pagination re-run the server load in place, and SvelteKit
+  // keeps the current page rendered while it does — so without this the old
+  // rows sit there looking authoritative under a filter that has not applied
+  // yet. The delay matches PageLoadProgress: a fast load should not flash.
+  const SKELETON_DELAY_MS = 150;
+  let isReloading = $state(false);
+
+  $effect(() => {
+    // Same route only. Leaving the page replaces it anyway.
+    const isReloadingList = navigating.to?.route.id === page.route.id;
+
+    if (!isReloadingList) {
+      isReloading = false;
+
+      return;
+    }
+
+    const timer = setTimeout(() => (isReloading = true), SKELETON_DELAY_MS);
+
+    return () => clearTimeout(timer);
+  });
+
+  const activeView = $derived(matchAudienceView(query));
+  const activeFilterCount = $derived(countActiveAudienceFilters(query));
+  const isFiltered = $derived(activeFilterCount > 0 || Boolean(query.search));
+
+  let inviteActionEmail = $state<string | null>(null);
+  let deletingMemberId = $state<string | null>(null);
+  let deleteCandidate = $state<OrganizationAudienceMember | null>(null);
+  let deleteDialogOpen = $state(false);
+  let searchValue = $state(query.search ?? '');
+
+  async function handleResendInvite(email: string) {
+    inviteActionEmail = email;
+    try {
+      const result = await orgApi.resendAudienceInvite({ email });
+      if (result) {
+        await refreshAudience();
+      }
+    } finally {
+      inviteActionEmail = null;
+    }
+  }
+
+  async function handleRevokeInvite(email: string) {
+    inviteActionEmail = email;
+    try {
+      const result = await orgApi.revokeAudienceInvite({ email });
+      if (result) {
+        await refreshAudience();
+      }
+    } finally {
+      inviteActionEmail = null;
+    }
+  }
+
+  let selectedIds = new SvelteSet<string>();
+  let assignModalOpen = $state(false);
+
+  const currentPage = $derived(pagination?.page ?? DEFAULT_ORG_AUDIENCE_QUERY.page);
+  const pageSize = $derived(pagination?.limit ?? DEFAULT_ORG_AUDIENCE_QUERY.limit);
+  const totalCount = $derived(pagination?.total ?? 0);
+  const selectablePageRows = $derived(orgApi.audience.filter((row) => row.profileId));
+
+  // "All matching" covers every row on this page by definition, so the boxes
+  // have to show it. Without this the bar reads "all 31 selected" over a table
+  // with one tick in it.
+  const allPageSelected = $derived(
+    allMatchingSelected ||
+      (selectablePageRows.length > 0 && selectablePageRows.every((row) => selectedIds.has(String(row.id))))
+  );
+  const somePageSelected = $derived(
+    !allMatchingSelected && selectablePageRows.some((row) => selectedIds.has(String(row.id))) && !allPageSelected
+  );
+  const hasSelection = $derived(selectedIds.size > 0 || allMatchingSelected);
+
+  // The selection bar's Copy and Export both need the rows behind the current
+  // selection. Ticked rows win; "all matching" is a filter, so it falls back to
+  // the query and lets the server resolve it.
+  // Writes only; nothing here reads `selectionControls`, so this cannot loop.
+  $effect(() => {
+    selectionControls = {
+      selectedCount: selectedIds.size,
+      totalMatching: totalCount,
+      allMatchingSelected,
+      isApplying: isApplyingBulkAction,
+      loadDocument: loadSelectionExportDocument,
+      selectAllMatching: () => (allMatchingSelected = true),
+      clear: clearSelection,
+      openAssign: () => (assignModalOpen = true),
+      act: handleBulkAction
+    };
+  });
+
+  async function loadSelectionExportDocument() {
+    const memberIds = allMatchingSelected ? undefined : [...selectedIds].map(Number);
+    const response = await orgApi.getAudienceExportRows(query, memberIds?.length ? memberIds : undefined);
+
+    return buildAudienceExportDocument(
+      response?.data ?? [],
+      $currentOrg?.name ?? 'Organization',
+      audienceExportHeaders()
+    );
+  }
+
+  // Selection lives here, but the Export control sits in the route's header, so
+  // the ids have to travel up or the exported file silently ignores what was
+  // ticked. "All matching" is a filter, not a set of ids, so it reports none
+  // and the export falls back to the filter query.
+  $effect(() => {
+    selectedMemberIds = allMatchingSelected ? [] : [...selectedIds].map(Number);
+  });
+
+  /**
+   * Leaves "all matching" for the concrete rows on this page, so a tick the
+   * admin removes lands on something representable. The mode spans pages and a
+   * set of ids does not, so this is a narrowing, not a no-op.
+   */
+  function materialisePageSelection() {
+    allMatchingSelected = false;
+
+    for (const row of selectablePageRows) {
+      selectedIds.add(String(row.id));
+    }
+  }
+
+  function toggleSelectAll() {
+    // The header box covers this page; the mode covers every page. Turning it
+    // off can only mean all of it.
+    if (allMatchingSelected) {
+      clearSelection();
+      return;
+    }
+
+    if (allPageSelected) {
+      for (const row of selectablePageRows) {
+        selectedIds.delete(String(row.id));
+      }
+    } else {
+      for (const row of selectablePageRows) {
+        selectedIds.add(String(row.id));
+      }
+    }
+  }
+
+  function toggleRow(id: string) {
+    if (allMatchingSelected) {
+      materialisePageSelection();
+      selectedIds.delete(id);
+      return;
+    }
+
+    if (selectedIds.has(id)) {
+      selectedIds.delete(id);
+    } else {
+      selectedIds.add(id);
+    }
+  }
+
+  const selectedProfileIds = $derived(
+    orgApi.audience.filter((r) => selectedIds.has(String(r.id)) && r.profileId).map((r) => r.profileId!)
+  );
+
+  function handleAssigned() {
+    assignModalOpen = false;
+    selectedIds.clear();
+  }
+
+  $effect(() => {
+    searchValue = query.search ?? '';
+  });
+
+  $effect(() => {
+    const normalizedSearch = searchValue.trim() || undefined;
+    const currentSearch = query.search ?? undefined;
+
+    if (normalizedSearch === currentSearch) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      void navigateAudience({
+        ...query,
+        page: 1,
+        search: normalizedSearch
+      });
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  });
+
+  async function refreshAudience(pageOverride = currentPage) {
+    await navigateAudience({
+      ...query,
+      page: pageOverride
+    });
+  }
+
+  async function navigateAudience(nextQuery: OrganizationAudienceQuery) {
+    const searchParams = getAudienceSearchParams(nextQuery);
+    const nextSearch = searchParams.toString();
+    const currentSearch = page.url.searchParams.toString();
+
+    await goto(`${page.url.pathname}?${nextSearch}`, {
+      replaceState: nextSearch === currentSearch,
+      keepFocus: true,
+      noScroll: true,
+      invalidateAll: true
+    });
+  }
+
+  function handlePageChange(nextPage: number) {
+    if (nextPage === currentPage) {
+      return;
+    }
+
+    void navigateAudience({
+      ...query,
+      page: nextPage
+    });
+  }
+
+  function handleSortChange(
+    sortBy: OrganizationAudienceQuery['sortBy'],
+    sortOrder: OrganizationAudienceQuery['sortOrder']
+  ) {
+    void navigateAudience({ ...query, page: 1, sortBy, sortOrder });
+  }
+
+  // Every filter change resets to page 1: staying on page 7 of a result set
+  // that just shrank to two pages shows an empty table.
+  function handleFilterChange(patch: Partial<OrganizationAudienceQuery>) {
+    void navigateAudience({ ...query, ...patch, page: 1 });
+  }
+
+  function handleSelectView(view: OrganizationAudienceView) {
+    void navigateAudience(applyAudienceView(view, query));
+  }
+
+  function handleClearFilters() {
+    void navigateAudience(clearAudienceFilters(query));
+  }
+
+  // "All matching" is a mode, not 12,000 ids in a Set. It resolves server-side
+  // from the same filters the list used.
+  let allMatchingSelected = $state(false);
+  let bulkAction = $state<AudienceBulkAction | null>(null);
+  let bulkDialogOpen = $state(false);
+  let bulkPreview = $state<BulkAudiencePreview | null>(null);
+  /** Frozen when the dialog opens so clearing selection mid-submit cannot flash "0". */
+  let bulkDialogCount = $state(0);
+  let isApplyingBulkAction = $state(false);
+  let lastUndoToken = $state<string | null>(null);
+  // The run the API handed to the queue. The poll loop reads it to tell "still
+  // mine" from "superseded".
+  let queuedJobId = $state<string | null>(null);
+
+  const bulkTargetCount = $derived(allMatchingSelected ? totalCount : selectedIds.size);
+
+  function clearSelection() {
+    selectedIds.clear();
+    allMatchingSelected = false;
+  }
+
+  async function handleBulkAction(action: AudienceBulkAction) {
+    bulkAction = action;
+    bulkPreview = null;
+
+    // Filter mode needs the server's exact count and target hash before the
+    // admin can approve anything; ids mode already knows precisely who it hits.
+    if (allMatchingSelected) {
+      const response = await orgApi.previewBulkAudienceAction(query);
+      if (!response) {
+        bulkAction = null;
+        return;
+      }
+
+      bulkPreview = response.data;
+      bulkDialogCount = response.data.count;
+    } else {
+      bulkDialogCount = selectedIds.size;
+    }
+
+    bulkDialogOpen = true;
+  }
+
+  const QUEUED_POLL_FALLBACK_MS = 3_000;
+
+  // Clearing this is what ends the poll loop; without it a navigation would
+  // leave it running against a destroyed component.
+  onDestroy(() => {
+    queuedJobId = null;
+  });
+
+  /**
+   * Polls a queued run to its terminal state, resolving the spinner toast into
+   * the same summary the synchronous path shows. The loop exits as soon as
+   * `queuedJobId` no longer names this job, so leaving the page or starting
+   * another run stops it.
+   */
+  async function pollQueuedRun(jobId: string, toastId: string) {
+    for (let pollCount = 0; queuedJobId === jobId; pollCount += 1) {
+      const response = await orgApi.bulkAudienceActionStatus(jobId, pollCount);
+
+      if (!response) {
+        queuedJobId = null;
+        snackbar.error('audience.bulk.queued_lost', toastId);
+
+        return;
+      }
+
+      const { job, nextPollMs } = response.data;
+
+      if (job.status === 'completed') {
+        const outcome = job.result as BulkAudienceActionOutcome | null;
+        queuedJobId = null;
+
+        if (outcome && outcome.failed.length > 0) {
+          snackbar.success(
+            t.get('audience.bulk.partial_success', {
+              succeeded: outcome.succeeded,
+              failed: outcome.failed.length
+            }),
+            toastId
+          );
+        } else {
+          snackbar.success('audience.bulk.success', toastId);
+        }
+
+        await refreshAudience();
+
+        return;
+      }
+
+      if (job.status === 'failed' || job.status === 'canceled') {
+        queuedJobId = null;
+        snackbar.error('audience.bulk.queued_failed', toastId);
+        await refreshAudience();
+
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, nextPollMs ?? QUEUED_POLL_FALLBACK_MS));
+    }
+  }
+
+  async function handleBulkConfirm(reason: string | undefined) {
+    if (!bulkAction) return;
+
+    const target = allMatchingSelected
+      ? bulkPreview
+        ? ({
+            mode: 'filter' as const,
+            filter: toAudienceBulkFilterQuery(query),
+            expectedCount: bulkPreview.count,
+            expectedTargetHash: bulkPreview.targetHash
+          } as never)
+        : null
+      : ({ mode: 'ids' as const, memberIds: [...selectedIds].map(Number) } as never);
+
+    if (!target) return;
+
+    isApplyingBulkAction = true;
+
+    try {
+      const response = await orgApi.bulkAudienceAction({ target, action: bulkAction, reason });
+      if (!response) return;
+
+      const result = response.data;
+      lastUndoToken = 'undoToken' in result ? (result.undoToken ?? null) : null;
+
+      if (result.mode === 'queued') {
+        // Too large to apply in the request. Nothing has changed yet, so the
+        // list is not refreshed until the run reports back.
+        bulkDialogOpen = false;
+        bulkAction = null;
+        clearSelection();
+        queuedJobId = result.jobId;
+        // One toast for the whole run: it spins while polling, then becomes the
+        // outcome in place rather than a second toast arriving beside it.
+        const toastId = snackbar.loading(t.get('audience.bulk.queued_running', { count: result.requested }));
+        void pollQueuedRun(result.jobId, toastId);
+
+        return;
+      }
+
+      if (result.mode === 'completed' && result.failed.length > 0) {
+        snackbar.success(
+          t.get('audience.bulk.partial_success', { succeeded: result.succeeded, failed: result.failed.length })
+        );
+      } else {
+        snackbar.success('audience.bulk.success');
+      }
+
+      bulkDialogOpen = false;
+      bulkAction = null;
+      clearSelection();
+      await refreshAudience();
+    } finally {
+      isApplyingBulkAction = false;
+    }
+  }
+
+  let isUndoing = $state(false);
+
+  async function handleUndo() {
+    if (!lastUndoToken || isUndoing) return;
+
+    isUndoing = true;
+
+    try {
+      const response = await orgApi.undoBulkAudienceAction(lastUndoToken);
+      if (!response) return;
+
+      // Cleared only once the server has actually consumed it. Dropping it up
+      // front would remove the retry affordance on a failed request, and the
+      // token is single-use anyway so a double-click cannot double-apply.
+      lastUndoToken = null;
+      await refreshAudience();
+    } finally {
+      isUndoing = false;
+    }
+  }
+
+  function openDeleteConfirmation(member: OrganizationAudienceMember) {
+    deleteCandidate = member;
+    deleteDialogOpen = true;
+  }
+
+  async function handleDeleteAudienceMember() {
+    if (!deleteCandidate) {
+      return;
+    }
+
+    deletingMemberId = String(deleteCandidate.id);
+
+    try {
+      const result = await orgApi.deleteAudienceMember(Number(deleteCandidate.id));
+      if (!result) {
+        return;
+      }
+
+      selectedIds.delete(String(deleteCandidate.id));
+
+      const nextPage = orgApi.audience.length === 1 && currentPage > 1 ? currentPage - 1 : currentPage;
+      await refreshAudience(nextPage);
+      deleteCandidate = null;
+      deleteDialogOpen = false;
+    } finally {
+      deletingMemberId = null;
+    }
+  }
+</script>
+
+{#if totalCount >= $currentOrgMaxAudience}
+  <UpgradeBanner>{$t('audience.upgrade')}</UpgradeBanner>
+{/if}
+
+<AudienceTableToolbar
+  bind:searchValue
+  {query}
+  {activeView}
+  {activeFilterCount}
+  {totalCount}
+  onSortChange={handleSortChange}
+  onFilterChange={handleFilterChange}
+  onClearFilters={handleClearFilters}
+  onSelectView={handleSelectView}
+/>
+
+{#if lastUndoToken}
+  <div class="flex items-center gap-2 rounded-md border px-4 py-2">
+    <span class="ui:text-muted-foreground text-sm">{$t('audience.bulk.undo_available')}</span>
+    <Button variant="secondary" size="sm" onclick={handleUndo} loading={isUndoing} disabled={isUndoing}>
+      {$t('audience.bulk.undo')}
+    </Button>
+    <!-- Dismissing drops the offer, not the action: the change already
+         happened, and the token expires on its own either way. -->
+    <Button
+      variant="secondary"
+      size="icon"
+      class="ml-auto"
+      disabled={isUndoing}
+      onclick={() => (lastUndoToken = null)}
+      title={$t('audience.bulk.undo_dismiss')}
+    >
+      <XIcon class="size-4" aria-hidden="true" />
+      <span class="sr-only">{$t('audience.bulk.undo_dismiss')}</span>
+    </Button>
+  </div>
+{/if}
+
+{#if totalCount > 0}
+  <div class="w-full space-y-4">
+    <AudienceTable
+      {headers}
+      loading={isReloading}
+      rows={orgApi.audience}
+      {allPageSelected}
+      {somePageSelected}
+      onToggleSelectAll={toggleSelectAll}
+      isRowSelected={(id) => allMatchingSelected || selectedIds.has(id)}
+      onToggleRow={toggleRow}
+      {inviteActionEmail}
+      {deletingMemberId}
+      canDeleteMembers={$isOrgAdmin === true}
+      onResendInvite={handleResendInvite}
+      onRevokeInvite={handleRevokeInvite}
+      onDeleteRow={openDeleteConfirmation}
+    />
+
+    <TablePagination count={totalCount} perPage={pageSize} page={currentPage} onPageChange={handlePageChange} />
+  </div>
+{:else if isFiltered}
+  <!-- Distinct from the "no audience at all" state: here the roster has people,
+       the filters just exclude them, so the action is to clear the filters. -->
+  <Empty
+    title={$t('audience.filter.empty_title')}
+    description={$t('audience.filter.empty_description')}
+    icon={SearchXIcon}
+    variant="page"
+  >
+    <Button variant="secondary" onclick={handleClearFilters}>{$t('audience.filter.clear')}</Button>
+  </Empty>
+{:else}
+  <Empty title={$t('audience.no_audience')} description={$t('audience.manage')} icon={UsersIcon} variant="page" />
+{/if}
+
+<AssignCoursesModal
+  bind:open={assignModalOpen}
+  {selectedProfileIds}
+  {courses}
+  onclose={() => (assignModalOpen = false)}
+  onassigned={handleAssigned}
+/>
+
+<AudienceDeleteConfirmation
+  bind:open={deleteDialogOpen}
+  member={deleteCandidate}
+  isDeleting={deletingMemberId !== null}
+  onDelete={handleDeleteAudienceMember}
+/>
+
+<AudienceBulkConfirmation
+  bind:open={bulkDialogOpen}
+  action={bulkAction}
+  count={bulkDialogCount}
+  preview={bulkPreview}
+  isApplying={isApplyingBulkAction}
+  onConfirm={handleBulkConfirm}
+/>

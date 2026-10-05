@@ -1,195 +1,148 @@
 <script lang="ts">
-  import { browser } from '$app/environment';
-  import { page } from '$app/stores';
-  import debounce from 'lodash/debounce';
-
-  import Apps from '$lib/components/Apps/index.svelte';
-  import { course } from '$lib/components/Course/store';
-  import OrgNavigation from '$lib/components/Navigation/app.svelte';
-  import LandingNavigation from '$lib/components/Navigation/index.svelte';
-  import LMSNavigation from '$lib/components/Navigation/lms.svelte';
-  import OrgLandingPage from '$lib/components/Org/LandingPage/index.svelte';
-  import PlayQuiz from '$lib/components/Org/Quiz/Play/index.svelte';
-  import { PageRestricted } from '$lib/components/Page';
-  import PageLoadProgressBar from '$lib/components/Progress/PageLoadProgressBar.svelte';
-  import Snackbar from '$lib/components/Snackbar/index.svelte';
-  import UpgradeModal from '$lib/components/Upgrade/Modal.svelte';
-  import { isCoursesPage, isLMSPage, isOrgPage, toggleBodyByMode } from '$lib/utils/functions/app';
-  import { getProfile, setupAnalytics } from '$lib/utils/functions/appSetup';
-  import hideNavByRoute from '$lib/utils/functions/routes/hideNavByRoute';
-  import showAppsSideBar from '$lib/utils/functions/showAppsSideBar';
-  import { getSupabase } from '$lib/utils/functions/supabase';
-  import { setTheme } from '$lib/utils/functions/theme';
-  import { initOrgAnalytics } from '$lib/utils/services/posthog';
-  import { globalStore } from '$lib/utils/store/app';
-  import { currentOrg } from '$lib/utils/store/org';
-  import { isMobile } from '$lib/utils/store/useMobile';
-  import { Theme } from 'carbon-components-svelte';
-  import type { CarbonTheme } from 'carbon-components-svelte/types/Theme/Theme.svelte';
-  import merge from 'lodash/merge';
+  import { page } from '$app/state';
   import { onMount } from 'svelte';
+
+  import { Snackbar } from '$features/ui';
+  import { appInitApi } from '$features/app/init.svelte';
+  import PendingInviteModal from '$features/invite/components/pending-invite-modal.svelte';
+  import { resolveAppOrgParams } from '$features/app/resolve-app-org-params';
+  import { setupCloudAnalytics } from '$lib/utils/functions/appSetup';
+  import { globalStore } from '$lib/utils/store/app';
+  import { currentOrg, mergeAccountOrgFromServer } from '$lib/utils/store/org';
+  import { get } from 'svelte/store';
+  import { user } from '$lib/utils/store/user';
+  import { setTheme } from '$lib/utils/functions/theme';
+  import { activateLocale, ensureTranslations } from '$lib/utils/functions/translations';
+  import { authClient } from '$lib/utils/services/auth/client';
+  import merge from 'lodash/merge';
   import { MetaTags } from 'svelte-meta-tags';
-  import isPublicRoute from '$lib/utils/functions/routes/isPublicRoute';
-  import { hasSession } from '$lib/utils/functions/supabase';
-  import { goto } from '$app/navigation';
+  import AppModeWatcher from '$features/app/app-mode-watcher.svelte';
+  import AppVersionNotifier from '$features/app/app-version-notifier.svelte';
+  import OrgSiteFavicon from '$features/app/org-site-favicon.svelte';
 
-  import '../app.postcss';
+  import '../app.css';
 
-  export let data;
+  import { setUploadLimitsContext } from '$lib/utils/config/upload-limits-context';
 
-  let supabase = getSupabase();
-  let path = $page.url?.pathname?.replace('/', '');
-  let queryParam = $page.url?.search;
-  let carbonTheme: CarbonTheme = 'white';
+  let { data, children } = $props();
 
-  function handleResize() {
-    isMobile.update(() => window.innerWidth <= 760);
-  }
+  setUploadLimitsContext(data.uploadLimits);
 
-  const getProfileDebounced = debounce(getProfile, 1000);
-
-  function pageSetup() {
-    console.log(
-      'Welcome to ClassroomIO, we are grateful you chose us.',
-      $page.url.host,
-      `\nIs student domain: ${data.isOrgSite}`,
-      data
-    );
-
-    $globalStore.isDark = localStorage.getItem('mode') === 'dark';
-    toggleBodyByMode($globalStore.isDark);
-
-    setupAnalytics();
-
-    handleResize();
-
-    if (!data.isOrgSite || !data.org) return;
-
-    $globalStore.orgSiteName = data.orgSiteName;
-    $globalStore.isOrgSite = data.isOrgSite;
-
-    currentOrg.set(data.org);
-
-    // Setup internal analytics
-    initOrgAnalytics(data.orgSiteName);
-
-    setTheme(data.org?.theme);
-  }
+  const metaTags = $derived(merge(data.baseMetaTags, page.data.pageMetaTags));
 
   onMount(() => {
-    pageSetup();
+    const sessionUser = data?.locals?.user;
+    setupCloudAnalytics(
+      sessionUser ? { id: sessionUser.id, email: sessionUser.email, name: sessionUser.name } : undefined,
+      data.isOrgSite
+    );
 
-    if (!hasSession() && !isPublicRoute($page.url?.pathname)) {
-      console.log('No auth token and is not a public route, redirect to login', path);
-      return goto('/login?redirect=/' + path);
+    if (data?.locals?.user) {
+      user.set({
+        ...$user,
+        isLoggedIn: true,
+        currentSession: data.locals.user
+      });
+    }
+  });
+
+  $effect(() => {
+    let isCurrent = true;
+    const isOrgSiteRoute = data.isOrgSite && page.url.pathname.length > 0;
+
+    if (!data.isOrgSite || !data.org) {
+      $globalStore.isOrgSite = false;
+      $globalStore.orgSiteName = '';
+      return () => {
+        isCurrent = false;
+      };
     }
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event) => {
-      console.log(`event`, event);
+    const enforcedLocale = data.org.settings?.language?.enforced ? data.org.settings.language.locale : undefined;
+    if (isOrgSiteRoute && enforcedLocale) {
+      void ensureTranslations(enforcedLocale, () => isCurrent).then(() => {
+        if (isCurrent) activateLocale(enforcedLocale);
+      });
+    }
 
-      if (path.includes('reset')) {
-        console.log('Dont change auth when on reset page');
-        return;
-      }
+    $globalStore.orgSiteName = data.orgSiteName || '';
+    $globalStore.isOrgSite = true;
 
-      if (data.skipAuth) return;
+    const existingOrg = get(currentOrg);
+    const shouldSetPublicOrg =
+      !existingOrg.id || existingOrg.siteName !== data.org.siteName || existingOrg.roleId === 0;
 
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        getProfileDebounced({
-          path,
-          queryParam,
-          isOrgSite: data.isOrgSite,
-          orgSiteName: data.orgSiteName
-        });
-      }
-    });
+    if (shouldSetPublicOrg) {
+      currentOrg.set(mergeAccountOrgFromServer(data.org));
+    }
+
+    setTheme(data.org.theme || 'blue');
 
     return () => {
-      console.log('unsubscribed');
-      authListener.subscription.unsubscribe();
+      isCurrent = false;
     };
   });
 
-  $: path = $page.url?.pathname?.replace('/', '');
-  $: carbonTheme = $globalStore.isDark ? 'g100' : 'white';
-  $: metaTags = merge(data.baseMetaTags, $page.data.pageMetaTags);
+  const session = authClient.useSession();
+  const isSessionReady = $derived(!$session.isPending && !$session.isRefetching && $session.data);
+  const appOrgParams = $derived(resolveAppOrgParams(data, page.url.pathname, page.params.slug));
+
+  /*
+    Auth + org context for the whole dashboard.
+
+    setupApp runs once per session to load /account. After that, org context can
+    still change when a logged-in user navigates to a different tenant subdomain
+    or opens another /org/[slug] on the app host — without another setupApp run.
+    syncOrgContext re-pins currentOrg from the URL + cached account data.
+  */
+  $effect(() => {
+    if (!isSessionReady || appInitApi.loading) {
+      return;
+    }
+
+    if (!appInitApi.isInitializedAndReady) {
+      appInitApi.setupApp($session.data as App.Locals, appOrgParams);
+      return;
+    }
+
+    void appInitApi.syncOrgContext(appOrgParams);
+  });
 </script>
 
-<svelte:window on:resize={handleResize} />
-
-<MetaTags {...metaTags} />
-
-<Theme bind:theme={carbonTheme} />
-
-<UpgradeModal />
-
-<Snackbar />
-
-{#if data.org?.is_restricted || $currentOrg.is_restricted}
-  <PageRestricted />
-{:else if data.skipAuth}
-  <PlayQuiz />
-{:else if data.isOrgSite && !path}
-  <OrgLandingPage orgSiteName={data.orgSiteName} org={data.org} />
-{:else}
-  <main class="font-roboto dark:bg-black">
-    {#if !hideNavByRoute($page.url?.pathname)}
-      {#if isOrgPage($page.url?.pathname) || $page.url?.pathname.includes('profile') || isCoursesPage(path)}
-        <OrgNavigation bind:title={$course.title} isCoursePage={isCoursesPage(path)} />
-      {:else if isLMSPage($page.url?.pathname)}
-        <LMSNavigation />
-      {:else}
-        <LandingNavigation
-          isOrgSite={data.isOrgSite}
-          logo={data.isOrgSite ? $currentOrg.avatar_url : undefined}
-          orgName={data.isOrgSite ? $currentOrg.name : undefined}
-          disableSignup={false}
-        />
-      {/if}
-
-      <PageLoadProgressBar textColorClass="text-neutral-700" />
-    {/if}
-
-    <div class={path.includes('home') ? '' : 'flex justify-between'}>
-      <slot />
-
-      {#if showAppsSideBar(path)}
-        <Apps />
-      {/if}
-    </div>
-  </main>
+{#if data.isOrgSite}
+  <OrgSiteFavicon org={data.org} />
 {/if}
 
-<style>
-  main {
-    background-color: white;
-    box-sizing: border-box;
-  }
+<svelte:head>
+  {#if !data.isOrgSite}
+    <link rel="icon" type="image/png" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/logo-32.png" />
+  {/if}
+</svelte:head>
 
-  :global(a:hover) {
-    text-decoration: underline;
-  }
+<div>
+  <AppModeWatcher />
+
+  <MetaTags {...metaTags} />
+
+  <Snackbar />
+  <AppVersionNotifier />
+
+  {#if appInitApi.pendingOrgInvite}
+    <PendingInviteModal
+      bind:open={appInitApi.showPendingInviteModal}
+      invite={appInitApi.pendingOrgInvite}
+      onAccepted={(redirectTo) => appInitApi.handlePendingInviteAccepted(redirectTo)}
+    />
+  {/if}
+
+  {@render children?.()}
+</div>
+
+<style>
   :global(:root) {
     --main-primary-color: rgba(29, 78, 216, 1);
     --border-color: #eaecef;
-    --app-background-color: #fafbfc;
-    --app-background: radial-gradient(
-      circle at 10% 20%,
-      rgb(239, 246, 249) 0%,
-      rgb(206, 239, 253) 90%
-    );
-    --dark-app-background: radial-gradient(circle at 10% 20%, rgb(0 0 0) 0%, rgb(27 60 74) 90%);
-  }
-
-  :global(.app-background) {
-    background: var(--app-background);
-  }
-  :global(.dark .app-background) {
-    background: var(--dark-app-background);
-  }
-
-  :global(.bx--data-table-container) {
-    width: 100%;
   }
 
   :global(.dark svg.dark) {
@@ -202,23 +155,6 @@
 
   :global(.border-bottom-c) {
     border-bottom: 1px solid var(--border-color);
-  }
-
-  :global(.bx--search-close > svg) {
-    fill: black;
-  }
-
-  :global(.dark .bx--search-close:hover > svg) {
-    fill: #fff;
-  }
-
-  :global(.plyr__controls) {
-    background:
-      url(/logo-192.png) 99% 70% no-repeat,
-      linear-gradient(rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.5)) !important;
-    background-size:
-      50px auto,
-      auto !important;
   }
 
   :global(.cards-container) {

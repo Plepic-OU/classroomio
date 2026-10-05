@@ -9,11 +9,16 @@ const jessy = require('jessy');
 const set = require('lodash/set');
 
 const englishTranslations = require('../src/lib/utils/translations/en.json');
+let prettierPromise;
 
 // Load env variables
 dotenv.config();
 
 const SCRIPT_WAIT_TIME = 2000;
+const requestedLanguages = process.argv
+  .slice(2)
+  .map((language) => language.toLowerCase())
+  .filter((language) => language && language !== '--');
 
 // Define file paths for each language
 const languageFiles = {
@@ -25,10 +30,34 @@ const languageFiles = {
   pt: path.resolve(__dirname, '../src/lib/utils/translations/pt.json'),
   ru: path.resolve(__dirname, '../src/lib/utils/translations/ru.json'),
   vi: path.resolve(__dirname, '../src/lib/utils/translations/vi.json'),
-  da: path.resolve(__dirname, '../src/lib/utils/translations/da.json')
+  da: path.resolve(__dirname, '../src/lib/utils/translations/da.json'),
+  tr: path.resolve(__dirname, '../src/lib/utils/translations/tr.json')
 };
 
+const selectedLanguageFiles = requestedLanguages.length
+  ? Object.fromEntries(Object.entries(languageFiles).filter(([language]) => requestedLanguages.includes(language)))
+  : languageFiles;
+
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getPrettier = async () => {
+  if (!prettierPromise) {
+    prettierPromise = import('prettier');
+  }
+
+  return prettierPromise;
+};
+
+const writeFormattedTranslationFile = async (outputFilePath, translations) => {
+  const prettier = await getPrettier();
+  const prettierConfig = (await prettier.resolveConfig(outputFilePath)) ?? {};
+  const formattedJson = await prettier.format(JSON.stringify(translations, null, 2), {
+    ...prettierConfig,
+    filepath: outputFilePath
+  });
+
+  fs.writeFileSync(outputFilePath, formattedJson);
+};
 
 const getMissingTranslations = async (toLanguage, outputFilePath) => {
   const englishKeys = keys(englishTranslations);
@@ -50,9 +79,7 @@ const getMissingTranslations = async (toLanguage, outputFilePath) => {
 
   // Check if there are missing translations, if not, stop the process
   if (!missingKeysWithDetails) {
-    console.log(
-      `No missing translations for ${toLanguage.toUpperCase()}. Stopping translation process.`
-    );
+    console.log(`No missing translations for ${toLanguage.toUpperCase()}. Stopping translation process.`);
     return;
   }
 
@@ -103,7 +130,7 @@ const translateLanguage = async (fromLanguage, toLanguage, outputFilePath) => {
         set(targetTranslations, key, value);
       }
 
-      fs.writeFileSync(outputFilePath, JSON.stringify(targetTranslations, null, 2));
+      await writeFormattedTranslationFile(outputFilePath, targetTranslations);
       console.log(`${toLanguage.toUpperCase()} translations updated successfully.`);
     } else {
       console.log(`Failed to update ${toLanguage.toUpperCase()} translations.`);
@@ -129,7 +156,12 @@ const flattenJSON = (obj, prefix = '') => {
 
 // Loop through each language and translate the English text with a delay
 const translate = async () => {
-  for (const [language, filePath] of Object.entries(languageFiles)) {
+  if (!Object.keys(selectedLanguageFiles).length) {
+    console.error(`No matching languages for: ${requestedLanguages.join(', ')}`);
+    process.exit(1);
+  }
+
+  for (const [language, filePath] of Object.entries(selectedLanguageFiles)) {
     console.log(`============FROM: EN================`);
     console.log(`============TO: ${language.toUpperCase()}================`);
 

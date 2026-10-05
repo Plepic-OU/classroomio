@@ -1,0 +1,575 @@
+<script module lang="ts">
+  let pendingEditor: Promise<typeof import('../editor')> | null = null;
+  function loadEditor() {
+    pendingEditor ??= import('../editor');
+    return pendingEditor;
+  }
+</script>
+
+<script lang="ts">
+  import type {
+    AnswerData,
+    ExerciseQuestionModel,
+    ExerciseQuestionRenderContract,
+    ExerciseQuestionRendererProps
+  } from '@cio/question-types';
+  import { getExerciseQuestionLabel } from '@cio/question-types';
+  import PlusIcon from '@lucide/svelte/icons/plus';
+  import XIcon from '@lucide/svelte/icons/x';
+  import { Button } from '../../base/button';
+  import { HoverableItem, MaximizeIcon } from '../moving-icons';
+  import * as Dialog from '../../base/dialog';
+  import * as DropdownMenu from '../../base/dropdown-menu';
+  import { Input } from '../../base/input';
+  import { IconButton } from '../icon-button';
+  import { MediaPlayer, getVideoMediaType, isYoutubeUrl, isVimeoUrl } from '../media-player';
+  import { dedupe } from '@cio/utils';
+  import NumberBadge from '$src/base/number-badge/number-badge.svelte';
+  import QuestionTitle from './question-title.svelte';
+  import { YoutubeLinkForm } from '../youtube-link-form';
+  import { ImageLightbox, ZoomableHtmlContent, ZoomableImage, type LightboxImage } from '../image-lightbox';
+  import { getQuestionLightboxLabels } from './lightbox-labels';
+  import { hasQuestionDescriptionContent, toQuestionDescriptionHtml } from './question-description';
+  import QuestionSurface from './question-surface.svelte';
+  import { getExerciseQuestionRenderer } from './renderer-contract';
+  import type { Snippet } from 'svelte';
+
+  interface Props {
+    contract: ExerciseQuestionRenderContract;
+    onAnswerChange?: (answer: AnswerData | null) => void;
+    onQuestionChange?: (question: ExerciseQuestionRendererProps['question']) => void;
+    showContainer?: boolean;
+    questionTypeSelect?: Snippet;
+    /** When set, a numbered badge is shown to the left of the title (non-edit modes). */
+    questionNumber?: number;
+    /** When false, the badge uses muted styling (e.g. question lists). Defaults to true. */
+    questionNumberActive?: boolean;
+    /** Shown beneath the title input in edit mode when validation fails. */
+    titleError?: string | null;
+    /** Heading of the expanded description sheet in edit mode. */
+    exerciseTitle?: string;
+  }
+
+  let {
+    contract,
+    onAnswerChange = () => {},
+    onQuestionChange = () => {},
+    showContainer = true,
+    questionTypeSelect,
+    questionNumber,
+    questionNumberActive = true,
+    titleError = null,
+    exerciseTitle = ''
+  }: Props = $props();
+
+  const Renderer = $derived(getExerciseQuestionRenderer(contract.question.questionType, contract.mode));
+  const label = (key: Parameters<typeof getExerciseQuestionLabel>[1], fallback = '') =>
+    getExerciseQuestionLabel(contract.labels, key, fallback);
+
+  let imageFileInput = $state<HTMLInputElement | null>(null);
+  let isImageUploading = $state(false);
+  let imageUploadError = $state('');
+  let isDescriptionEditorVisible = $state(false);
+  let isYoutubeDialogOpen = $state(false);
+  let isLightboxOpen = $state(false);
+  let isDescriptionExpanded = $state(false);
+  let lightboxIndex = $state(0);
+  let lightboxImages = $state<LightboxImage[]>([]);
+
+  const questionDescription = $derived(String((contract.question.settings?.description as string | undefined) ?? ''));
+  const hasDescription = $derived(isDescriptionEditorVisible || questionDescription.trim().length > 0);
+  const questionDescriptionHtml = $derived(toQuestionDescriptionHtml(questionDescription));
+  const questionImageUrls = $derived.by(() => {
+    const settings = contract.question.settings ?? {};
+
+    const explicitImageUrls = Array.isArray(settings.imageUrls)
+      ? settings.imageUrls.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      : [];
+
+    if (explicitImageUrls.length > 0) return explicitImageUrls;
+
+    const legacyImageUrl = settings.imageUrl;
+    if (typeof legacyImageUrl === 'string' && legacyImageUrl.trim().length > 0) return [legacyImageUrl];
+
+    return [] as string[];
+  });
+  const questionImages = $derived(
+    questionImageUrls.map((imageUrl) => ({ src: imageUrl, alt: label('question.edit.image_alt') }))
+  );
+  const questionVideoUrls = $derived.by(() => {
+    const settings = contract.question.settings ?? {};
+
+    const explicitVideoUrls = Array.isArray(settings.videoUrls)
+      ? settings.videoUrls.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      : [];
+
+    if (explicitVideoUrls.length > 0) return explicitVideoUrls;
+
+    const legacyVideoUrl = settings.videoUrl;
+    if (typeof legacyVideoUrl === 'string' && legacyVideoUrl.trim().length > 0) return [legacyVideoUrl];
+
+    return [] as string[];
+  });
+  const questionVideos = $derived.by(() =>
+    questionVideoUrls
+      .map((videoUrl, index) => {
+        const sourceUrl = videoUrl.trim();
+        return sourceUrl.length > 0
+          ? {
+              key: `${sourceUrl}-${index}`,
+              sourceIndex: index,
+              sourceUrl
+            }
+          : null;
+      })
+      .filter((entry): entry is { key: string; sourceIndex: number; sourceUrl: string } =>
+        Boolean(entry && (isYoutubeUrl(entry.sourceUrl) || isVimeoUrl(entry.sourceUrl)))
+      )
+  );
+
+  $effect(() => {
+    if (questionDescription.trim().length > 0) {
+      isDescriptionEditorVisible = true;
+    }
+  });
+
+  function patchQuestion(partial: Partial<ExerciseQuestionModel>) {
+    onQuestionChange({ ...contract.question, ...partial });
+  }
+
+  function patchSettings(next: Record<string, unknown>) {
+    patchQuestion({
+      settings: {
+        ...(contract.question.settings ?? {}),
+        ...next
+      }
+    });
+  }
+
+  function setQuestionDescription(nextDescription: string | null) {
+    const nextSettings = { ...(contract.question.settings ?? {}) } as Record<string, unknown>;
+
+    if (nextDescription === null) {
+      delete nextSettings.description;
+    } else {
+      nextSettings.description = nextDescription;
+    }
+
+    patchQuestion({
+      settings: nextSettings
+    });
+  }
+
+  function setQuestionImageUrls(nextUrls: string[]) {
+    const deduped = dedupe(nextUrls.map((value) => value.trim()).filter(Boolean));
+    const nextSettings = {
+      ...(contract.question.settings ?? {}),
+      imageUrls: deduped
+    } as Record<string, unknown>;
+
+    delete nextSettings.imageUrl;
+
+    patchQuestion({
+      settings: nextSettings
+    });
+  }
+
+  function setQuestionVideoUrls(nextUrls: string[]) {
+    const deduped = dedupe(nextUrls.map((value) => value.trim()).filter(Boolean));
+    const nextSettings = {
+      ...(contract.question.settings ?? {}),
+      videoUrls: deduped
+    } as Record<string, unknown>;
+
+    delete nextSettings.videoUrl;
+
+    patchQuestion({
+      settings: nextSettings
+    });
+  }
+
+  function openImagePicker() {
+    if (contract.disabled || isImageUploading) return;
+    imageFileInput?.click();
+  }
+
+  function fileToDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        if (!reader.result) {
+          reject(new Error('Failed to read image file'));
+          return;
+        }
+
+        resolve(String(reader.result));
+      };
+
+      reader.onerror = () => {
+        reject(reader.error ?? new Error('Failed to read image file'));
+      };
+
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function uploadQuestionImage(file: File): Promise<string> {
+    if (contract.onImageUpload) {
+      return contract.onImageUpload(file);
+    }
+
+    return fileToDataUrl(file);
+  }
+
+  async function handleImageFileSelection(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const selectedFiles = Array.from(input.files ?? []);
+    input.value = '';
+
+    if (!selectedFiles.length) return;
+
+    const validFiles = selectedFiles.filter((file) => file.type.startsWith('image/'));
+    if (!validFiles.length) {
+      imageUploadError = label('question.edit.upload_error_only_images');
+      return;
+    }
+
+    imageUploadError = '';
+    isImageUploading = true;
+
+    try {
+      const uploadedUrls: string[] = [];
+
+      for (const file of validFiles) {
+        const uploadedUrl = await uploadQuestionImage(file);
+        if (!uploadedUrl) continue;
+        uploadedUrls.push(uploadedUrl);
+      }
+
+      if (uploadedUrls.length > 0) {
+        setQuestionImageUrls([...questionImageUrls, ...uploadedUrls]);
+      }
+
+      if (validFiles.length !== selectedFiles.length) {
+        imageUploadError = label('question.edit.upload_error_skipped');
+      }
+    } catch (error) {
+      imageUploadError = label('question.edit.upload_error_failed');
+      console.error('Failed to upload question image:', error);
+    } finally {
+      isImageUploading = false;
+    }
+  }
+
+  function removeImage(imageIndex: number) {
+    setQuestionImageUrls(questionImageUrls.filter((_, index) => index !== imageIndex));
+    imageUploadError = '';
+  }
+
+  function onDescriptionAction() {
+    if (contract.disabled) return;
+
+    if (hasDescription) {
+      isDescriptionEditorVisible = false;
+      setQuestionDescription(null);
+      return;
+    }
+
+    isDescriptionEditorVisible = true;
+    setQuestionDescription(questionDescription);
+  }
+
+  function openYoutubeDialog() {
+    if (contract.disabled) return;
+    isYoutubeDialogOpen = true;
+  }
+
+  async function addYoutubeVideos(links: string[]) {
+    if (!links.length) return;
+    setQuestionVideoUrls([...questionVideoUrls, ...links]);
+    isYoutubeDialogOpen = false;
+  }
+
+  function removeVideo(videoIndex: number) {
+    setQuestionVideoUrls(questionVideoUrls.filter((_, index) => index !== videoIndex));
+  }
+
+  function openLightbox(images: LightboxImage[], imageIndex: number) {
+    lightboxImages = images;
+    lightboxIndex = imageIndex;
+    isLightboxOpen = true;
+  }
+</script>
+
+{#snippet content()}
+  {#if contract.mode === 'edit'}
+    <div class="ui:space-y-3">
+      <div class="ui:flex ui:min-w-0 ui:flex-col ui:items-stretch ui:gap-2 ui:sm:flex-row ui:sm:items-end">
+        <div class="ui:min-w-0 ui:flex-1 ui:space-y-1">
+          <p class="ui:text-sm ui:font-medium">{label('question.edit.title_label')}</p>
+          <Input
+            class="ui:w-full"
+            value={contract.question.title}
+            placeholder={label('question.edit.title_placeholder')}
+            disabled={contract.disabled}
+            aria-invalid={titleError ? true : undefined}
+            onchange={(event) => patchQuestion({ title: event.currentTarget.value })}
+          />
+          {#if titleError}
+            <p class="ui:text-destructive ui:text-xs">{titleError}</p>
+          {/if}
+        </div>
+
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger disabled={contract.disabled}>
+            {#snippet child({ props })}
+              <IconButton {...props} type="button" disabled={contract.disabled}>
+                <PlusIcon class="ui:size-4" />
+                <span class="ui:sr-only">{label('question.edit.media_menu_sr')}</span>
+              </IconButton>
+            {/snippet}
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content align="end">
+            <DropdownMenu.Item disabled={contract.disabled} onclick={onDescriptionAction}>
+              {hasDescription ? label('question.edit.remove_description') : label('question.edit.add_description')}
+            </DropdownMenu.Item>
+            <DropdownMenu.Item disabled={contract.disabled || isImageUploading} onclick={openImagePicker}>
+              {label('question.edit.add_image')}
+            </DropdownMenu.Item>
+            <DropdownMenu.Item disabled={contract.disabled} onclick={openYoutubeDialog}>
+              {label('question.edit.add_video')}
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
+        {#if questionTypeSelect}
+          {@render questionTypeSelect()}
+        {/if}
+      </div>
+
+      {#if hasDescription}
+        <div class="ui:space-y-1">
+          <div class="ui:flex ui:items-center ui:justify-between ui:gap-2">
+            <p class="ui:text-sm ui:font-medium">{label('question.edit.description_label')}</p>
+            <HoverableItem>
+              {#snippet children(isHovered)}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={contract.disabled}
+                  onclick={() => (isDescriptionExpanded = true)}
+                >
+                  <MaximizeIcon {isHovered} size={16} ariaHidden />
+                  {label('question.edit.expand_description')}
+                </Button>
+              {/snippet}
+            </HoverableItem>
+          </div>
+          {#await loadEditor()}
+            <div class="ui:h-32 ui:w-full ui:animate-pulse ui:rounded-md ui:bg-muted"></div>
+          {:then { Editor: DescriptionEditor }}
+            <DescriptionEditor
+              content={questionDescriptionHtml}
+              editable={!contract.disabled}
+              showToolBar={!contract.disabled}
+              placeholder={label('question.edit.description_placeholder')}
+              editorClass="ui:h-32"
+              showDragHandle={false}
+              onContentChange={(html) => patchSettings({ description: html })}
+              onImageUpload={uploadQuestionImage}
+              expandable
+              bind:expanded={isDescriptionExpanded}
+              expandedTitle={exerciseTitle || label('question.edit.description_label')}
+              expandedDescription={contract.question.title || label('question.edit.description_label')}
+            />
+          {/await}
+        </div>
+      {/if}
+
+      <input
+        bind:this={imageFileInput}
+        type="file"
+        accept="image/*"
+        multiple
+        class="ui:hidden"
+        disabled={contract.disabled || isImageUploading}
+        onchange={handleImageFileSelection}
+      />
+
+      {#if imageUploadError || questionImageUrls.length > 0}
+        <div class="ui:space-y-2">
+          {#if imageUploadError}
+            <p class="ui:text-destructive ui:text-xs">{imageUploadError}</p>
+          {/if}
+
+          {#if questionImageUrls.length > 0}
+            <div class="ui:flex ui:flex-wrap ui:gap-3">
+              {#each questionImageUrls as imageUrl, imageIndex (`${imageUrl}-${imageIndex}`)}
+                <div class="ui:group ui:relative ui:h-40 ui:w-40 ui:rounded-md ui:border">
+                  <div class="ui:absolute ui:inset-0 ui:overflow-hidden ui:rounded-md">
+                    <img
+                      src={imageUrl}
+                      alt={label('question.edit.image_alt')}
+                      class="ui:h-full ui:w-full ui:object-cover"
+                    />
+                  </div>
+                  <IconButton
+                    disabled={contract.disabled}
+                    tooltipClass="ui:absolute ui:right-[-12px] ui:top-[-12px] ui:z-10"
+                    class="ui:opacity-0 ui:transition-opacity ui:group-hover:opacity-100"
+                    tooltip={label('question.edit.remove_image_tooltip')}
+                    onclick={() => removeImage(imageIndex)}
+                    size="icon-sm"
+                  >
+                    <XIcon />
+                    <span class="ui:sr-only">{label('question.edit.remove_image_sr')}</span>
+                  </IconButton>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </div>
+      {/if}
+
+      {#if questionVideos.length > 0}
+        <div class="ui:space-y-3">
+          {#each questionVideos as video (video.key)}
+            <div class="ui:group ui:relative ui:max-w-xl ui:rounded-md ui:border">
+              <MediaPlayer
+                source={{
+                  type: getVideoMediaType(video.sourceUrl),
+                  url: video.sourceUrl
+                }}
+                options={{
+                  maxHeight: '320px',
+                  width: '100%',
+                  controls: true,
+                  playsinline: true
+                }}
+              />
+              <IconButton
+                disabled={contract.disabled}
+                tooltipClass="ui:absolute ui:right-[-12px] ui:top-[-12px] ui:z-10"
+                class="ui:opacity-0 ui:transition-opacity ui:group-hover:opacity-100"
+                tooltip={label('question.edit.remove_video_tooltip')}
+                onclick={() => removeVideo(video.sourceIndex)}
+                size="icon-sm"
+              >
+                <XIcon />
+                <span class="ui:sr-only">{label('question.edit.remove_video_sr')}</span>
+              </IconButton>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+
+    <Dialog.Root bind:open={isYoutubeDialogOpen}>
+      <Dialog.Content class="ui:max-w-xl">
+        <Dialog.Header>
+          <Dialog.Title>{label('question.edit.video_modal_title')}</Dialog.Title>
+        </Dialog.Header>
+        <YoutubeLinkForm
+          inputLabel={label('question.edit.video_link_label')}
+          inputPlaceholder={label('question.edit.video_link_placeholder')}
+          addButtonLabel={label('question.edit.video_add_button')}
+          invalidYoutubeMessage={label('question.edit.video_invalid_link')}
+          disabled={contract.disabled}
+          onSubmit={addYoutubeVideos}
+        />
+      </Dialog.Content>
+    </Dialog.Root>
+  {/if}
+
+  {#if contract.mode !== 'edit'}
+    <div class="ui:mb-4 ui:space-y-3">
+      {#if questionNumber !== undefined}
+        <div class="ui:flex ui:items-center ui:gap-2">
+          <NumberBadge number={questionNumber} active={questionNumberActive} />
+          {#if contract.question.title.trim().length > 0}
+            <QuestionTitle title={contract.question.title} class="ui:min-w-0 ui:flex-1" />
+          {/if}
+        </div>
+      {:else if contract.question.title.trim().length > 0}
+        <QuestionTitle title={contract.question.title} />
+      {/if}
+
+      {#if hasQuestionDescriptionContent(questionDescriptionHtml)}
+        <ZoomableHtmlContent
+          content={questionDescriptionHtml}
+          labels={getQuestionLightboxLabels(contract.labels)}
+          enlargeLabel={label('question.media.enlarge_image', 'Click to enlarge')}
+          fallbackAlt={label('question.edit.image_alt')}
+          class="ui:text-sm ui:leading-relaxed ui:text-muted-foreground ui:[&_p]:m-0 ui:[&_p+p]:mt-2 ui:[&_ul]:list-disc ui:[&_ul]:pl-5 ui:[&_ol]:list-decimal ui:[&_ol]:pl-5 ui:[&_li]:mt-1 ui:[&_a]:text-primary ui:[&_a]:underline ui:[&_strong]:font-semibold ui:[&_strong]:text-foreground ui:[&_img]:my-2 ui:[&_img]:max-w-full ui:[&_img]:rounded-md ui:[&_img]:border ui:[&_th]:border ui:[&_th]:px-2 ui:[&_th]:py-1 ui:[&_td]:border ui:[&_td]:px-2 ui:[&_td]:py-1"
+        />
+      {/if}
+
+      {#if questionImageUrls.length > 0}
+        <div class={questionImageUrls.length > 1 ? 'ui:grid ui:gap-3 ui:sm:grid-cols-2' : ''}>
+          {#each questionImageUrls as imageUrl, imageIndex (`${imageUrl}-${imageIndex}`)}
+            <ZoomableImage
+              src={imageUrl}
+              alt={label('question.edit.image_alt')}
+              enlargeLabel={label('question.media.enlarge_image', 'Click to enlarge')}
+              class={questionImageUrls.length > 1 ? 'ui:aspect-video' : ''}
+              imageClass={questionImageUrls.length > 1 ? '' : 'ui:h-auto ui:max-h-[28rem]'}
+              onclick={() => openLightbox(questionImages, imageIndex)}
+            />
+          {/each}
+        </div>
+      {/if}
+
+      <ImageLightbox
+        images={lightboxImages}
+        labels={getQuestionLightboxLabels(contract.labels)}
+        bind:open={isLightboxOpen}
+        bind:index={lightboxIndex}
+      />
+
+      {#if questionVideos.length > 0}
+        <div class="ui:space-y-3">
+          {#each questionVideos as video (video.key)}
+            <div class="ui:max-w-xl ui:overflow-hidden ui:rounded-md ui:border">
+              <MediaPlayer
+                source={{
+                  type: getVideoMediaType(video.sourceUrl),
+                  url: video.sourceUrl
+                }}
+                options={{
+                  maxHeight: '320px',
+                  width: '100%',
+                  controls: true,
+                  playsinline: true
+                }}
+              />
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  {/if}
+
+  <Renderer
+    question={contract.question}
+    answer={contract.answer}
+    submissions={contract.submissions}
+    maxSubmissionItems={contract.maxSubmissionItems}
+    disabled={contract.disabled}
+    labels={contract.labels}
+    platformMaxFileSizeMb={contract.platformMaxFileSizeMb}
+    onImageUpload={contract.onImageUpload}
+    onFileUpload={contract.onFileUpload}
+    onVideoRecordingUpload={contract.onVideoRecordingUpload}
+    {onAnswerChange}
+    {onQuestionChange}
+  />
+{/snippet}
+
+{#if showContainer}
+  <QuestionSurface>
+    {@render content()}
+  </QuestionSurface>
+{:else}
+  {@render content()}
+{/if}

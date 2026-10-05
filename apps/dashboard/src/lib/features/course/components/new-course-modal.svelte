@@ -1,0 +1,151 @@
+<script lang="ts">
+  import { preventDefault } from '$lib/utils/functions/svelte';
+
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import { page } from '$app/state';
+  import { createCourseModal } from '../utils/store';
+  import { TextareaField } from '@cio/ui/custom/textarea-field';
+  import { InputField } from '@cio/ui/custom/input-field';
+  import * as Dialog from '@cio/ui/base/dialog';
+  import { Button } from '@cio/ui/base/button';
+  import * as Field from '@cio/ui/base/field';
+  import { RadioOptionCardGroup } from '@cio/ui/custom/radio-option-card';
+  import { t } from '$lib/utils/functions/translations';
+  import type { TCourseType } from '@cio/db/types';
+  import { courseApi } from '../api';
+
+  let step = $state(0);
+
+  const options = [
+    {
+      id: 'self-paced',
+      title: $t('new_course_modal.self_paced_label'),
+      subtitle: $t('new_course_modal.self_paced_subtitle'),
+      type: 'SELF_PACED' as TCourseType,
+      isDisabled: false
+    },
+    {
+      id: 'live-class',
+      title: $t('new_course_modal.live_class_label'),
+      subtitle: $t('new_course_modal.live_class_subtitle'),
+      type: 'LIVE_CLASS' as TCourseType,
+      isDisabled: false
+    },
+    {
+      id: 'compliance',
+      title: $t('new_course_modal.compliance_label'),
+      subtitle: $t('new_course_modal.compliance_subtitle'),
+      type: 'COMPLIANCE' as TCourseType,
+      isDisabled: false
+    },
+    {
+      id: 'public',
+      title: $t('new_course_modal.public_label'),
+      subtitle: $t('new_course_modal.public_subtitle'),
+      type: 'PUBLIC' as TCourseType,
+      isDisabled: false
+    }
+  ];
+  const courseTypeOptionsForGroup = options.map((o) => ({
+    id: o.id,
+    title: o.title,
+    description: o.subtitle,
+    value: o.type
+  }));
+
+  let type = $state(options[0].type);
+
+  function onClose(redirectTo) {
+    goto(redirectTo);
+
+    createCourseModal.update(() => ({
+      title: '',
+      description: '',
+      type: '',
+      emails: '',
+      tutors: '',
+      students: ''
+    }));
+  }
+
+  async function createCourse() {
+    await courseApi.create(
+      {
+        title: $createCourseModal.title,
+        description: $createCourseModal.description,
+        type: type
+      },
+      (courseId) => {
+        goto(resolve(`/courses/${courseId}/lessons`, {}));
+      }
+    );
+  }
+
+  let open = $derived(new URLSearchParams(page.url.search).get('create') === 'true');
+</script>
+
+{#snippet course_type_selector()}
+  <Field.Description>{$t('courses.new_course_modal.type_selector_title')}</Field.Description>
+
+  <RadioOptionCardGroup options={courseTypeOptionsForGroup} bind:value={type} class="grid-cols-1 md:grid-cols-2" />
+{/snippet}
+
+<Dialog.Root
+  bind:open
+  onOpenChange={(isOpen) => {
+    if (!isOpen) onClose(page.url.pathname);
+  }}
+>
+  <Dialog.Content>
+    <Dialog.Header>
+      <Dialog.Title>{$t('courses.new_course_modal.heading')}</Dialog.Title>
+    </Dialog.Header>
+    {#if step === 0}
+      <div class="my-4 space-y-4">
+        {@render course_type_selector()}
+
+        <Dialog.Footer>
+          <Button onclick={() => (step = 1)} disabled={!type}>
+            {$t('courses.new_course_modal.next')}
+          </Button>
+        </Dialog.Footer>
+      </div>
+    {:else}
+      <form onsubmit={preventDefault(createCourse)}>
+        <div class="mb-4 flex items-end space-x-2">
+          <InputField
+            label={$t('courses.new_course_modal.course_name')}
+            bind:value={$createCourseModal.title}
+            placeholder={$t('courses.new_course_modal.course_name_placeholder')}
+            className="w-full"
+            isRequired={true}
+            errorMessage={courseApi.errors.title}
+            autoComplete={false}
+          />
+        </div>
+
+        <TextareaField
+          label={$t('courses.new_course_modal.short_description')}
+          bind:value={$createCourseModal.description}
+          rows={4}
+          placeholder={$t('courses.new_course_modal.short_description_placeholder')}
+          className="mb-4"
+          isRequired={true}
+          errorMessage={courseApi.errors.description}
+          isAIEnabled={true}
+          initAIPrompt="Write a 30 word description for a course titled: {$createCourseModal.title}"
+        />
+
+        <Dialog.Footer>
+          <Button variant="outline" onclick={() => (step = 0)}>
+            {$t('courses.new_course_modal.back')}
+          </Button>
+          <Button type="submit" disabled={courseApi.isLoading} loading={courseApi.isLoading}>
+            {$t('courses.new_course_modal.button')}
+          </Button>
+        </Dialog.Footer>
+      </form>
+    {/if}
+  </Dialog.Content>
+</Dialog.Root>

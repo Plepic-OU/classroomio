@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test';
 import { createBdd } from 'playwright-bdd';
 import { waitForHydration } from '../../helpers/hydration';
 
@@ -9,15 +10,15 @@ Given('I am on the login page', async ({ page }) => {
 });
 
 When('I enter email {string}', async ({ page }, email: string) => {
-  await page.getByPlaceholder('you@domain.com').fill(email);
+  await page.getByTestId('auth-login-email').fill(email);
 });
 
 When('I enter password {string}', async ({ page }, password: string) => {
-  await page.getByPlaceholder('************').fill(password);
+  await page.getByTestId('auth-login-password').fill(password);
 });
 
 When('I click the login button', async ({ page }) => {
-  await page.getByRole('button', { name: /log\s*in/i }).first().click();
+  await page.getByTestId('auth-login-submit').click();
 });
 
 Then('I should be redirected to the org dashboard', async ({ page }) => {
@@ -25,5 +26,5 @@ Then('I should be redirected to the org dashboard', async ({ page }) => {
 });
 
 Then('I should see an error message', async ({ page }) => {
-  await page.locator('.text-red-500').waitFor();
+  await expect(page.getByText(/invalid email or password/i)).toBeVisible();
 });

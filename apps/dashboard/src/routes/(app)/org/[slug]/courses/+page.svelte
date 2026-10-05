@@ -1,0 +1,280 @@
+<script lang="ts">
+  import CoursesPage from '$features/course/pages/courses.svelte';
+  import TemplateRow from '$features/course/components/template-row.svelte';
+  import { Button } from '@cio/ui/base/button';
+  import { CreateCourseButton } from '$features/course/components';
+  import { isStudentExperience } from '$lib/utils/store/app';
+  import { currentOrgPath, isOrgAdmin } from '$lib/utils/store/org';
+  import CourseFilterPopover from '$features/course/components/course-filter-popover.svelte';
+  import { courseMetaDeta } from '$features/course/utils/store';
+  import {
+    DEFAULT_COURSE_SORT,
+    DEFAULT_SORT_ORDER,
+    parseCourseSortOrder,
+    parseCourseSortValue,
+    type CourseSortBy,
+    type CourseSortOrder
+  } from '$features/course/utils/constants';
+  import {
+    DEFAULT_COURSE_LIST_FILTERS,
+    DEFAULT_COURSE_LIST_NEXT,
+    mergeCourseListSearchParams,
+    parseCourseListFilters,
+    type CourseListFilters,
+    type PublishedStatusFilter
+  } from '$features/course/utils/course-list-filters';
+  import { browser } from '$app/environment';
+  import { goto } from '$app/navigation';
+  import { page } from '$app/state';
+  import { SvelteSet } from 'svelte/reactivity';
+  import { t } from '$lib/utils/functions/translations';
+  import { onMount } from 'svelte';
+  import * as Page from '@cio/ui/base/page';
+  import { coursesApi } from '$features/course/api/courses.svelte';
+
+  let { data } = $props();
+
+  let searchValue = $state('');
+  let sortKey: CourseSortBy = $state(DEFAULT_COURSE_SORT);
+  let selectedOrder = $state<CourseSortOrder>(DEFAULT_SORT_ORDER);
+  let selectedTags = $state<string[]>([]);
+  let courseType = $state<string>('all');
+  let publishedStatus = $state<PublishedStatusFilter>('all');
+
+  const courseTypeOptions = $derived([
+    { value: 'SELF_PACED', label: $t('new_course_modal.self_paced_label') },
+    { value: 'LIVE_CLASS', label: $t('new_course_modal.live_class_label') },
+    { value: 'COMPLIANCE', label: $t('new_course_modal.compliance_label') },
+    { value: 'PUBLIC', label: $t('new_course_modal.public_label') }
+  ]);
+
+  let hasInitializedFilters = $state(false);
+  let isFiltering = $state(false);
+  let isLoadingMore = $state(false);
+  let appliedUrlSearch = $state('');
+
+  const filtersFromUrl = $derived(parseCourseListFilters(page.url.searchParams));
+  const listIsUnfiltered = $derived(
+    !searchValue.trim() && selectedTags.length === 0 && courseType === 'all' && publishedStatus === 'all'
+  );
+  const hasMoreCourses = $derived(data.pagination?.hasMore ?? false);
+
+  $effect(() => {
+    if (data.courses) {
+      coursesApi.orgCourses = data.courses;
+    }
+  });
+
+  function applyFiltersToState(filters: CourseListFilters) {
+    searchValue = filters.search;
+    sortKey = filters.sortKey;
+    selectedOrder = filters.order;
+    selectedTags = filters.tags;
+    courseType = filters.courseType;
+    publishedStatus = filters.publishedStatus;
+  }
+
+  async function navigateCourseFilters(
+    nextFilters: CourseListFilters,
+    options: { replaceState?: boolean; next?: number } = {}
+  ) {
+    const pagesLoaded = options.next ?? DEFAULT_COURSE_LIST_NEXT;
+    const nextParams = mergeCourseListSearchParams(page.url.searchParams, nextFilters, pagesLoaded);
+    const nextSearch = nextParams.toString();
+    const currentSearch = page.url.searchParams.toString();
+
+    if (nextSearch === currentSearch) {
+      return;
+    }
+
+    if (browser) {
+      localStorage.setItem('classroomio_filter_course_sort_key', nextFilters.sortKey);
+      localStorage.setItem('classroomio_filter_course_order_key', nextFilters.order);
+    }
+
+    const isLoadMore = pagesLoaded > DEFAULT_COURSE_LIST_NEXT;
+    isFiltering = !isLoadMore;
+    isLoadingMore = isLoadMore;
+    const targetUrl = `${page.url.pathname}${nextSearch ? `?${nextSearch}` : ''}${page.url.hash}`;
+
+    try {
+      await goto(targetUrl, {
+        replaceState: options.replaceState ?? false,
+        keepFocus: true,
+        noScroll: true,
+        invalidateAll: true
+      });
+    } catch (error) {
+      console.error('navigateCourseFilters error:', error);
+    } finally {
+      isFiltering = false;
+      isLoadingMore = false;
+    }
+  }
+
+  $effect(() => {
+    if (!hasInitializedFilters) {
+      return;
+    }
+
+    const currentUrlSearch = page.url.searchParams.toString();
+
+    if (currentUrlSearch === appliedUrlSearch) {
+      return;
+    }
+
+    appliedUrlSearch = currentUrlSearch;
+    applyFiltersToState(parseCourseListFilters(page.url.searchParams));
+  });
+
+  $effect(() => {
+    if (!hasInitializedFilters) {
+      return;
+    }
+
+    const urlFilters = filtersFromUrl;
+    const pendingSearch = searchValue.trim();
+
+    const tagsChanged = selectedTags.join(',') !== urlFilters.tags.join(',');
+    const sortChanged = sortKey !== urlFilters.sortKey || selectedOrder !== urlFilters.order;
+    const typeChanged = courseType !== urlFilters.courseType;
+    const statusChanged = publishedStatus !== urlFilters.publishedStatus;
+
+    if (!tagsChanged && !sortChanged && !typeChanged && !statusChanged) {
+      return;
+    }
+
+    const nextSearch = pendingSearch !== urlFilters.search ? pendingSearch : urlFilters.search;
+
+    void navigateCourseFilters({
+      search: nextSearch,
+      tags: selectedTags,
+      sortKey,
+      order: selectedOrder,
+      courseType,
+      publishedStatus
+    });
+  });
+
+  $effect(() => {
+    if (!hasInitializedFilters) {
+      return;
+    }
+
+    const normalizedSearch = searchValue.trim();
+    const currentSearch = filtersFromUrl.search;
+
+    if (normalizedSearch === currentSearch) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      void navigateCourseFilters(
+        {
+          ...filtersFromUrl,
+          search: normalizedSearch
+        },
+        { replaceState: true }
+      );
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  });
+
+  function toggleTag(tagSlug: string, checked: boolean) {
+    const next = new SvelteSet(selectedTags);
+
+    if (checked) {
+      next.add(tagSlug);
+    } else {
+      next.delete(tagSlug);
+    }
+
+    selectedTags = Array.from(next);
+  }
+
+  async function clearFilters() {
+    await navigateCourseFilters(DEFAULT_COURSE_LIST_FILTERS);
+  }
+
+  async function loadMoreCourses() {
+    await navigateCourseFilters(filtersFromUrl, {
+      next: (data.pagination?.next ?? DEFAULT_COURSE_LIST_NEXT) + 1
+    });
+  }
+
+  onMount(() => {
+    const courseView = localStorage.getItem('courseView') as 'grid' | 'list' | null;
+
+    if (courseView) {
+      $courseMetaDeta.view = courseView;
+    }
+
+    const initialParams = new URLSearchParams(window.location.search);
+    const initialFilters = parseCourseListFilters(initialParams);
+    const hasSortInUrl = initialParams.has('sort') || initialParams.has('order');
+
+    if (!hasSortInUrl) {
+      initialFilters.sortKey = parseCourseSortValue(localStorage.getItem('classroomio_filter_course_sort_key'));
+      initialFilters.order = parseCourseSortOrder(localStorage.getItem('classroomio_filter_course_order_key'));
+    }
+
+    applyFiltersToState(initialFilters);
+    appliedUrlSearch = initialParams.toString();
+    hasInitializedFilters = true;
+  });
+</script>
+
+<svelte:head>
+  <title>Courses - ClassroomIO</title>
+</svelte:head>
+
+<Page.Root class="w-full gap-0">
+  {#if !$isStudentExperience}
+    <TemplateRow />
+  {/if}
+  <div class="mx-auto w-full max-w-6xl px-4 pt-3">
+    <Page.Body>
+      {#snippet child()}
+        <CoursesPage
+          courses={data.courses}
+          bind:searchValue
+          bind:sortKey
+          showSortSelect={false}
+          hasMore={hasMoreCourses}
+          {isLoadingMore}
+          onLoadMore={loadMoreCourses}
+          sectionTitle={$isStudentExperience ? undefined : $t('course_templates.row.yours')}
+          emptyTitle={$isStudentExperience || !listIsUnfiltered ? undefined : $t('course_templates.empty.title')}
+          emptyDescription={$isStudentExperience || !listIsUnfiltered
+            ? undefined
+            : $t('course_templates.empty.description')}
+        >
+          {#snippet emptyAction()}
+            {#if !$isStudentExperience && listIsUnfiltered && $isOrgAdmin}
+              <Button onclick={() => goto(`${$currentOrgPath}/courses/templates`)}>
+                {$t('course_templates.empty.browse')}
+              </Button>
+            {:else if !$isStudentExperience}
+              <CreateCourseButton isResponsive />
+            {/if}
+          {/snippet}
+          {#snippet filterControls()}
+            <CourseFilterPopover
+              bind:sortKey
+              bind:selectedOrder
+              bind:courseType
+              bind:publishedStatus
+              {courseTypeOptions}
+              {selectedTags}
+              tagGroups={data.tagGroups}
+              {isFiltering}
+              onToggleTag={toggleTag}
+              onClearFilters={clearFilters}
+            />
+          {/snippet}
+        </CoursesPage>
+      {/snippet}
+    </Page.Body>
+  </div>
+</Page.Root>

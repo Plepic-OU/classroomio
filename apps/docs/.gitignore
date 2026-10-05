@@ -2,18 +2,19 @@ node_modules
 
 .DS_Store
 .cache
-.vercel
-.output
-.nitro
-/build/
-/api/
-/server/build
-/public/build
-/test-results/
-/playwright-report/
-/blob-report/
-/playwright/.cache/
-.tanstack
+.wrangler
+.dev.vars
 
-src/routeTree.gen.ts
-.source
+# Blume build output, and the packaged assets served by the worker.
+/dist/
+/build/
+/.blume/
+/.blume-verify/
+/.astro/
+
+# Fetched at build time by scripts/fetch-openapi.mjs.
+/openapi/
+.blume-verify/
+
+# Vale style packages, fetched by `vale sync`.
+/styles/

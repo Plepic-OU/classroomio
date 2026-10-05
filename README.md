@@ -1,5 +1,5 @@
 <a href="https://classroomio.com/">
-  <img alt="ClassroomIO is a no-code tool that allows you build and scale your online bootcamp with ease." src="https://raw.githubusercontent.com/classroomio/classroomio/main/apps/classroomio-com/static/classroomio-opengraph-image.png" />
+  <img alt="ClassroomIO is a no-code tool that allows you build and scale your online bootcamp with ease." src="https://raw.githubusercontent.com/classroomio/classroomio/main/apps/website/static/classroomio-opengraph-image.jpg" />
   <h1 align="center">ClassroomIO.com</h1>
   <p align="center">
     The Open Source Learning Management System for Companies
@@ -8,40 +8,53 @@
   </p>
 </a>
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/629e2bb8994345729513c4d69ccbe3d5)](https://app.codacy.com/gh/classroomio/classroomio?utm_source=github.com&utm_medium=referral&utm_content=classroomio/classroomio&utm_campaign=Badge_Grade)
-
 ## ✨ About ClassroomIO.com
 
-<img alt="ClassroomIO Courses page" src="https://raw.githubusercontent.com/classroomio/classroomio/main/apps/classroomio-com/static/classroomio-courses.png" />
+<img alt="ClassroomIO Courses page" src="https://assets.cdn.clsrio.com/www/home/ai-course-builder.jpeg" />
 
-Streamline training for everyone with ClassroomIO.com. Our all-in-one platform empowers bootcamps, educators, and businesses to manage training programs easily. With our platform, anyone can run multiple classes and cohorts all from one UI. The application is mobile-first, which means that students can access your lesson materials from any device.
+ClassroomIO is an open source LMS for companies. Run compliance/employee training, customer education, and partner certification cohorts — all from one platform. Self-host it on your own infrastructure or use the cloud version.
 
-### Mission: Provide Students with the Best Learning Experience
+### Who It's For
 
-At ClassroomIO, our mission is to provide students with the best possible learning experience. We believe in empowering educators with the tools they need to deliver high-quality education that is accessible, engaging, and effective.
+| Use Case | What You Get |
+|---|---|
+| **Compliance Training** | Deadline tracking, renewals & retake intervals, grace periods, waivers, certificates with custom IDs |
+| **Customer Education** | Branded academy portal, cohorts (cohorts with goals), AI lesson tutor, multilingual content |
+| **Partner Training** | Partner workspaces, branded certificates, custom domains, embeddable widgets, multilingual support |
 
 ### Key Features
 
-1. **📚 Advanced Course Management:** You can create unlimited courses, create lessons, invite students, add assignments, grade their assignments, and even generate certificates.
-2. **👨‍👩‍👦 Multi-Teacher Management:** You can invite other teachers into your organization and assign them individual courses.
-3. **🤖 AI Integration:** We've got OpenAI integration for quick course creation where you can generate course content, lesson outlines, and even generate assignments right from your lesson notes.
-4. **💬 Forum:** Students can ask questions in your dedicated community and get answers from either you or other students.
-5. **💻 Dedicated Student Dashboard:** Once you create an account, you get a dedicated dashboard where your students can access all their courses, assignments, and more.
-6. **🔒 Fully open source:** You can self-host the entire stack on your servers.
+**Course & Content**
+- **Course management** — unlimited courses, lessons, exercises, grading, and certificates
+- **Cohorts** — group courses into cohorts with goals, team management, and progress tracking
+- **AI Course Builder** — generate outlines, lesson content, and assignments (Gemini, GPT-4o, Claude)
+- **AI Lesson Tutor** — in-lesson AI assistant that helps learners as they study
 
-### Roadmap Features
+**Compliance & Certification**
+- **Compliance tracking** — status, deadlines, grace periods, renewals, and waivers
+- **Certificates** — issue branded certificates with custom IDs
 
-1. **Forms:** Instead of using Google Forms to collect vital information from your students, you will be able to create forms directly within the dashboard.
-2. **Course Templates:** You can clone a full course or share templates with other people.
-3. **Analytics:** You can track data about your students across multiple courses.
-4. **Run Courses on Messengers:** Students can just join a channel on slack/discord/telegram and a bot automatically sends daily lesson content to your students without you doing anything.
+**Learner & Org Experience**
+- **Multi-org & multi-teacher** — invite teachers, assign courses, manage multiple organizations
+- **Student dashboard** — learners access all courses, assignments, and progress in one place
+- **Multilingual** — deliver content in 10+ languages
 
-Please reach out to me on [twitter](https://x.com/rotimi_best) if you have any feature request.
+**Integrations & Developer Tools**
+- **REST API + Webhooks** — enroll users, trigger automations, receive events (`certificate.issued`, `enrollment.completed`, and more)
+- **MCP server** — `@classroomio/mcp` on npm for AI-native integrations
+- **Embeddable widget** — embed your course catalog on any website
+
+**Platform**
+- **Fully open source** — self-host the entire stack on your own servers
+
+For what's coming next, see the [public roadmap](https://classroomio.com/roadmap).
 
 ## Built With
 
 - [SvelteKit](https://kit.svelte.dev/?ref=classroomio.com)
-- [Supabase](https://supabase.com/?ref=classroomio.com)
+- [Hono](https://hono.dev/)
+- [PostgreSQL](https://www.postgresql.org/)
+- [Better Auth](https://www.better-auth.com/)
 - [TailwindCSS](https://tailwindcss.com/?ref=classroomio.com)
 
 ## Get a Demo
@@ -62,33 +75,26 @@ To get a local copy up and running, please follow these simple steps.
 
 Here is what you need to be able to run ClassroomIO.com
 
-- [Node.js](https://nodejs.org/) (Version: >=22.x)
-- [Supabase CLI](https://github.com/supabase/cli)
-- [Docker](https://docs.docker.com/engine/install/)
-- [NPM](https://www.npmjs.com/)
+- **[Node.js](https://nodejs.org/)** (Version: >=20.19.3) — _required_
+- **[pnpm](https://pnpm.io/installation)** (v10) — _required_; the package scripts call `pnpm` directly, so npm/yarn are not substitutes
+- **[Docker](https://docs.docker.com/engine/install/)** — _required_; runs Postgres + Redis (no local install of those needed)
 
 ### Project Structure
 
-This repo is a mono repo that consists of 3 projects:
+This repo is a monorepo that consists of these primary apps:
 
-1. `classroomio-com`: The landing page of ClassroomIO hosted [here](https://classroomio.com)
+1. `website`: The landing page of ClassroomIO hosted [here](https://classroomio.com)
 2. `api`: The api service that handles PDF, video processing, Emailing and Notifications.
 3. `dashboard`: The web application that runs the learning management system hosted [here](https://app.classroomio.com).
 4. `docs`: Official documentation of ClassroomIO hosted [here](https://classroomio.com/docs)
 
+The repository also contains shared packages under `packages/` (for example `packages/db`, `packages/utils`, and `packages/ui`).
+
 ## Development
-
-### Gitpod Setup
-
-1. Click the button below to open this project in Gitpod.
-
-2. This will open a fully configured workspace in your browser with all the necessary dependencies already installed.
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/classroomio/classroomio)
 
 ### Dev Container Setup
 
-Works with VS Code, IntelliJ, GitHub Codespaces, or any [devcontainer](https://containers.dev/)-compatible tool.
+Works with VS Code, IntelliJ, GitHub Codespaces, or any [devcontainer](https://containers.dev/)-compatible tool. Postgres and Redis run inside the container (Docker-in-Docker), so they don't need installing on the host. The host needs Docker plus one of those tools; the steps below use the devcontainer CLI, which is installed with npm (Node.js).
 
 1. Install the [devcontainer CLI](https://github.com/devcontainers/cli):
 
@@ -115,28 +121,41 @@ Works with VS Code, IntelliJ, GitHub Codespaces, or any [devcontainer](https://c
 4. Start developing:
 
    ```bash
-   pnpm dev:container                    # all apps (binds to 0.0.0.0 for host access)
-   pnpm dev --filter=@cio/dashboard      # just the dashboard on :5173
-   pnpm dev --filter=@cio/api            # just the API on :3002
+   pnpm dev:container    # API on :3002 + dashboard on :5173 (binds to 0.0.0.0 for host access)
    ```
 
-   The setup script runs automatically on first launch — it installs dependencies, starts Supabase, and configures `.env` files with the correct keys.
+   Then open [http://localhost:5173/login](http://localhost:5173/login) and log in as `admin@test.com` / `123456`.
+
+   The setup script runs automatically on first launch — it installs dependencies, creates the `.env` files (with generated secrets) as described in [`DEV_SETUP_NOTES.md`](DEV_SETUP_NOTES.md), builds the shared packages, starts Postgres + Redis, creates the schema and seeds demo data, and installs the Playwright browser. Postgres and Redis are started again every time the container starts; `bash .devcontainer/start-infra.sh` does the same by hand.
+
+5. Run the end-to-end tests (Playwright + [playwright-bdd](https://vitalets.github.io/playwright-bdd/), in `tests/e2e`) while `pnpm dev:container` is running:
+
+   ```bash
+   pnpm test:e2e           # run the scenarios headless
+   pnpm test:e2e:report    # serve the last HTML report on :9323
+   pnpm test:e2e:ui        # Playwright UI mode on :9324
+   ```
 
 ### Local Setup
 
-1. Fork the repo, then clone it using the following command (remember to replace the url with the url from your forked repo)
+> **Before you start:** make sure **pnpm** and **Docker** are installed (see
+> [Prerequisites](#prerequisites)). New to the project? Read
+> [`DEV_SETUP_NOTES.md`](DEV_SETUP_NOTES.md) first — it's a full step-by-step
+> walkthrough with a troubleshooting reference for the errors you're likely to hit.
+
+1. Fork the repo, then clone it:
 
    ```bash
    git clone https://github.com/classroomio/classroomio.git
    ```
 
-2. Go to project folder
+2. Go to project folder:
 
    ```bash
    cd classroomio
    ```
 
-3. Set up Node if your Node version does not meet the project's requirements, as instructed by the documentation., "nvm" (Node Version Manager) allows using Node at the version required by the project:
+3. Set up Node (using `nvm`):
 
    ```bash
    nvm use
@@ -150,81 +169,176 @@ Works with VS Code, IntelliJ, GitHub Codespaces, or any [devcontainer](https://c
 
    You can install nvm from [here](https://github.com/nvm-sh/nvm).
 
-   You also need to have pnpm installed, you can find the installation guide [here](https://pnpm.io/installation#using-npm)
-
-4. Set up your `.env` file
-
-   - Go to `apps/dashboard` and `apps/api`.
-   - Duplicate the `.env.example` file and rename it to `.env`
-   - Populate your .env files with the neccessary variables
-
-To get the environmental variables for supabase continue to step(5)
-
-1. Install all dependencies
+4. Install dependencies:
 
    ```bash
    pnpm i
    ```
 
-2. Setup Supabase.
+5. Set up your `.env` files:
 
-   - Install and Start [docker](https://docs.docker.com/engine/install/)
-   - Install [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started) on your computer
-   - Go to the project directory in your terminal and start Supabase
+   Each app reads its **own** `.env`. In `apps/api`, `apps/jobs` and `apps/dashboard`, duplicate
+   `.env.example` to `.env` and fill the values below (host ports). The secret values are
+   placeholders — **generate each one** with `openssl rand -hex 32` rather than copying
+   the example text. The two `PRIVATE_SERVER_KEY` values **must match** — they
+   authenticate the dashboard's server-to-server calls to the API, so generate it once
+   and paste the same value into both files.
+
+   - `apps/api/.env`:
 
      ```bash
-       supabase start
+     DATABASE_URL="postgresql://postgres:postgres@localhost:5432/classroomio"
+     REDIS_URL="redis://localhost:6379"
+     PUBLIC_SERVER_URL="http://localhost:3002"
+     TRUSTED_ORIGINS="http://localhost:5173"        # the dashboard dev origin
+     BETTER_AUTH_SECRET="<generate-with-openssl-rand-hex-32>"
+     PRIVATE_SERVER_KEY="<generate-with-openssl-rand-hex-32>"   # generate once; use the SAME value in the dashboard
+     DASHBOARD_ORIGIN="http://localhost:5173"        # optional; used for invite/email links back to the dashboard
      ```
 
-   - You should get a result like this
+   - `apps/jobs/.env`:
+      The jobs service handles background tasks (emails, media processing, analytics rollups, etc.).
+
+      **Recommended setup** (simplest):
+
+      ```bash
+      cd apps/jobs
+      ln -s ../../apps/api/.env .env  
+     ```
+
+   - `apps/dashboard/.env`:
 
      ```bash
-       supabase local development setup is running.
-
-         API URL: http://127.0.0.1:54321
-     GraphQL URL: http://127.0.0.1:54321/graphql/v1
-           DB URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
-       Studio URL: http://127.0.0.1:54323
-     Inbucket URL: http://127.0.0.1:54324
-       JWT secret: super-secret-jwt-token-with-at-least-32-characters-long
-         anon key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
-     service_role key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+     PUBLIC_SERVER_URL="http://localhost:3002"
+     PRIVATE_SERVER_URL="http://localhost:3002"      # used by the SSR auth proxy — required, or login returns "API upstream not configured"
+     PRIVATE_SERVER_KEY="<generate-with-openssl-rand-hex-32>"   # must match the API (paste the value generated above)
+     PUBLIC_IS_SELFHOSTED=false
      ```
 
-   - Add Supabase environment variables into `app/dashboard` folder, which should be taken from the result of `supabase start`
+   - Running the background workers? Also create `apps/jobs/.env` (e.g. `cp apps/api/.env apps/jobs/.env`); it needs `REDIS_URL`. The `packages/db/.env` used by the DB scripts is set up in step 6.
+   - Optional for self-hosted Enterprise-only features (SSO, token-auth, no-tracking): set `LICENSE_KEY` in `apps/api/.env`.
+   - Optional upload size limits: set matching `UPLOAD_MAX_*_MB` values in **both** `apps/api/.env` and `apps/dashboard/.env` (see `apps/api/.env.example`). Defaults are 5 MB documents, 2 MB assignment files, 800 MB videos.
 
-     ```env
-       PUBLIC_SUPABASE_URL=<API URL>
-       PUBLIC_SUPABASE_ANON_KEY=<anon key>
-       PRIVATE_SUPABASE_SERVICE_ROLE=<service_role key>
-     ```
-
-   - To view the Supabase studio, open the Studio URL from the result of `supabase start`
-
-3. Run all projects (in development mode)
+6. Start local infrastructure for API (Postgres + Redis) and seed the DB:
 
    ```bash
-   pnpm dev
+   docker compose -f docker-compose.yaml up -d postgres redis
+   cp packages/db/.env.example packages/db/.env   # one-time (Windows: Copy-Item)
+   pnpm --filter @cio/db db:setup:seed
    ```
 
-4. All projects should start running
+   - Connect with `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/classroomio`
+   - Connect with `REDIS_URL=redis://localhost:6379`
+   - `db:setup:seed` creates the schema and seeds demo data once Postgres is up. The db scripts run with their own working directory, so they read `DATABASE_URL` from `packages/db/.env` (not `apps/api/.env`).
 
-   - `classroomio-com`: [http://localhost:5174](http://localhost:5174)
+7. (Optional) Start MinIO locally for object storage (media/documents):
+
+   ```bash
+   docker compose -f docker-compose.yaml --profile minio up -d minio minio-init
+   ```
+
+   - Console Web UI: http://localhost:9001 (user/pass default `minioadmin` / `minioadmin`). Open in browser and select **Object Browser** to view buckets and uploaded files.
+   - S3 endpoint: http://localhost:9000
+   - Buckets created by `minio-init`: `videos`, `documents`, `media`
+   - Browser presigned uploads work out of the box: Compose passes `MINIO_API_CORS_ALLOW_ORIGIN` (default `*`) from the **root `.env`** to the MinIO container — set it there if you need to restrict origins.
+   - Add to `apps/api/.env` when using MinIO locally:
+     - `OBJECT_STORAGE_ENDPOINT=http://localhost:9000`
+     - `OBJECT_STORAGE_PUBLIC_ENDPOINT=http://localhost:9000`
+     - `OBJECT_STORAGE_ACCESS_KEY_ID=minioadmin`
+     - `OBJECT_STORAGE_SECRET_ACCESS_KEY=minioadmin`
+     - `OBJECT_STORAGE_FORCE_PATH_STYLE=true`
+     - `OBJECT_STORAGE_MEDIA_PUBLIC_BASE_URL=http://localhost:9000/media`
+
+8. Run the local app services in separate terminals:
+
+   ```bash
+   pnpm api:dev
+   ```
+
+   ```bash
+   pnpm dashboard:dev
+   ```
+
+   - If you see `Failed to resolve entry for package "@cio/..."`, the shared workspace packages haven't been built yet (their `dist/` is missing). Build them once with `pnpm build`, then re-run the dev commands.
+   - To test over HTTPS (e.g. from a mobile device on your local network), run `pnpm dashboard:dev:https` (or `pnpm dashboard:dev:https:fresh`). This provisions local certificates and automatically binds to `0.0.0.0` (on seperate mobile or LAN devices, bypass the browser's certificate warning if you have the option).
+
+9. Default local URLs:
+
    - `api`: [http://localhost:3002](http://localhost:3002)
    - `dashboard`: [http://localhost:5173](http://localhost:5173)
-   - `docs`: [http://localhost:3000](http://localhost:3000)
 
-5. Running a specific project
+10. Optional: run other apps:
 
-   - **classroomio-com**: `pnpm dev --filter=@cio/classroomio-com`
-   - **api**: `pnpm dev --filter=@cio/api`
-   - **dashboard**: `pnpm dev --filter=@cio/dashboard`
-   - **docs**: `pnpm dev --filter=@cio/docs`
+   - **website**: `pnpm website:dev`
+   - **docs**: `CHOKIDAR_USEPOLLING=true pnpm dev --filter=@cio/docs`
+     (Requires Node ≥ 22.12: `nvm use 22.12` first. The polling flag prevents
+     an `EMFILE` error on macOS when other dev servers are already consuming
+     file descriptors.)
 
-6.  Login into `dashboard`
+     On Windows, `nvm` (nvm-windows) switches the Node version globally
+     rather than per-shell, so run this from a separate terminal window than
+     the one running `api`/`dashboard` — switching versions there won't
+     affect processes already started in other terminals.
+
+     The docs' API reference is built from a static OpenAPI spec fetched at
+     dev-server startup from the deployed production API
+     (`apps/docs/scripts/fetch-openapi.mjs`), not from your local `api`. If
+     you're working on public API routes and want to preview unmerged
+     changes in the docs before they're deployed, generate the spec from
+     your local code instead:
+
+     ```bash
+     # from apps/api, with local Redis running (same as normal api dev setup)
+     OPENAPI_SKIP_CDN_PURGE=1 npx tsx scripts/upload-openapi-spec.ts
+     cp dist/openapi/public-api/openapi.json ../docs/openapi/public-api.json
+     ```
+
+     Then start the docs server with `pnpm exec blume dev` from `apps/docs`
+     instead of `pnpm dev --filter=@cio/docs` — the latter re-runs
+     `fetch-openapi.mjs` as a prestep on every start and will overwrite your
+     local copy with the stale remote spec again.
+
+11. Login into `dashboard`:
 
     - Visit [http://localhost:5173/login](http://localhost:5173/login)
     - Enter email: `admin@test.com`
     - Enter password: `123456`
-     
+
     To learn more about how to login with a dummy account, [go here.](https://classroomio.com/docs/contributor-guides/demo-accounts)
+
+### Enabling the AI Course Assistant
+
+The in-course AI chat (course authoring, plan generation, lesson edits) is **disabled by default**. Enable it by setting at least one provider API key in `apps/api/.env` (or the root `.env` for the Docker stack):
+
+```bash
+# Pick one or more — the dashboard model picker exposes Gemini 2.5 Flash and GPT-4o.
+OPENAI_API_KEY=sk-...        # enables GPT-4o
+GOOGLE_API_KEY=AIza...       # enables Gemini 2.5 Flash (default model in the picker)
+ANTHROPIC_API_KEY=sk-ant-... # supported in code; not currently in the picker UI
+```
+
+Notes:
+- The `GET /agent/status` endpoint flips to `enabled: true` as soon as any of those keys is set, which is what the dashboard checks before showing the AI button on a course.
+- Each chat request sends the user-selected `model` (persisted in `localStorage` as `classroomio-ai-chat-model`). The API resolves the provider for that model (`packages/utils/src/agent-models`) and returns 503 `AI_NOT_CONFIGURED` if that provider's key is missing.
+- Optional Tinybird observability: set `TINYBIRD_TOKEN` (and optionally `TINYBIRD_BASE_URL`) in `apps/api/.env`. Events are silently skipped when the token is absent.
+- More detail on architecture, tools, and routes lives in [`prd/ai-course-assistant [DONE]/README.md`](prd/ai-course-assistant%20[DONE]/README.md).
+
+### Docker Compose (Full Stack)
+
+```bash
+cp .env.example .env   # copy env template, edit for your domain
+./classroomio.sh start           # pulls pre-built images; use --build to build from source
+```
+
+The script reads root `.env` via `docker compose --env-file .env` and auto-generates a secure `PRIVATE_SERVER_KEY` (and `BETTER_AUTH_SECRET`) when missing. Run `./classroomio.sh` with no arguments for the full lifecycle menu (install, start, stop, restart, upgrade, logs, backup).
+
+See [`.env.example`](.env.example) for the full list of environment variables with required/optional grouping, and [`docker/docs/SELF_HOST.md`](docker/docs/SELF_HOST.md) for the complete Docker self-hosting guide. To raise upload caps (documents, videos, assignment files), set the `UPLOAD_MAX_*_MB` vars in `.env` — see the [docs](https://classroomio.com/docs/self-hosted/configuration/storage#upload-file-size-limits).
+
+## Publishing
+
+When cutting releases for hosted assets or the npm MCP package, run:
+
+- **Storybook** — `pnpm --filter @cio/storybook storybook:publish`
+- **Course widget embed** — `pnpm --filter @cio/embeds embeds:publish`
+- **Question type picker** — `pnpm --filter @cio/embeds embeds:publish` (same script builds and uploads both embeds)
+- **MCP (`@classroomio/mcp`)** — bump the version in `packages/mcp/package.json`, then `pnpm mcp:build` and `pnpm --filter @classroomio/mcp publish`

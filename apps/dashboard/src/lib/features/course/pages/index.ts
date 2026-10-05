@@ -1,0 +1,13 @@
+export { default as AnalyticsPage } from './analytics.svelte';
+export { default as AttendancePage } from './attendance.svelte';
+export { default as CertificatesPage } from './certificates.svelte';
+export { default as CompliancePage } from './compliance.svelte';
+export { default as CourseSettingsPage } from './settings.svelte';
+export { default as CoursesPage } from './courses.svelte';
+export { default as ExercisePage } from './exercise.svelte';
+export { default as LessonPage } from './lesson.svelte';
+export { default as LessonsPage } from './lessons.svelte';
+export { default as MarksPage } from './marks.svelte';
+export { default as NewsFeedPage } from './newsfeed.svelte';
+export { default as PeoplePage } from './people.svelte';
+export { default as SubmissionsPage } from './submissions.svelte';

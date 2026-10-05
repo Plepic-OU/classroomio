@@ -1,0 +1,144 @@
+import type { Component } from 'svelte';
+import CircleDotIcon from '@lucide/svelte/icons/circle-dot';
+import GlobeIcon from '@lucide/svelte/icons/globe';
+import GraduationCapIcon from '@lucide/svelte/icons/graduation-cap';
+import ShieldCheckIcon from '@lucide/svelte/icons/shield-check';
+import UserIcon from '@lucide/svelte/icons/user';
+
+import { DEFAULT_COURSE_BANNER_IMAGE } from '../course-card/constants';
+import type { CourseItem } from './types';
+
+export function getCourseCoverImage(course: CourseItem): string {
+  const bannerImage = course.bannerImage?.trim();
+  if (bannerImage) {
+    return bannerImage;
+  }
+
+  const image = course.image?.trim();
+  if (image) {
+    return image;
+  }
+
+  return DEFAULT_COURSE_BANNER_IMAGE;
+}
+
+export function getPrimaryCourseTag(course: CourseItem) {
+  return course.tags?.[0];
+}
+
+/** Label + icon for course `type` (COURSE_TYPE enum) on org landing cards. */
+export function getCourseTypeLandingMeta(
+  course: CourseItem
+): { label: string; icon: Component; iconClass?: string } | undefined {
+  const raw = course.type?.trim();
+  if (!raw) return undefined;
+
+  const known: Record<string, { label: string; icon: Component; iconClass?: string }> = {
+    LIVE_CLASS: {
+      label: 'Live class',
+      icon: CircleDotIcon,
+      iconClass: 'custom ui:size-3.5 ui:shrink-0 ui:text-red-700'
+    },
+    SELF_PACED: {
+      label: 'Self-paced',
+      icon: UserIcon,
+      iconClass: 'custom ui:size-3.5 ui:shrink-0 ui:text-primary'
+    },
+    COMPLIANCE: {
+      label: 'Compliance',
+      icon: ShieldCheckIcon,
+      iconClass: 'custom ui:size-3.5 ui:shrink-0 ui:text-emerald-700'
+    },
+    PUBLIC: {
+      label: 'Public',
+      icon: GlobeIcon,
+      iconClass: 'custom ui:size-3.5 ui:shrink-0 ui:text-primary'
+    }
+  };
+
+  if (known[raw]) {
+    return { ...known[raw], label: course.typeLabel ?? known[raw].label };
+  }
+
+  const label = raw
+    .toLowerCase()
+    .split('_')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+
+  return {
+    label: label || raw,
+    icon: GraduationCapIcon,
+    iconClass: 'custom ui:size-3.5 ui:shrink-0 ui:text-muted-foreground'
+  };
+}
+
+/** Plain copy for org landing templates (no dashboard i18n). */
+export function formatExerciseCountLabel(count: number) {
+  if (count === 1) return '1 exercise';
+  return `${count} exercises`;
+}
+
+/** Mirrors dashboard `calcCourseDiscount` for landing-page course cards. */
+export function calcCourseDiscount(percent = 0, cost: number, showDiscount: boolean) {
+  if (!percent || !showDiscount) return cost;
+  const discountAmount = (percent / 100) * cost;
+  const discountedPrice = cost - discountAmount;
+  return Math.round(discountedPrice);
+}
+
+export function defaultLessonsLabel(count: number): string {
+  return count === 1 ? '1 lesson' : `${count.toLocaleString()} lessons`;
+}
+
+export function defaultExercisesLabel(count: number): string {
+  return count === 1 ? '1 exercise' : `${count.toLocaleString()} exercises`;
+}
+
+export function defaultEnrolledLabel(count: number): string {
+  return `${count.toLocaleString()} enrolled`;
+}
+
+export function defaultLearningPathCourseCountLabel(count: number): string {
+  return count === 1 ? '1 course' : `${count.toLocaleString()} courses`;
+}
+
+export type EmbedIframeDimensions = {
+  width?: string;
+  height?: string;
+};
+
+function toCssSize(value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (/^\d+(\.\d+)?$/.test(trimmed)) {
+    return `${trimmed}px`;
+  }
+
+  return trimmed;
+}
+
+/** Reads width/height from the first iframe in a pasted embed snippet. */
+export function parseEmbedIframeDimensions(html: string): EmbedIframeDimensions {
+  const iframeMatch = html.match(/<iframe\b[^>]*>/i);
+  if (!iframeMatch) {
+    return {};
+  }
+
+  const tag = iframeMatch[0];
+  const widthRaw = tag.match(/\bwidth\s*=\s*["']?([^"'\s>]+)["']?/i)?.[1];
+  const heightRaw = tag.match(/\bheight\s*=\s*["']?([^"'\s>]+)["']?/i)?.[1];
+
+  return {
+    width: toCssSize(widthRaw),
+    height: toCssSize(heightRaw)
+  };
+}

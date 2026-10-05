@@ -1,0 +1,279 @@
+import type { QuestionTypeKey } from './question-type-keys';
+import type { AnswerData, VideoRecordingAnswerData } from './answer-data';
+
+export type ExerciseQuestionTypeKey = QuestionTypeKey;
+
+export type ExerciseRendererMode = 'edit' | 'take' | 'preview' | 'review' | 'view' | 'submission';
+
+export type ExerciseQuestionLabelKey =
+  | 'common.option_prefix'
+  | 'common.remove'
+  | 'common.add_option'
+  | 'common.correct_badge'
+  | 'common.incorrect_badge'
+  | 'common.not_set'
+  | 'navigation.previous'
+  | 'navigation.next'
+  | 'navigation.finish'
+  | 'question.edit.title_label'
+  | 'question.edit.title_placeholder'
+  | 'question.edit.description_label'
+  | 'question.edit.description_placeholder'
+  | 'question.edit.add_description'
+  | 'question.edit.remove_description'
+  | 'question.edit.expand_description'
+  | 'question.edit.media_menu_sr'
+  | 'question.edit.add_image'
+  | 'question.edit.add_video'
+  | 'question.edit.remove_image_tooltip'
+  | 'question.edit.remove_image_sr'
+  | 'question.edit.remove_video_tooltip'
+  | 'question.edit.remove_video_sr'
+  | 'question.edit.image_alt'
+  | 'question.edit.video_modal_title'
+  | 'question.edit.video_link_label'
+  | 'question.edit.video_link_placeholder'
+  | 'question.edit.video_add_button'
+  | 'question.edit.video_invalid_link'
+  | 'question.edit.upload_error_only_images'
+  | 'question.edit.upload_error_skipped'
+  | 'question.edit.upload_error_failed'
+  | 'question.media.enlarge_image'
+  | 'question.media.close'
+  | 'question.media.zoom_in'
+  | 'question.media.zoom_out'
+  | 'question.media.previous_image'
+  | 'question.media.next_image'
+  | 'radio.edit.helper'
+  | 'radio.edit.correct_selected_tooltip'
+  | 'radio.edit.mark_correct_tooltip'
+  | 'radio.edit.mark_correct_sr'
+  | 'checkbox.edit.helper'
+  | 'checkbox.edit.correct_selected_tooltip'
+  | 'checkbox.edit.toggle_correct_tooltip'
+  | 'checkbox.edit.toggle_correct_sr'
+  | 'true_false.true_label'
+  | 'true_false.false_label'
+  | 'true_false.edit.correct_answer_label'
+  | 'true_false.preview.correct_value_label'
+  | 'thumbs.yes_label'
+  | 'thumbs.no_label'
+  | 'thumbs.edit.positive_option_label'
+  | 'thumbs.edit.negative_option_label'
+  | 'thumbs.preview.helper'
+  | 'short_answer.edit.instructions_placeholder'
+  | 'short_answer.take.placeholder'
+  | 'short_answer.preview.helper'
+  | 'short_answer.review.your_answer_label'
+  | 'short_answer.review.accepted_label'
+  | 'numeric.edit.correct_value_label'
+  | 'numeric.edit.correct_value_info'
+  | 'numeric.edit.tolerance_label'
+  | 'numeric.edit.tolerance_info'
+  | 'numeric.edit.correct_value_placeholder'
+  | 'numeric.edit.tolerance_placeholder'
+  | 'numeric.take.placeholder'
+  | 'numeric.preview.correct_value_label'
+  | 'numeric.preview.tolerance_label'
+  | 'numeric.review.your_answer_label'
+  | 'numeric.review.in_range'
+  | 'numeric.review.out_of_range'
+  | 'star.edit.correct_value_label'
+  | 'star.edit.correct_value_info'
+  | 'star.edit.max_stars_label'
+  | 'star.edit.max_stars_info'
+  | 'star.edit.correct_value_placeholder'
+  | 'star.edit.max_stars_placeholder'
+  | 'star.take.helper'
+  | 'star.take.star_sr'
+  | 'star.preview.correct_label'
+  | 'fill_blank.edit.accepted_answers_placeholder'
+  | 'fill_blank.take.placeholder'
+  | 'fill_blank.preview.accepted_answers_label'
+  | 'fill_blank.review.your_answer_label'
+  | 'word_bank.edit.template_label'
+  | 'word_bank.edit.template_placeholder'
+  | 'word_bank.edit.template_helper'
+  | 'word_bank.edit.no_blanks_warning'
+  | 'word_bank.edit.correct_answers_heading'
+  | 'word_bank.edit.blank_label'
+  | 'word_bank.edit.correct_placeholder'
+  | 'word_bank.edit.distractors_heading'
+  | 'word_bank.edit.distractor_placeholder'
+  | 'word_bank.edit.add_distractor'
+  | 'word_bank.take.helper'
+  | 'word_bank.take.bank_heading'
+  | 'word_bank.take.clear_blank_sr'
+  | 'word_bank.preview.filled_label'
+  | 'word_bank.review.your_answer_label'
+  | 'word_bank.review.correct_label'
+  | 'file_upload.edit.accepted_types_placeholder'
+  | 'file_upload.edit.max_size_placeholder'
+  | 'file_upload.take.selected_file_label'
+  | 'file_upload.take.upload_button'
+  | 'file_upload.take.upload_progress'
+  | 'file_upload.take.upload_error'
+  | 'file_upload.take.download'
+  | 'file_upload.take.view'
+  | 'file_upload.preview.accepted_types_label'
+  | 'file_upload.preview.max_size_label'
+  | 'video_recording.edit.max_duration_label'
+  | 'video_recording.edit.max_duration_helper'
+  | 'video_recording.edit.max_duration_placeholder'
+  | 'video_recording.edit.manual_grading'
+  | 'video_recording.take.unsupported'
+  | 'video_recording.take.permission_prompt'
+  | 'video_recording.take.permission_denied'
+  | 'video_recording.take.start_camera'
+  | 'video_recording.take.camera_label'
+  | 'video_recording.take.camera_placeholder'
+  | 'video_recording.take.play_preview'
+  | 'video_recording.take.pause_preview'
+  | 'video_recording.take.start_recording'
+  | 'video_recording.take.stop_recording'
+  | 'video_recording.take.elapsed'
+  | 'video_recording.take.remaining'
+  | 'video_recording.take.max_duration'
+  | 'video_recording.take.too_short'
+  | 'video_recording.take.use_recording'
+  | 'video_recording.take.retake'
+  | 'video_recording.take.delete'
+  | 'video_recording.take.retry_upload'
+  | 'video_recording.take.uploading'
+  | 'video_recording.take.uploaded'
+  | 'video_recording.take.upload_failed'
+  | 'video_recording.take.replaces_previous'
+  | 'video_recording.preview.max_duration_label'
+  | 'video_recording.preview.manual_grading'
+  | 'video_recording.submission.no_video'
+  | 'video_recording.submission.unavailable'
+  | 'video_recording.submission.duration'
+  | 'video_recording.submission.file_size'
+  | 'video_recording.submission.recorded_at'
+  | 'video_recording.submission.uploaded_at'
+  | 'video_recording.submission.retake_count'
+  | 'link.edit.instructions_placeholder'
+  | 'link.edit.helper'
+  | 'link.take.helper'
+  | 'link.take.placeholder'
+  | 'link.take.remove_tooltip'
+  | 'link.take.remove_sr'
+  | 'link.take.invalid_url_error'
+  | 'link.take.add_button'
+  | 'link.preview.empty'
+  | 'link.preview.item_label'
+  | 'matching.edit.helper'
+  | 'matching.take.placeholder'
+  | 'matching.preview.helper'
+  | 'ordering.fallback_step_prefix'
+  | 'ordering.edit.helper'
+  | 'ordering.edit.add_step'
+  | 'ordering.edit.empty'
+  | 'ordering.edit.step_placeholder'
+  | 'ordering.edit.remove_step_tooltip'
+  | 'ordering.take.helper'
+  | 'ordering.take.empty'
+  | 'ordering.preview.submitted_label'
+  | 'ordering.preview.expected_label'
+  | 'ordering.preview.matches'
+  | 'ordering.preview.differs'
+  | 'hotspot.edit.helper'
+  | 'hotspot.take.placeholder'
+  | 'hotspot.preview.helper'
+  | 'textarea.edit.placeholder'
+  | 'textarea.edit.min_characters_label'
+  | 'textarea.edit.min_characters_placeholder'
+  | 'textarea.edit.max_characters_label'
+  | 'textarea.edit.max_characters_placeholder'
+  | 'textarea.take.placeholder'
+  | 'submission.common.no_answer'
+  | 'submission.common.other'
+  | 'submission.chart.responses'
+  | 'submission.chart.no_data'
+  | 'submission.list.responses'
+  | 'submission.list.no_responses';
+
+export type ExerciseQuestionLabels = Partial<Record<ExerciseQuestionLabelKey, string>>;
+
+export interface ExerciseQuestionOption {
+  id?: number | string;
+  label: string;
+  value?: string;
+  isCorrect?: boolean;
+  settings?: Record<string, unknown>;
+}
+
+export interface ExerciseQuestionModel {
+  id?: number | string;
+  key?: string;
+  title: string;
+  questionType: ExerciseQuestionTypeKey;
+  points?: number;
+  required?: boolean;
+  options?: ExerciseQuestionOption[];
+  settings?: Record<string, unknown>;
+}
+
+export interface ExerciseSubmissionAnswer {
+  questionId: number | string;
+  answerData?: AnswerData | null;
+}
+
+export interface ExerciseSubmissionModel {
+  id?: string;
+  studentName?: string;
+  studentAvatarUrl?: string;
+  answers: ExerciseSubmissionAnswer[];
+}
+
+export type ExerciseAnswerValue =
+  | string
+  | number
+  | boolean
+  | string[]
+  | number[]
+  | Record<string, unknown>
+  | null
+  | undefined;
+
+export type ExerciseQuestionImageUploader = (file: File) => Promise<string>;
+
+export type ExerciseQuestionFileUploader = (
+  file: File
+) => Promise<{ fileKey: string; fileName: string; fileUrl?: string }>;
+
+export type ExerciseQuestionVideoRecordingUploader = (input: {
+  questionId: number | string;
+  blob: Blob;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  durationSeconds: number;
+  recordedAt: string;
+  retakeCount: number;
+}) => Promise<VideoRecordingAnswerData>;
+
+export interface ExerciseRendererDefinition<TRenderer = unknown> {
+  edit: TRenderer;
+  take: TRenderer;
+  preview: TRenderer;
+  submission: TRenderer;
+  /** Read-only submission replay with correctness; defaults to `take` when omitted. */
+  review?: TRenderer;
+}
+
+export interface ExerciseQuestionRendererProps {
+  question: ExerciseQuestionModel;
+  answer?: AnswerData | null;
+  submissions?: ExerciseSubmissionModel[];
+  maxSubmissionItems?: number;
+  disabled?: boolean;
+  labels?: ExerciseQuestionLabels;
+  /** Platform-wide cap for exercise file uploads (megabytes). */
+  platformMaxFileSizeMb?: number;
+  onAnswerChange?: (answer: AnswerData | null) => void;
+  onQuestionChange?: (question: ExerciseQuestionModel) => void;
+  onImageUpload?: ExerciseQuestionImageUploader;
+  onFileUpload?: ExerciseQuestionFileUploader;
+  onVideoRecordingUpload?: ExerciseQuestionVideoRecordingUploader;
+}

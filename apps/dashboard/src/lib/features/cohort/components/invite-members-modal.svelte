@@ -1,0 +1,287 @@
+<script lang="ts">
+  import { untrack } from 'svelte';
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import * as Dialog from '@cio/ui/base/dialog';
+  import * as UnderlineTabs from '@cio/ui/custom/underline-tabs';
+  import { Button } from '@cio/ui/base/button';
+  import { ROLE } from '@cio/utils/constants';
+  import { t } from '$lib/utils/functions/translations';
+  import { currentOrg, isOrgAdmin, isStudentLimitReached } from '$lib/utils/store/org';
+  import { orgApi } from '$features/org/api/org.svelte';
+  import { DEFAULT_ORG_AUDIENCE_QUERY } from '$features/org/utils/audience-query-utils';
+  import {
+    BulkEmailSection,
+    ExistingStudentsSection,
+    InviteLinkSection,
+    TutorSelectSection
+  } from '$features/people/components';
+  import { UpgradeBanner } from '$features/ui';
+  import type { OrgStudent, Tutor } from '$features/people/utils/types';
+  import { buildResourceInviteLink } from '$features/people/utils/invite-link-utils';
+  import type { OrgTeamMember } from '$lib/utils/types/org';
+  import { cohortApi } from '../api';
+
+  interface Props {
+    cohortId: string;
+    onMembersChanged?: () => void;
+  }
+
+  let { cohortId, onMembersChanged }: Props = $props();
+
+  let tutors = $state<Tutor[]>([]);
+  let selectedIds = $state<string[]>([]);
+  let isLoadingStudents = $state(false);
+  let activeTab = $state<'tutors' | 'students' | 'link'>('students');
+
+  const addPeopleParam = $derived(new URLSearchParams(page.url.search).get('add'));
+  const isOpen = $derived(addPeopleParam === 'true');
+  const selectedTutors = $derived(tutors.filter((tutor) => selectedIds.includes(tutor.id.toString())));
+  const availableStudents = $derived.by(() => getAvailableStudents(orgApi.audience, cohortApi.members));
+  const inviteLink = $derived(buildResourceInviteLink(cohortApi.inviteLink?.token, $currentOrg));
+  const INVITE_MODAL = 'course.navItem.people.invite_modal';
+
+  function getTutors(team: OrgTeamMember[]) {
+    const existingTutorIds = new Set(
+      cohortApi.members
+        .filter((member) => Number(member.roleId) === ROLE.TUTOR || Number(member.roleId) === ROLE.ADMIN)
+        .map((member) => member.profileId)
+        .filter((profileId): profileId is string => Boolean(profileId))
+    );
+
+    return team
+      .filter((teamMember) => teamMember.verified)
+      .filter((teamMember) => !existingTutorIds.has(teamMember.profileId))
+      .map((teamMember) => ({
+        id: teamMember.id,
+        text: teamMember.fullname,
+        profileId: teamMember.profileId,
+        email: teamMember.email
+      }));
+  }
+
+  function getAvailableStudents(students: OrgStudent[], cohortMembers: typeof cohortApi.members) {
+    const existingStudentIds = new Set(
+      cohortMembers
+        .filter((member) => Number(member.roleId) === ROLE.STUDENT)
+        .map((member) => member.profileId)
+        .filter((profileId): profileId is string => Boolean(profileId))
+    );
+
+    return students.filter((student) => {
+      if (!student.profileId) {
+        return false;
+      }
+
+      return !existingStudentIds.has(student.profileId);
+    });
+  }
+
+  function closeModal() {
+    const searchParams = new URLSearchParams(page.url.searchParams);
+    searchParams.delete('add');
+    const nextSearch = searchParams.toString();
+
+    void goto(resolve(`${page.url.pathname}${nextSearch ? `?${nextSearch}` : ''}`, {}));
+  }
+
+  function setTutors(orgId: string | undefined) {
+    if (!orgId || !$isOrgAdmin) {
+      return;
+    }
+
+    untrack(async () => {
+      await orgApi.getOrgTeam();
+      if (orgApi.error) {
+        console.error('Error fetching teams', orgApi.error);
+        return;
+      }
+
+      tutors = getTutors(orgApi.teamMembers);
+    });
+  }
+
+  function loadStudents(orgId: string | undefined) {
+    if (!orgId || !$isOrgAdmin) {
+      return;
+    }
+
+    untrack(async () => {
+      isLoadingStudents = true;
+
+      try {
+        await orgApi.getOrgAudience(orgId, DEFAULT_ORG_AUDIENCE_QUERY, { abortPrevious: true });
+      } finally {
+        isLoadingStudents = false;
+      }
+    });
+  }
+
+  async function handleStudentSearch(value: string) {
+    const orgId = $currentOrg.id;
+    if (!orgId || !$isOrgAdmin) {
+      return;
+    }
+
+    isLoadingStudents = true;
+
+    try {
+      await orgApi.getOrgAudience(
+        orgId,
+        {
+          ...DEFAULT_ORG_AUDIENCE_QUERY,
+          search: value.trim() || undefined
+        },
+        { abortPrevious: true }
+      );
+    } finally {
+      isLoadingStudents = false;
+    }
+  }
+
+  async function addTutors() {
+    if (!selectedTutors.length) {
+      closeModal();
+      return;
+    }
+
+    cohortApi.success = false;
+
+    await cohortApi.addMembers(cohortId, {
+      members: selectedTutors.map((tutor) => ({
+        profileId: tutor.profileId,
+        roleId: ROLE.TUTOR,
+        email: tutor.email,
+        name: tutor.text
+      }))
+    });
+
+    if (cohortApi.success) {
+      onMembersChanged?.();
+      closeModal();
+    }
+  }
+
+  async function assignExistingStudents(profileIds: string[], sendEmail: boolean) {
+    await cohortApi.assignExistingStudentsToCohort(cohortId, { profileIds, sendEmail });
+    if (cohortApi.success) {
+      onMembersChanged?.();
+    }
+  }
+
+  async function inviteNewStudents(recipientCsv: string, sendEmail: boolean) {
+    await cohortApi.inviteStudentsToCohort(cohortId, { recipientCsv, sendEmail });
+    if (cohortApi.success) {
+      onMembersChanged?.();
+    }
+  }
+
+  async function generateInviteLink() {
+    await cohortApi.generateInviteLink(cohortId);
+  }
+
+  async function toggleInviteLink(isRevoked: boolean) {
+    await cohortApi.toggleInviteLink(cohortId, isRevoked);
+  }
+
+  $effect(() => {
+    setTutors($currentOrg.id);
+  });
+
+  $effect(() => {
+    if (!isOpen || !cohortId) {
+      return;
+    }
+
+    untrack(() => {
+      activeTab = 'students';
+      selectedIds = [];
+      void loadStudents($currentOrg.id);
+      void cohortApi.getInviteLink(cohortId);
+    });
+  });
+</script>
+
+<Dialog.Root
+  open={isOpen}
+  onOpenChange={(open) => {
+    if (!open) closeModal();
+  }}
+>
+  <Dialog.Content class="max-h-[80vh] w-[96vw] max-w-3xl! overflow-y-auto">
+    <Dialog.Header>
+      <Dialog.Title>{$t('cohorts.people.invite_modal_title')}</Dialog.Title>
+    </Dialog.Header>
+
+    <UnderlineTabs.Root bind:value={activeTab}>
+      <UnderlineTabs.List class="flex flex-wrap">
+        {#if $isOrgAdmin}
+          <UnderlineTabs.Trigger value="tutors">
+            {$t(`${INVITE_MODAL}.invite`)}
+          </UnderlineTabs.Trigger>
+        {/if}
+        <UnderlineTabs.Trigger value="students">
+          {$t(`${INVITE_MODAL}.invite_students`)}
+        </UnderlineTabs.Trigger>
+        <UnderlineTabs.Trigger value="link">
+          {$t('invite_link.tab_label')}
+        </UnderlineTabs.Trigger>
+      </UnderlineTabs.List>
+
+      {#if $isOrgAdmin}
+        <UnderlineTabs.Content value="tutors">
+          <div class="space-y-3">
+            <TutorSelectSection
+              {tutors}
+              bind:selectedIds
+              isLoading={orgApi.isLoading}
+              helperHref={`/org/${$currentOrg.siteName}/settings/teams`}
+            />
+
+            <div class="mt-5 flex flex-row-reverse items-center gap-2">
+              <Button variant="secondary" type="button" onclick={addTutors} loading={cohortApi.isLoading}>
+                {$t(`${INVITE_MODAL}.finish`)}
+              </Button>
+            </div>
+          </div>
+        </UnderlineTabs.Content>
+      {/if}
+
+      <UnderlineTabs.Content value="students">
+        <div class="space-y-6">
+          {#if $isOrgAdmin}
+            <ExistingStudentsSection
+              students={availableStudents}
+              isLoading={isLoadingStudents}
+              onSearchValueChange={handleStudentSearch}
+              onAssign={assignExistingStudents}
+            />
+          {/if}
+          {#if $isStudentLimitReached}
+            <UpgradeBanner removeParams={['add']}>{$t(`${INVITE_MODAL}.student_limit_reached`)}</UpgradeBanner>
+          {/if}
+          <BulkEmailSection onInvite={inviteNewStudents} disabled={$isStudentLimitReached} />
+        </div>
+      </UnderlineTabs.Content>
+
+      <UnderlineTabs.Content value="link">
+        <div class="space-y-6">
+          <InviteLinkSection
+            link={inviteLink}
+            isRevoked={cohortApi.inviteLink?.isRevoked ?? false}
+            isLoading={cohortApi.isLoading}
+            joinCount={cohortApi.inviteLink?.joinCount}
+            descriptionKey="invite_link.cohort_description"
+            onGenerate={generateInviteLink}
+            onToggle={toggleInviteLink}
+          />
+
+          {#if $isStudentLimitReached}
+            <UpgradeBanner removeParams={['add']}>{$t(`${INVITE_MODAL}.student_limit_reached`)}</UpgradeBanner>
+          {/if}
+        </div>
+      </UnderlineTabs.Content>
+    </UnderlineTabs.Root>
+  </Dialog.Content>
+</Dialog.Root>

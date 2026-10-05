@@ -1,0 +1,631 @@
+import { presignApi } from '$features/course/api/presign.svelte';
+import { BaseApiWithErrors, classroomio } from '$lib/utils/services/api';
+import type {
+  AssetStorageSummary,
+  AssetTranscriptPayload,
+  AssetUsage,
+  AssetUsageGraph,
+  CreateAndAttachAssetData,
+  CreateAndAttachAssetRequest,
+  CreateAssetRequest,
+  DeleteAssetRequest,
+  GetAssetTranscriptRequest,
+  GetAssetUsageRequest,
+  GetVimeoMetadataRequest,
+  GetYouTubeMetadataRequest,
+  ListAssetsRequest,
+  OrganizationAsset,
+  RegenerateAssetThumbnailRequest,
+  SelectAssetThumbnailRequest,
+  TranscriptSegment,
+  UpdateAssetData,
+  UpdateAssetRequest,
+  UpdateAssetTranscriptRequest,
+  VimeoMetadata,
+  YouTubeMetadata
+} from '../utils/types';
+import type {
+  TAssetAttach,
+  TAssetCreateUpload,
+  TAssetDetach,
+  TAssetListQuery,
+  TAssetStorageQuery,
+  TAssetUpdate,
+  TVimeoMetadataQuery,
+  TYouTubeMetadataQuery
+} from '@cio/utils/validation/assets';
+import {
+  ZAssetAttach,
+  ZAssetCreateAndAttach,
+  ZAssetCreateUpload,
+  ZAssetDetach,
+  ZAssetListQuery,
+  ZAssetStorageQuery,
+  ZAssetUpdate,
+  ZVimeoMetadataQuery,
+  ZYouTubeMetadataQuery
+} from '@cio/utils/validation/assets';
+import { getAssetHlsManifestLink, isHlsAsset, mapAssetToLessonVideo } from '../utils/media-manager-utils';
+
+import type { AttachAssetRequest } from '../utils/types';
+import type { DetachAssetRequest } from '../utils/types';
+import { mapZodErrorsToTranslations } from '$lib/utils/validation';
+import { orgNavCountsApi } from '$features/ui/sidebar/org-sidebar/org-nav-counts.svelte';
+import { snackbar } from '$features/ui/snackbar/store';
+import type { StartAssetTranscriptionRequest } from '$features/jobs/utils/types';
+
+export class MediaApi extends BaseApiWithErrors {
+  assets = $state<OrganizationAsset[]>([]);
+  storageSummary = $state<AssetStorageSummary | null>(null);
+  pagination = $state<{
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  } | null>(null);
+
+  private normalizeDurationSeconds(value: number | null | undefined): number | undefined {
+    if (value == null || !Number.isFinite(value)) {
+      return undefined;
+    }
+
+    return Math.max(0, Math.round(value));
+  }
+
+  async listAssets(query: Partial<TAssetListQuery> = {}) {
+    const parsed = ZAssetListQuery.partial().safeParse(query);
+    if (!parsed.success) {
+      this.errors = mapZodErrorsToTranslations(parsed.error);
+      return;
+    }
+
+    const { page, limit, kind, status, search, includeExternal } = parsed.data;
+    const rpcQuery = {
+      page: String(page),
+      limit: String(limit),
+      includeExternal: String(includeExternal),
+      ...(kind !== undefined ? { kind } : {}),
+      ...(status !== undefined ? { status } : {}),
+      ...(search !== undefined ? { search } : {})
+    };
+
+    await this.execute<ListAssetsRequest>({
+      requestFn: () => classroomio.organization.assets.$get({ query: rpcQuery }),
+      logContext: 'listing organization assets',
+      onSuccess: (response) => {
+        this.assets = response.data;
+        this.pagination = response.pagination;
+      },
+      onError: () => {
+        snackbar.error('snackbar.media_manager.list_failed');
+      }
+    });
+  }
+
+  async getStorageSummary(query: Partial<TAssetStorageQuery> = {}) {
+    const parsed = ZAssetStorageQuery.partial().safeParse(query);
+    if (!parsed.success) {
+      this.errors = mapZodErrorsToTranslations(parsed.error);
+      return;
+    }
+
+    const rpcQuery = {
+      includeArchived: String(parsed.data.includeArchived),
+      includeExternal: String(parsed.data.includeExternal)
+    };
+
+    await this.execute<typeof classroomio.organization.assets.storage.$get>({
+      requestFn: () => classroomio.organization.assets.storage.$get({ query: rpcQuery }),
+      logContext: 'fetching media manager storage summary',
+      onSuccess: (response) => {
+        this.storageSummary = response.data;
+      },
+      onError: () => {
+        snackbar.error('snackbar.media_manager.storage_failed');
+      }
+    });
+  }
+
+  async getYouTubeMetadata(url: string): Promise<YouTubeMetadata | null> {
+    const query: TYouTubeMetadataQuery = { url };
+    const result = ZYouTubeMetadataQuery.safeParse(query);
+    if (!result.success) {
+      this.errors = mapZodErrorsToTranslations(result.error);
+      return null;
+    }
+
+    let metadata: YouTubeMetadata | null = null;
+    await this.execute<GetYouTubeMetadataRequest>({
+      requestFn: () =>
+        classroomio.organization.assets['youtube-metadata'].$get({
+          query: result.data
+        }),
+      logContext: 'resolving YouTube metadata',
+      onSuccess: (response) => {
+        metadata = response.data;
+      }
+    });
+
+    return metadata;
+  }
+
+  async getVimeoMetadata(url: string): Promise<VimeoMetadata | null> {
+    const query: TVimeoMetadataQuery = { url };
+    const result = ZVimeoMetadataQuery.safeParse(query);
+    if (!result.success) {
+      this.errors = mapZodErrorsToTranslations(result.error);
+      return null;
+    }
+
+    let metadata: VimeoMetadata | null = null;
+    await this.execute<GetVimeoMetadataRequest>({
+      requestFn: () =>
+        classroomio.organization.assets['vimeo-metadata'].$get({
+          query: result.data
+        }),
+      logContext: 'resolving Vimeo metadata',
+      onSuccess: (response) => {
+        metadata = response.data;
+      }
+    });
+
+    return metadata;
+  }
+
+  async createAsset(fields: TAssetCreateUpload): Promise<OrganizationAsset | null> {
+    const normalizedFields = {
+      ...fields,
+      durationSeconds: this.normalizeDurationSeconds(fields.durationSeconds)
+    };
+
+    const result = ZAssetCreateUpload.safeParse(normalizedFields);
+    if (!result.success) {
+      this.errors = mapZodErrorsToTranslations(result.error);
+      return null;
+    }
+
+    let asset: OrganizationAsset | null = null;
+    await this.execute<CreateAssetRequest>({
+      requestFn: () =>
+        classroomio.organization.assets.$post({
+          json: result.data
+        }),
+      logContext: 'creating media asset',
+      onSuccess: (response) => {
+        asset = response.data;
+        orgNavCountsApi.adjustCount('media', 1);
+      },
+      onError: () => {
+        snackbar.error('snackbar.media_manager.create_failed');
+      }
+    });
+
+    return asset;
+  }
+
+  async createAndAttachAsset(
+    assetFields: TAssetCreateUpload,
+    attachFields: TAssetAttach
+  ): Promise<CreateAndAttachAssetData | null> {
+    const normalizedFields = {
+      asset: {
+        ...assetFields,
+        durationSeconds: this.normalizeDurationSeconds(assetFields.durationSeconds)
+      },
+      attach: attachFields
+    };
+
+    const result = ZAssetCreateAndAttach.safeParse(normalizedFields);
+    if (!result.success) {
+      this.errors = mapZodErrorsToTranslations(result.error);
+      return null;
+    }
+
+    let createdData: CreateAndAttachAssetData | null = null;
+    await this.execute<CreateAndAttachAssetRequest>({
+      requestFn: () =>
+        classroomio.organization.assets['create-and-attach'].$post({
+          json: result.data
+        }),
+      logContext: 'creating and attaching media asset',
+      onSuccess: (response) => {
+        createdData = response.data;
+        orgNavCountsApi.adjustCount('media', 1);
+      },
+      onError: () => {
+        snackbar.error('snackbar.media_manager.create_failed');
+      }
+    });
+
+    return createdData;
+  }
+
+  async updateAsset(assetId: string, fields: TAssetUpdate): Promise<UpdateAssetData | null> {
+    const normalizedFields = {
+      ...fields,
+      durationSeconds: this.normalizeDurationSeconds(fields.durationSeconds)
+    };
+
+    const result = ZAssetUpdate.safeParse(normalizedFields);
+    if (!result.success) {
+      this.errors = mapZodErrorsToTranslations(result.error);
+      return null;
+    }
+
+    let updated: UpdateAssetData | null = null;
+    await this.execute<UpdateAssetRequest>({
+      requestFn: () =>
+        classroomio.organization.assets[':assetId'].$put({
+          param: { assetId },
+          json: result.data
+        }),
+      logContext: 'updating media asset',
+      onSuccess: (response) => {
+        updated = response.data;
+        this.assets = this.assets.map((asset) => (asset.id === response.data.id ? response.data : asset));
+      },
+      onError: () => {
+        snackbar.error('snackbar.media_manager.update_failed');
+      }
+    });
+
+    return updated;
+  }
+
+  async getAssetUsage(assetId: string): Promise<AssetUsageGraph | null> {
+    let usage: AssetUsageGraph | null = null;
+    await this.execute<GetAssetUsageRequest>({
+      requestFn: () =>
+        classroomio.organization.assets[':assetId'].usage.$get({
+          param: { assetId }
+        }),
+      logContext: 'fetching media asset usage',
+      onSuccess: (response) => {
+        usage = response.data;
+      },
+      onError: () => {
+        snackbar.error('snackbar.media_manager.usage_failed');
+      }
+    });
+
+    return usage;
+  }
+
+  async attachAsset(assetId: string, fields: TAssetAttach): Promise<AssetUsage | null> {
+    const result = ZAssetAttach.safeParse(fields);
+    if (!result.success) {
+      this.errors = mapZodErrorsToTranslations(result.error);
+      return null;
+    }
+
+    let usage: AssetUsage | null = null;
+    await this.execute<AttachAssetRequest>({
+      requestFn: () =>
+        classroomio.organization.assets[':assetId'].attach.$post({
+          param: { assetId },
+          json: result.data
+        }),
+      logContext: 'attaching media asset',
+      onSuccess: (response) => {
+        usage = response.data;
+      },
+      onError: () => {
+        snackbar.error('snackbar.media_manager.attach_failed');
+      }
+    });
+
+    return usage;
+  }
+
+  async detachAsset(assetId: string, fields: TAssetDetach): Promise<boolean> {
+    const result = ZAssetDetach.safeParse(fields);
+    if (!result.success) {
+      this.errors = mapZodErrorsToTranslations(result.error);
+      return false;
+    }
+
+    let success = false;
+    await this.execute<DetachAssetRequest>({
+      requestFn: () =>
+        classroomio.organization.assets[':assetId'].detach.$post({
+          param: { assetId },
+          json: result.data
+        }),
+      logContext: 'detaching media asset',
+      onSuccess: () => {
+        success = true;
+      },
+      onError: () => {
+        snackbar.error('snackbar.media_manager.detach_failed');
+      }
+    });
+
+    return success;
+  }
+
+  /**
+   * Permanently delete an asset and its stored files. The API blocks deletion
+   * while the asset is still attached anywhere (409 ASSET_IN_USE). Returns true
+   * only when the asset was actually removed.
+   */
+  async deleteAsset(assetId: string): Promise<boolean> {
+    let deleted = false;
+    await this.execute<DeleteAssetRequest>({
+      requestFn: () => classroomio.organization.assets[':assetId'].$delete({ param: { assetId } }),
+      logContext: 'deleting media asset',
+      onSuccess: () => {
+        deleted = true;
+        this.assets = this.assets.filter((asset) => asset.id !== assetId);
+        orgNavCountsApi.adjustCount('media', -1);
+        snackbar.success('snackbar.media_manager.delete_success');
+      },
+      onError: (error) => {
+        const inUse = typeof error === 'object' && error !== null && 'code' in error && error.code === 'ASSET_IN_USE';
+        snackbar.error(inUse ? 'snackbar.media_manager.delete_in_use' : 'snackbar.media_manager.delete_failed');
+      }
+    });
+
+    return deleted;
+  }
+
+  async getVideoPlaybackUrl(asset: OrganizationAsset): Promise<string | null> {
+    return this.getAssetDownloadUrl(asset, { forPlayback: true });
+  }
+
+  async getAssetDownloadUrl(
+    asset: OrganizationAsset,
+    options: {
+      forPlayback?: boolean;
+    } = {}
+  ): Promise<string | null> {
+    if (asset.provider !== 'upload' || !asset.storageKey) {
+      return asset.sourceUrl ?? null;
+    }
+
+    const useDocumentEndpoint =
+      !options.forPlayback && (asset.kind === 'document' || asset.mimeType?.startsWith('application/'));
+    const urls = useDocumentEndpoint
+      ? await presignApi.getDocumentDownloadUrls([asset.storageKey])
+      : await presignApi.getVideoDownloadUrls([asset.storageKey]);
+
+    return urls[asset.storageKey] ?? null;
+  }
+
+  async registerUploadedLessonVideo(params: {
+    lessonId: string;
+    position: number;
+    fileKey: string;
+    videoUrl: string;
+    fileName: string;
+    mimeType: string;
+    byteSize: number;
+    thumbnailUrl?: string;
+    durationSeconds?: number | null;
+  }): Promise<OrganizationAsset | null> {
+    const asset = await this.createAsset({
+      kind: 'video',
+      provider: 'upload',
+      storageProvider: 's3',
+      storageKey: params.fileKey,
+      sourceUrl: params.videoUrl,
+      mimeType: params.mimeType,
+      byteSize: params.byteSize,
+      title: params.fileName,
+      thumbnailUrl: params.thumbnailUrl,
+      durationSeconds: this.normalizeDurationSeconds(params.durationSeconds),
+      isExternal: false,
+      metadata: {
+        fileName: params.fileName,
+        createdAt: new Date().toISOString()
+      }
+    });
+
+    if (!asset) {
+      return null;
+    }
+
+    await this.attachAsset(asset.id, {
+      targetType: 'lesson',
+      targetId: params.lessonId,
+      slotType: 'lesson_video',
+      position: params.position
+    });
+
+    return asset;
+  }
+
+  async registerUploadedLessonDocument(params: {
+    lessonId: string;
+    position: number;
+    fileKey: string;
+    documentUrl: string;
+    fileName: string;
+    mimeType: string;
+    byteSize: number;
+  }): Promise<OrganizationAsset | null> {
+    const asset = await this.createAsset({
+      kind: 'document',
+      provider: 'upload',
+      storageProvider: 's3',
+      storageKey: params.fileKey,
+      sourceUrl: params.documentUrl,
+      mimeType: params.mimeType,
+      byteSize: params.byteSize,
+      title: params.fileName,
+      isExternal: false,
+      metadata: {
+        fileName: params.fileName,
+        createdAt: new Date().toISOString()
+      }
+    });
+
+    if (!asset) {
+      return null;
+    }
+
+    await this.attachAsset(asset.id, {
+      targetType: 'lesson',
+      targetId: params.lessonId,
+      slotType: 'lesson_document',
+      position: params.position
+    });
+
+    return asset;
+  }
+
+  async buildLessonVideoFromAsset(
+    asset: OrganizationAsset,
+    params: { lessonId?: string; position?: number; slotType?: string } = {}
+  ) {
+    // HLS assets have no presignable storageKey — the manifest is served via the
+    // /hls proxy + signed cookie, so the link is the relative manifest path.
+    const url = isHlsAsset(asset) ? getAssetHlsManifestLink(asset) : await this.getVideoPlaybackUrl(asset);
+    if (!url) {
+      snackbar.error('snackbar.media_manager.resolve_video_failed');
+      return null;
+    }
+
+    if (params.lessonId) {
+      await this.attachAsset(asset.id, {
+        targetType: 'lesson',
+        targetId: params.lessonId,
+        slotType: params.slotType ?? 'lesson_video',
+        position: params.position
+      });
+    }
+
+    return mapAssetToLessonVideo(asset, {
+      url,
+      key: asset.storageKey
+    });
+  }
+
+  /**
+   * Returns transcript payload or null when none exists yet.
+   */
+  async getAssetTranscript(assetId: string): Promise<AssetTranscriptPayload | null> {
+    let data: AssetTranscriptPayload | null = null;
+
+    await this.execute<GetAssetTranscriptRequest>({
+      requestFn: () => classroomio.organization.assets[':assetId'].transcript.$get({ param: { assetId } }),
+      logContext: 'fetching asset transcript',
+      onSuccess: (response) => {
+        data = response.data;
+      },
+      onError: () => {
+        snackbar.error('snackbar.media_manager.transcript_fetch_failed');
+      }
+    });
+
+    return data;
+  }
+
+  /** Save edited transcript segments (org admins only). Returns the updated payload or null on failure. */
+  async updateAssetTranscript(assetId: string, segments: TranscriptSegment[]): Promise<AssetTranscriptPayload | null> {
+    let data: AssetTranscriptPayload | null = null;
+
+    await this.execute<UpdateAssetTranscriptRequest>({
+      requestFn: () =>
+        classroomio.organization.assets[':assetId'].transcript.$put({
+          param: { assetId },
+          json: { segments }
+        }),
+      logContext: 'updating asset transcript',
+      onSuccess: (response) => {
+        data = response.data;
+        snackbar.success('snackbar.media_manager.transcript_saved');
+      },
+      onError: () => {
+        snackbar.error('snackbar.media_manager.transcript_save_failed');
+      }
+    });
+
+    return data;
+  }
+
+  /** Persist the chosen thumbnail URL (must be a generated candidate or a fresh upload). */
+  async selectThumbnail(assetId: string, thumbnailUrl: string): Promise<OrganizationAsset | null> {
+    let updated: OrganizationAsset | null = null;
+    await this.execute<SelectAssetThumbnailRequest>({
+      requestFn: () =>
+        classroomio.organization.assets[':assetId'].thumbnail.$put({
+          param: { assetId },
+          json: { thumbnailUrl }
+        }),
+      logContext: 'selecting asset thumbnail',
+      onSuccess: (response) => {
+        updated = response.data;
+        this.assets = this.assets.map((asset) => (asset.id === response.data.id ? response.data : asset));
+        snackbar.success('snackbar.media_manager.thumbnail_updated');
+      },
+      onError: () => {
+        snackbar.error('snackbar.media_manager.thumbnail_update_failed');
+      }
+    });
+
+    return updated;
+  }
+
+  /** Enqueue a fresh generate-thumbnail job and return the media_job id. */
+  async regenerateThumbnails(assetId: string): Promise<string | null> {
+    let jobId: string | null = null;
+    await this.execute<RegenerateAssetThumbnailRequest>({
+      requestFn: () =>
+        classroomio.jobs.media.asset[':assetId']['regenerate-thumbnail'].$post({
+          param: { assetId }
+        }),
+      logContext: 'regenerating asset thumbnail',
+      onSuccess: (response) => {
+        jobId = response.data.id;
+        snackbar.success('snackbar.media_manager.thumbnail_regen_started');
+      },
+      onError: () => {
+        snackbar.error('snackbar.media_manager.thumbnail_regen_failed');
+      }
+    });
+
+    return jobId;
+  }
+
+  async refreshAsset(assetId: string): Promise<OrganizationAsset | null> {
+    let updated: OrganizationAsset | null = null;
+    await this.execute<(typeof classroomio.organization.assets)[':assetId']['$get']>({
+      requestFn: () =>
+        classroomio.organization.assets[':assetId'].$get({
+          param: { assetId }
+        }),
+      logContext: 'refreshing asset',
+      onSuccess: (response) => {
+        updated = response.data;
+        this.assets = this.assets.map((asset) => (asset.id === response.data.id ? response.data : asset));
+      }
+    });
+
+    return updated;
+  }
+
+  /** Enqueue extract-audio + Whisper for an existing upload. */
+  async generateTranscript(assetId: string): Promise<boolean> {
+    let ok = false;
+    await this.execute<StartAssetTranscriptionRequest>({
+      requestFn: () => classroomio.jobs.media.asset[':assetId'].transcribe.$post({ param: { assetId } }),
+      logContext: 'starting transcription job',
+      onSuccess: () => {
+        ok = true;
+        snackbar.success('snackbar.media_manager.transcription_started');
+      },
+      onError: (error) => {
+        const isConflict = typeof error === 'object' && error !== null && 'code' in error && error.code === 'CONFLICT';
+        snackbar.error(
+          isConflict
+            ? 'snackbar.media_manager.transcription_already_running'
+            : 'snackbar.media_manager.transcription_start_failed'
+        );
+      }
+    });
+
+    return ok;
+  }
+}
+
+export const mediaApi = new MediaApi();

@@ -1,128 +1,107 @@
 import 'dotenv/config';
 
 import adapterNode from '@sveltejs/adapter-node';
-import adapterVercel from '@sveltejs/adapter-vercel';
+import { getCspDomains } from './src/lib/utils/csp-domains.js';
 import path from 'path';
-import { vitePreprocess } from '@sveltejs/kit/vite';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
-const useNodeAdapter = process.env.PUBLIC_IS_SELFHOSTED === 'true';
+const IS_CLOUDFLARE = process.env.CI_ENVIRONMENT === 'cloudflare';
+
+const adapterCloudflare = IS_CLOUDFLARE ? (await import('@sveltejs/adapter-cloudflare')).default : null;
+const isSelfHosted = process.env.PUBLIC_IS_SELFHOSTED === 'true';
+const isProduction = process.env.NODE_ENV === 'production';
+const devConnectSrc = !isProduction ? ['ws:', 'wss:'] : [];
+const csp = getCspDomains(isSelfHosted, process.env.PUBLIC_SERVER_URL);
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
-  // Consult https://kit.svelte.dev/docs/integrations#preprocessors
-  // for more information about preprocessors
   preprocess: [vitePreprocess({})],
-
   kit: {
-    adapter: useNodeAdapter ? adapterNode() : adapterVercel(),
+    version: {
+      pollInterval: 60_000
+    },
+    // Default: Node server (Render, Docker). Opt into Cloudflare Pages only when CI_ENVIRONMENT=cloudflare.
+    adapter: IS_CLOUDFLARE ? adapterCloudflare() : adapterNode(),
     alias: {
       $lib: path.resolve('./src/lib'),
-      $mail: path.resolve('./src/mail')
+      $features: path.resolve('./src/lib/features'),
+      $mail: path.resolve('./src/mail'),
+      '$src/tools': path.resolve('./node_modules/@cio/ui/src/tools/index.ts'),
+      '$src/base/*': path.resolve('./node_modules/@cio/ui/src/base/*'),
+      '@cio/ui': path.resolve('./node_modules/@cio/ui/src'),
+      '@cio/ui/*': path.resolve('./node_modules/@cio/ui/src/*'),
+      '@cio/api': path.resolve('./node_modules/@cio/api/dist'),
+      '@cio/api/*': path.resolve('./node_modules/@cio/api/dist/*'),
+      '@cio/utils': path.resolve('./node_modules/@cio/utils/dist'),
+      '@cio/utils/*': path.resolve('./node_modules/@cio/utils/dist/*'),
+      '@cio/db/types': path.resolve('./node_modules/@cio/db/src/types.ts')
     },
     csp: {
+      mode: 'auto',
       directives: {
         'default-src': ['self'],
-        'script-src': [
+        'script-src': ['self', ...csp.scriptSrc, 'unsafe-hashes', 'unsafe-eval'],
+        'style-src': ['self', 'unsafe-inline', ...csp.styleSrc],
+        'style-src-elem': ['self', 'unsafe-inline', ...csp.styleSrc],
+        // data: covers inlined woff2 (e.g. PDF.js / icon fonts); file fonts use 'self'
+        'font-src': ['self', 'data:', ...csp.fontSrc],
+        'img-src': ['self', 'data:', ...csp.mediaSrc, 'blob:', 'http://localhost:9000'],
+        'media-src': [
           'self',
-          'https://assets.cdn.clsrio.com',
-          'https://cdnjs.cloudflare.com',
-          'https://*.i.posthog.com',
-          'https://*.senja.io',
-          'https://www.youtube.com',
-          'https://youtube.com'
+          ...csp.mediaSrc,
+          'data:',
+          'blob:',
+          'http://localhost:9000',
+          ...(csp.apiOrigin ? [csp.apiOrigin] : [])
         ],
-        'style-src': [
-          'self',
-          'unsafe-inline',
-          'https://cdn.plyr.io',
-          'https://unpkg.com/katex@0.12.0/dist/katex.min.css',
-          'https://assets.cdn.clsrio.com/carbon-all.css',
-          'https://assets.cdn.clsrio.com/eqneditor_1.css'
-        ],
-        'style-src-elem': [
-          'self',
-          'unsafe-inline',
-          'https://cdn.plyr.io',
-          'https://unpkg.com/katex@0.12.0/dist/katex.min.css',
-					'https://assets.cdn.clsrio.com/carbon-all.css',
-          'https://assets.cdn.clsrio.com/eqneditor_1.css'
-        ],
-        'font-src': ['self', 'https://fonts.gstatic.com', 'https://cdn.plyr.io'],
-        'img-src': ['self', 'data:', 'https:'],
-        'media-src': ['self', 'https:', 'data:'],
-        'frame-src': ['self', 'https://www.youtube.com', 'https://youtube.com'],
+        'frame-src': ['self', ...csp.frameSrc],
         'connect-src': [
           'self',
-          'https://*.supabase.co',
-          'https://*.classroomio.com',
-          'https://assets.cdn.clsrio.com',
-          'https://cdn.plyr.io',
-          'https://*.i.posthog.com',
-          'https://umami.hz.oncws.com',
-          'https://*.r2.cloudflarestorage.com',
-          'http://localhost:54321',
-          'ws://localhost:54321',
-          'wss://*.classroomio.com',
-          'wss://*.supabase.co',
-          'https://*.senja.io'
+          'blob:',
+          ...devConnectSrc,
+          'http://localhost:3002',
+          'http://localhost:9000',
+          ...(csp.apiOrigin ? [csp.apiOrigin] : []),
+          ...csp.connectSrc
         ],
         'worker-src': ['self', 'blob:'],
         'object-src': ['none'],
         'base-uri': ['self'],
         'form-action': ['self'],
-        'frame-ancestors': ['none'],
-        'upgrade-insecure-requests': true
+        // 'self' allows same-origin iframes (e.g. widget preview at /widget-preview). 'none' blocks all embedding.
+        'frame-ancestors': ['self'],
+        'upgrade-insecure-requests': isProduction
       },
       reportOnly: {
         'default-src': ['self'],
-        'script-src': [
+        'script-src': ['self', ...csp.scriptSrc, 'unsafe-hashes', 'unsafe-eval'],
+        'style-src': ['self', 'unsafe-inline', ...csp.styleSrc],
+        'style-src-elem': ['self', 'unsafe-inline', ...csp.styleSrc],
+        'font-src': ['self', 'data:', ...csp.fontSrc],
+        'img-src': ['self', 'data:', ...csp.mediaSrc, 'blob:', 'http://localhost:9000'],
+        'media-src': [
           'self',
-          'https://assets.cdn.clsrio.com',
-          'https://cdnjs.cloudflare.com',
-          'https://*.i.posthog.com',
-          'https://*.senja.io',
-          'https://www.youtube.com',
-          'https://youtube.com'
+          ...csp.mediaSrc,
+          'data:',
+          'blob:',
+          'http://localhost:9000',
+          ...(csp.apiOrigin ? [csp.apiOrigin] : [])
         ],
-        'style-src': [
-          'self',
-          'unsafe-inline',
-          'https://cdn.plyr.io',
-          'https://unpkg.com/katex@0.12.0/dist/katex.min.css',
-          'https://assets.cdn.clsrio.com/eqneditor_1.css'
-        ],
-        'style-src-elem': [
-          'self',
-          'unsafe-inline',
-          'https://cdn.plyr.io',
-          'https://unpkg.com/katex@0.12.0/dist/katex.min.css',
-          'https://assets.cdn.clsrio.com/eqneditor_1.css'
-        ],
-        'font-src': ['self', 'https://fonts.gstatic.com', 'https://cdn.plyr.io'],
-        'img-src': ['self', 'data:', 'https:'],
-        'media-src': ['self', 'https:', 'data:'],
-        'frame-src': ['self', 'https://www.youtube.com', 'https://youtube.com'],
+        'frame-src': ['self', ...csp.frameSrc],
         'connect-src': [
           'self',
-          'https://*.supabase.co',
-          'https://pgrest.classroomio.com',
-          'https://api.classroomio.com',
-          'https://assets.cdn.clsrio.com',
-          'https://cdn.plyr.io',
-          'https://*.i.posthog.com',
-          'https://umami.hz.oncws.com',
-          'https://*.r2.cloudflarestorage.com',
-          'http://localhost:54321',
-          'ws://localhost:54321',
-          'wss://*.classroomio.com',
-          'wss://*.supabase.co',
-          'https://*.senja.io'
+          'blob:',
+          ...devConnectSrc,
+          'http://localhost:3002',
+          'http://localhost:9000',
+          ...(csp.apiOrigin ? [csp.apiOrigin] : []),
+          ...csp.connectSrc
         ],
         'worker-src': ['self', 'blob:'],
         'object-src': ['none'],
         'base-uri': ['self'],
         'form-action': ['self'],
-        'frame-ancestors': ['none'],
+        'frame-ancestors': ['self'],
         'report-uri': ['/csp-report']
       }
     }

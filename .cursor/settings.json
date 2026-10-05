@@ -1,0 +1,13 @@
+{
+  "plugins": {
+    "svelte": {
+      "enabled": true
+    },
+    "supabase": {
+      "enabled": true
+    },
+    "pstack": {
+      "enabled": true
+    }
+  }
+}

@@ -1,0 +1,62 @@
+<script lang="ts">
+  import type { CourseLandingPageProps } from '../types';
+  import EditorialNav from './nav.svelte';
+  import EditorialHero from './hero.svelte';
+  import OrgLandingPageFooter from '../landing-page-footer.svelte';
+  import CourseSocialProof from '../course-social-proof.svelte';
+  import CourseInfoBlocks from '../course-info-blocks.svelte';
+  import CourseCurriculum from '../course-curriculum.svelte';
+  import CourseChips from '../course-chips.svelte';
+  import CourseSectionNav from '../course-section-nav.svelte';
+  import CourseInstructor from '../course-instructor.svelte';
+  import CourseReviews from '../course-reviews.svelte';
+  import CoursePricing from '../course-pricing.svelte';
+  import LandingThemeScope from '../landing-theme-scope.svelte';
+  import { alignHeroCtaWithPricing, buildCourseSectionNavItems } from '../course-landing-page.helpers';
+
+  let {
+    orgName,
+    logoUrl,
+    navItems,
+    authAction,
+    hero,
+    socialProof,
+    info,
+    curriculum,
+    chips,
+    instructor,
+    reviews,
+    pricing,
+    footer,
+    labels,
+    learnerAccount
+  }: CourseLandingPageProps = $props();
+
+  const heroProps = $derived(alignHeroCtaWithPricing(hero, pricing));
+  const sectionNavItems = $derived(
+    buildCourseSectionNavItems({ info, curriculum, chips, instructor, reviews }, labels)
+  );
+</script>
+
+<LandingThemeScope theme="editorial" class="ui:font-sans">
+  <main>
+    <EditorialHero hero={heroProps} courses={[]}>
+      {#snippet navigation()}
+        <EditorialNav {orgName} {logoUrl} {navItems} {authAction} {learnerAccount} />
+      {/snippet}
+    </EditorialHero>
+
+    <CourseSectionNav variant="editorial" items={sectionNavItems} {labels} />
+    <CourseSocialProof variant="editorial" {socialProof} {labels} />
+    <CourseInfoBlocks variant="editorial" {info} {labels} />
+    <CourseCurriculum variant="editorial" {curriculum} {labels} />
+    {#if chips}
+      <CourseChips variant="editorial" {chips} {labels} />
+    {/if}
+    <CourseInstructor variant="editorial" {instructor} {logoUrl} {labels} />
+    <CourseReviews variant="editorial" {reviews} {labels} />
+    <CoursePricing variant="editorial" {pricing} {labels} />
+  </main>
+
+  <OrgLandingPageFooter {orgName} {logoUrl} {footer} variant="editorial" />
+</LandingThemeScope>

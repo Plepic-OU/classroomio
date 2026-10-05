@@ -1,0 +1,124 @@
+{
+  "name": "@cio/db",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "default": "./dist/types.js"
+    },
+    "./drizzle": {
+      "types": "./dist/drizzle.d.ts",
+      "default": "./dist/drizzle.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "default": "./dist/schema.js"
+    },
+    "./auth": {
+      "types": "./dist/auth.d.ts",
+      "default": "./dist/auth.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "default": "./dist/utils/index.js"
+    },
+    "./queries": {
+      "types": "./dist/queries/index.d.ts",
+      "default": "./dist/queries/index.js"
+    },
+    "./queries/query-errors": {
+      "types": "./dist/queries/query-errors.d.ts",
+      "default": "./dist/queries/query-errors.js"
+    },
+    "./queries/*": {
+      "types": "./dist/queries/*/index.d.ts",
+      "default": "./dist/queries/*/index.js"
+    },
+    "./queries/*/*": {
+      "types": "./dist/queries/*/*.d.ts",
+      "default": "./dist/queries/*/*.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prebuild": "pnpm --filter @cio/question-types run build && pnpm --filter @cio/utils run build && pnpm --filter @cio/jobs run build && pnpm --filter @cio/email run build",
+    "build": "rimraf dist tsconfig.tsbuildinfo && tsc && tsc-alias",
+    "dev": "tsc --watch",
+    "db": "drizzle-kit",
+    "db:studio": "drizzle-kit studio",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:baseline": "tsx src/scripts/baseline.ts",
+    "db:reset": "tsx src/scripts/db-reset.ts",
+    "db:setup": "tsx src/scripts/db-setup.ts",
+    "db:setup:seed": "tsx src/scripts/db-setup.ts --seed",
+    "db:exercise-backfill": "tsx src/scripts/backfill-exercise-course.ts",
+    "migrate:answer-data": "tsx src/scripts/migrate-answer-data.ts",
+    "migrate:programs-to-cohorts": "tsx src/scripts/migrate-programs-to-cohorts.ts",
+    "db:assets-backfill": "tsx src/scripts/backfill-lesson-assets.ts",
+    "db:rewrite-media-host": "tsx src/scripts/rewrite-media-host.ts",
+    "db:login-link": "tsx src/scripts/generate-login-link.ts",
+    "db:seed:coursera-students": "tsx src/scripts/seed-coursera-audience-students.ts",
+    "db:seed:platform-templates": "tsx src/scripts/seed-platform-templates.ts",
+    "db:create-org": "tsx src/scripts/create-org-with-admin.ts",
+    "db:sync-orphaned-profiles": "tsx src/scripts/sync-orphaned-profiles.ts",
+    "db:backfill-profile-email-verification": "tsx src/scripts/backfill-profile-email-verification.ts",
+    "db:backfill-archived-widgets": "tsx src/scripts/backfill-archived-widgets.ts",
+    "db:backfill-member-email-notifications": "tsx src/scripts/backfill-member-email-notifications-from-profile.ts",
+    "db:backfill-cohort-course-enrollment": "tsx src/scripts/backfill-cohort-course-enrollment.ts",
+    "db:update-user-email": "tsx src/scripts/update-user-email.ts",
+    "db:ban-user": "tsx src/scripts/ban-user.ts",
+    "db:delete-org": "tsx src/scripts/delete-org-by-email.ts",
+    "db:delete-org-by-sitename": "tsx src/scripts/delete-org-by-sitename.ts",
+    "db:notify-students-over-limit": "tsx src/scripts/notify-students-over-limit.ts",
+    "db:downgrade-expired-subscriptions": "tsx src/scripts/downgrade-expired-subscriptions.ts",
+    "move-users": "tsx src/scripts/supabase-to-betterauth.ts",
+    "pull": "drizzle-kit pull --config drizzle.config.ts",
+    "generate-types": "tsx scripts/generate-types.ts && pnpm format",
+    "seed": "tsx src/scripts/seed.ts",
+    "format": "prettier . --write",
+    "db:supabase-to-betterauth": "tsx src/scripts/supabase-to-betterauth.ts",
+    "db:dump-backup": "tsx src/scripts/pg-dump-backup.ts",
+    "db:push-dump-to-new-db": "tsx src/scripts/push-dump-to-new-db.ts",
+    "db:restore-lesson-section-from-dump": "tsx src/scripts/restore-lesson-section-from-dump.ts",
+    "db:restore-organizationmember-from-dump": "tsx src/scripts/restore-organizationmember-from-dump.ts",
+    "db:disable-v1-content-grouping-from-dump": "tsx src/scripts/disable-v1-content-grouping-from-dump.ts",
+    "db:fix-landing-courses": "tsx src/scripts/fix-landing-page-courses-links.ts",
+    "db:migrate-course-logo-to-banner-image": "tsx src/scripts/migrate-course-logo-to-banner-image.ts",
+    "db:remove-landing-contact": "tsx src/scripts/remove-landing-page-contact-nav.ts",
+    "db:migrate-landing-primary-action": "tsx src/scripts/migrate-landing-page-primary-action.ts"
+  },
+  "dependencies": {
+    "@better-auth/sso": "^1.4.18",
+    "@cio/email": "workspace:*",
+    "@cio/jobs": "workspace:*",
+    "@cio/question-types": "workspace:*",
+    "@cio/tsconfig": "workspace:*",
+    "@cio/utils": "workspace:*",
+    "bcrypt": "6.0.0",
+    "better-auth": "^1.4.18",
+    "drizzle-kit": "^0.31.8",
+    "drizzle-orm": "^0.44.7",
+    "jose": "^6.1.3",
+    "postgres": "^3.4.7"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "6.0.0",
+    "@types/node": "^24.8.1",
+    "@types/pg": "^8.16.0",
+    "dotenv": "^17.2.3",
+    "pg": "^8.18.0",
+    "tsc-alias": "^1.8.16",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.3"
+  }
+}

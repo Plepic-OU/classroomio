@@ -1,0 +1,44 @@
+name = "cio-tenant-router"
+main = "src/index.ts"
+compatibility_date = "2026-05-01"
+
+# Production routes — bind the Worker to every browser-facing host.
+# Tenant subdomains and the apex live on the `myclassroomio.com` zone.
+# The admin app `app.classroomio.com` is routed through the Worker so
+# it can use same-origin `/api/*` paths with host-only auth cookies.
+routes = [
+  { pattern = "*.myclassroomio.com/*", zone_name = "myclassroomio.com" },
+  { pattern = "myclassroomio.com/*", zone_name = "myclassroomio.com" },
+  { pattern = "app.classroomio.com/*", zone_name = "classroomio.com" },
+  { pattern = "embed.classroomio.com/*", zone_name = "classroomio.com" }
+]
+
+# Override per environment. Both values are the `.onrender.com` hostnames
+# of the dashboard and API services (no scheme, no path).
+[vars]
+# Despite the name, `cio-api.onrender.com` is the **dashboard** service
+# (apps/dashboard). The actual API service is `cio-api-vymh.onrender.com`.
+DASHBOARD_UPSTREAM_HOST = "cio-api.onrender.com"
+API_UPSTREAM_HOST = "cio-api-vymh.onrender.com"
+APEX_REDIRECT_TARGET = "https://classroomio.com"
+EMBED_HOST = "embed.classroomio.com"
+API_URL = "https://api.classroomio.com"
+
+# R2 bucket binding so /hls/* can stream segments directly from Cloudflare,
+# bypassing Render. The bucket name matches the storage config in
+# packages/agent-runtime/src/config/storage.ts (BUCKET_DEFAULTS.VIDEOS).
+[[r2_buckets]]
+binding = "VIDEOS_BUCKET"
+bucket_name = "videos"
+
+# Public embed scripts (course-widget, question-type-picker) uploaded by apps/embeds.
+[[r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "assets"
+
+# HLS_SIGNING_SECRET is set via `wrangler secret put HLS_SIGNING_SECRET` —
+# never commit it. The same value must be set as HLS_SIGNING_SECRET on the
+# API (Render env) so the cookie minted by the API verifies on the Worker.
+
+[observability]
+enabled = true

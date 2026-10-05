@@ -1,0 +1,270 @@
+@import 'tailwindcss' prefix(ui);
+@import 'tw-animate-css';
+@import './custom/animation/marketing-layers.css';
+
+@source './**/*.{html,js,ts,svelte}';
+@source '../node_modules/layerchart/dist';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/**
+ * Shared z-index scale.
+ *
+ * Tailwind supports arbitrary integer z-index values out of the box (e.g. `z-137`), which is
+ * how one-off stacking numbers end up scattered across the app and collide as new layers get
+ * added. Prefer these named layers instead so intent is documented at the call site — see
+ * `packages/ui/README.md` for the full write-up and when to reach for each one.
+ *
+ *   z-app-bar          (100) Sticky/fixed app chrome: top bars, sticky in-page headers, the
+ *                             desktop sidebar rail, the side panel.
+ *   z-app-bar-elevated (150) A sidebar (mobile sheet or desktop) that must render above other
+ *                             z-app-bar content while open, e.g. the course content sidebar.
+ *   z-modal             (200) Blocking dialogs, sheets, and drawers.
+ *   z-menu-elevated     (250) Dropdown/select/popover content that must escape a z-app-bar,
+ *                             z-app-bar-elevated, or z-modal ancestor.
+ *
+ * Tooltips use `z-menu-elevated` so they remain visible over `z-app-bar` chrome such as
+ * the transcript side panel.
+ */
+@utility z-app-bar {
+  z-index: 100;
+}
+
+@utility z-app-bar-elevated {
+  z-index: 150;
+}
+
+@utility z-modal {
+  z-index: 200;
+}
+
+@utility z-menu-elevated {
+  z-index: 250;
+}
+
+/*
+ * `@utility` only emits a class when Tailwind's scanner sees that exact candidate
+ * somewhere under `packages/ui/src` — it does not ship every documented layer just because
+ * it's declared above. Safelist all four here so the compiled `@cio/ui` CSS always exposes
+ * the full scale, regardless of which layers happen to be referenced inside this package
+ * today; otherwise a consumer using e.g. `ui:z-menu-elevated` could silently get no rule.
+ */
+@source inline('ui:z-app-bar{,!}');
+@source inline('ui:z-app-bar-elevated{,!}');
+@source inline('ui:z-modal{,!}');
+@source inline('ui:z-menu-elevated{,!}');
+
+:root {
+  --spacing: var(--ui-spacing);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.488 0.243 264.376);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.809 0.105 251.813);
+  --chart-2: oklch(0.623 0.214 259.815);
+  --chart-3: oklch(0.546 0.245 262.881);
+  --chart-4: oklch(0.488 0.243 264.376);
+  --chart-5: oklch(0.424 0.199 265.638);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.546 0.245 262.881);
+  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+  --success: oklch(0.623 0.214 142.495);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.424 0.199 265.638);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.809 0.105 251.813);
+  --chart-2: oklch(0.623 0.214 259.815);
+  --chart-3: oklch(0.546 0.245 262.881);
+  --chart-4: oklch(0.488 0.243 264.376);
+  --chart-5: oklch(0.424 0.199 265.638);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.623 0.214 259.815);
+  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+  --success: oklch(0.708 0.195 142.495);
+}
+
+@theme inline {
+  /* --font-cio: 'Geist', Arial, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji, sans-serif; */
+  --font-cio: var(--font-sans);
+  --default-font-family: var(--font-cio);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-success: var(--success);
+
+  /* Course-app style animations (marketing / landing) */
+  --animate-meteor: meteor 5s linear infinite;
+  --animate-shimmer-marketing: shimmer-marketing 8s infinite;
+  --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
+  --animate-magicslide: magicslide var(--speed) ease-in-out infinite alternate;
+  --animate-flip: flip 6s infinite steps(2, end);
+  --animate-kitrotate: kitrotate 3s linear infinite both;
+  --animate-shine: shine 2s linear infinite;
+}
+
+@layer base {
+  * {
+    @apply ui:border-border ui:outline-ring/50;
+  }
+
+  body {
+    @apply ui:bg-background ui:text-foreground ui:font-cio;
+  }
+
+  button,
+  input,
+  select,
+  optgroup,
+  textarea,
+  ::file-selector-button {
+    @apply ui:font-cio;
+  }
+
+  .toaster {
+    --normal-bg: var(--color-popover);
+    --normal-text: var(--color-popover-foreground);
+    --normal-border: var(--color-border);
+  }
+}
+
+@property --border-angle {
+  inherits: false;
+  initial-value: 0deg;
+  syntax: '<angle>';
+}
+
+@keyframes border {
+  to {
+    --border-angle: 360deg;
+  }
+}
+
+@keyframes flip {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes kitrotate {
+  to {
+    transform: rotate(90deg);
+  }
+}
+
+@keyframes shine {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.animate-gradient-border {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(45deg, white, white) padding-box,
+    conic-gradient(
+        from var(--border-angle),
+        rgb(148 163 184 / 0.3) 75%,
+        var(--primary, #1d4ee2) 82%,
+        var(--primary-foreground, white) 88%,
+        var(--primary, #1d4ee2) 92%,
+        rgb(148 163 184 / 0.3) 100%
+      )
+      border-box;
+  transition: --border-angle 3s ease-in-out;
+}
+
+.animate-gradient-border:hover {
+  animation: border 4s ease-in-out infinite;
+}
+
+.dark.animate-gradient-border {
+  background:
+    linear-gradient(45deg, rgb(0 0 0), rgb(0 0 0)) padding-box,
+    conic-gradient(
+        from var(--border-angle),
+        rgb(71 85 105 / 0.48) 75%,
+        var(--primary, #1d4ee2) 82%,
+        var(--primary-foreground, black) 88%,
+        var(--primary, #1d4ee2) 92%,
+        rgb(71 85 105 / 0.48) 100%
+      )
+      border-box;
+}

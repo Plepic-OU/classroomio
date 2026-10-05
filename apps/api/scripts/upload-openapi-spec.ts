@@ -6,14 +6,97 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { mkdirSync, writeFileSync } from 'fs';
 
 import { app } from '../src/app';
-import { env } from '../src/config/env';
+import { env } from '@cio/core/config/env';
 import { generateSpecs } from 'hono-openapi';
 import { join } from 'path';
+import { enrichPublicApiOpenApiSpec, PUBLIC_API_OPENAPI_URL } from '@cio/utils/openapi/public-api';
+
+const OPENAPI_CDN_BASE_URL = PUBLIC_API_OPENAPI_URL.replace(/\/openapi-latest\.json$/, '');
+
+/** Cloudflare allows a limited number of URLs per purge request. */
+const PURGE_URL_BATCH = 30;
+
+/**
+ * Purge Cloudflare edge cache for public OpenAPI spec URLs.
+ * R2 is origin storage; purging fixes stale responses when the hostname is proxied through Cloudflare.
+ */
+async function purgeCloudflareCdnForUrls(urls: string[]): Promise<void> {
+  if (process.env.OPENAPI_SKIP_CDN_PURGE === '1' || process.env.OPENAPI_SKIP_CDN_PURGE === 'true') {
+    console.log('Skipping Cloudflare CDN purge (OPENAPI_SKIP_CDN_PURGE is set).');
+    return;
+  }
+
+  const token = process.env.CLOUDFLARE_API_TOKEN;
+  const zoneId = process.env.CLOUDFLARE_ZONE_ID;
+
+  if (!token || !zoneId) {
+    console.log(
+      'Skipping Cloudflare CDN cache purge. Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID to purge after upload.'
+    );
+    return;
+  }
+
+  if (urls.length === 0) {
+    return;
+  }
+
+  const uniqueUrls = [...new Set(urls)];
+
+  for (let index = 0; index < uniqueUrls.length; index += PURGE_URL_BATCH) {
+    const batch = uniqueUrls.slice(index, index + PURGE_URL_BATCH);
+    const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ files: batch })
+    });
+
+    const payload: unknown = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(`Cloudflare CDN purge failed: ${response.status} ${JSON.stringify(payload)}`);
+    }
+
+    console.log(`Purged Cloudflare CDN cache for ${batch.length} URL(s).`);
+  }
+}
+
+function getOpenApiCdnUrls(uploadKey: string): string[] {
+  const datedFileName = uploadKey.split('/').pop()!;
+
+  return [PUBLIC_API_OPENAPI_URL, `${OPENAPI_CDN_BASE_URL}/${datedFileName}`];
+}
 
 interface UploadOptions {
   key: string;
   content: string;
   contentType?: string;
+}
+
+function filterPublicApiSpec(spec: Record<string, unknown>) {
+  const paths = (spec.paths ?? {}) as Record<string, unknown>;
+  const publicApiPaths = Object.fromEntries(
+    Object.entries(paths).filter(([path]) => path.startsWith('/public-api/v1/'))
+  );
+
+  const tags = Array.isArray(spec.tags)
+    ? spec.tags.filter((tag) => {
+        if (!tag || typeof tag !== 'object' || !('name' in tag)) {
+          return false;
+        }
+
+        return typeof tag.name === 'string' && tag.name.startsWith('Public API');
+      })
+    : undefined;
+
+  return enrichPublicApiOpenApiSpec({
+    ...spec,
+    openapi: spec.openapi ?? '3.1.0',
+    paths: publicApiPaths,
+    tags
+  });
 }
 
 class OpenAPISpecGenerator {
@@ -24,11 +107,7 @@ class OpenAPISpecGenerator {
   }
 
   private initializeS3Client() {
-    if (
-      env.CLOUDFLARE_ACCESS_KEY &&
-      env.CLOUDFLARE_SECRET_ACCESS_KEY &&
-      env.CLOUDFLARE_ACCOUNT_ID
-    ) {
+    if (env.CLOUDFLARE_ACCESS_KEY && env.CLOUDFLARE_SECRET_ACCESS_KEY && env.CLOUDFLARE_ACCOUNT_ID) {
       this.s3Client = new S3Client({
         region: 'auto',
         endpoint: `https://${env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -72,8 +151,19 @@ class OpenAPISpecGenerator {
         }
       });
 
-      const specString = JSON.stringify(spec, null, 2);
-      console.log('✅ OpenAPI specification generated successfully');
+      const publicApiSpec = filterPublicApiSpec(spec as Record<string, unknown>);
+      const pathCount = Object.keys((publicApiSpec as { paths?: Record<string, unknown> }).paths ?? {}).length;
+
+      if (pathCount === 0) {
+        throw new Error(
+          'Generated OpenAPI spec has zero public API paths. Refusing to publish an empty spec — ' +
+            'this usually means route metadata (describeRoute) is being dropped before reaching ' +
+            'hono-openapi, e.g. by an .onError() on a sub-router that gets merged via .route().'
+        );
+      }
+
+      const specString = JSON.stringify(publicApiSpec, null, 2);
+      console.log(`✅ OpenAPI specification generated successfully (${pathCount} path(s))`);
 
       return specString;
     } catch (error) {
@@ -84,7 +174,7 @@ class OpenAPISpecGenerator {
 
   async saveLocalSpec(spec: string): Promise<string> {
     try {
-      const outputDir = join(process.cwd(), 'dist', 'openapi');
+      const outputDir = join(process.cwd(), 'dist', 'openapi', 'public-api');
       mkdirSync(outputDir, { recursive: true });
 
       const filePath = join(outputDir, 'openapi.json');
@@ -126,22 +216,25 @@ class OpenAPISpecGenerator {
     try {
       const spec = await this.generateSpec();
 
-      // await this.saveLocalSpec(spec);
+      await this.saveLocalSpec(spec);
 
       if (this.s3Client) {
-        const uploadKey = `openapi/openapi-${new Date().toISOString().split('T')[0]}.json`;
+        const uploadKey = `openapi/public-api/openapi-${new Date().toISOString().split('T')[0]}.json`;
+        const cdnUrls = getOpenApiCdnUrls(uploadKey);
+
         await this.uploadToR2({
           key: uploadKey,
           content: spec,
           contentType: 'application/json'
         });
 
-        // Also upload as latest version
         await this.uploadToR2({
-          key: 'openapi/openapi-latest.json',
+          key: 'openapi/public-api/openapi-latest.json',
           content: spec,
           contentType: 'application/json'
         });
+
+        await purgeCloudflareCdnForUrls(cdnUrls);
       }
 
       console.log('🎉 OpenAPI spec generation and upload completed successfully!');
@@ -167,6 +260,11 @@ Environment Variables Required for R2 Upload:
   CLOUDFLARE_ACCESS_KEY
   CLOUDFLARE_SECRET_ACCESS_KEY
   CLOUDFLARE_ACCOUNT_ID
+
+Optional — purge Cloudflare CDN cache for api.cdn.clsrio.com (after upload):
+  CLOUDFLARE_API_TOKEN   (Zone → Cache Purge → Purge)
+  CLOUDFLARE_ZONE_ID
+  OPENAPI_SKIP_CDN_PURGE=1 to skip purge
     `);
     return;
   }

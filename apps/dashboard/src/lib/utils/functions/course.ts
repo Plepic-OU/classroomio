@@ -1,21 +1,24 @@
-import type { Course } from '../types';
-
 export const isCourseFree = (cost: number) => !(Number(cost) > 0);
 
-export const getStudentInviteLink = (_course: Course, orgSiteName: string, origin: string) => {
-  const hash = encodeURIComponent(
-    btoa(
-      JSON.stringify({
-        id: _course.id,
-        name: _course.title,
-        description: _course.description,
-        orgSiteName
-      })
-    )
-  );
+export type CoursePaidSource = {
+  cost?: number | null;
+  metadata?: { paymentEnabled?: boolean; discount?: number; showDiscount?: boolean } | null;
+} | null;
 
-  return `${origin}/invite/s/${hash}`;
+export const isCoursePaid = (course: CoursePaidSource) => {
+  const paidFlag = course?.metadata?.paymentEnabled;
+  if (typeof paidFlag === 'boolean') return paidFlag;
+  return !isCourseFree(Number(course?.cost ?? 0));
 };
+
+export function calcCourseCost(course: CoursePaidSource): number {
+  if (!isCoursePaid(course)) return 0;
+
+  const cost = Number(course?.cost ?? 0);
+  const discount = course?.metadata?.discount ?? 0;
+  const showDiscount = course?.metadata?.showDiscount ?? false;
+  return calcCourseDiscount(discount, cost, showDiscount);
+}
 
 const tagsToReplace: { [k: string]: string } = {
   '&': '&amp;',

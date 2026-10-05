@@ -1,0 +1,149 @@
+<script lang="ts">
+  import { Image } from '$features/ui';
+  import VideoIcon from '@lucide/svelte/icons/video';
+  import { ExternalLinkIcon, HoverableItem } from '@cio/ui/custom/moving-icons';
+  import { courseApi, lessonApi } from '$features/course/api';
+  import VideoCardDropdown from './video-card-dropdown.svelte';
+  import {
+    getVideoThumbnailUrl,
+    getVideoTitle,
+    getVideoDurationSeconds,
+    formatVideoDuration,
+    getVideoCreatedAt,
+    formatVideoCreatedAt,
+    type LessonVideo
+  } from './video-card-utils';
+  import { t } from '$lib/utils/functions/translations';
+  import { getVideoMediaType } from '@cio/utils';
+
+  interface Props {
+    video: LessonVideo;
+    index: number;
+    isEditMode: boolean;
+    onRemove: () => void;
+  }
+
+  let { video, index, isEditMode, onRemove }: Props = $props();
+
+  let isTranscribingForVideo = $state(false);
+
+  const thumbnailUrl = $derived(getVideoThumbnailUrl(video));
+  const title = $derived(getVideoTitle(video, index));
+  const durationSeconds = $derived(getVideoDurationSeconds(video));
+  const durationFormatted = $derived(formatVideoDuration(durationSeconds ?? undefined));
+  const createdAtIso = $derived(getVideoCreatedAt(video));
+  const createdAtFormatted = $derived(formatVideoCreatedAt(createdAtIso ?? undefined));
+
+  const mediaType = $derived(getVideoMediaType(video));
+  const isYoutube = $derived(mediaType === 'youtube');
+  const isVimeo = $derived(mediaType === 'vimeo');
+  const isExternalWithLink = $derived((isYoutube || isVimeo) && !!video.link);
+
+  const channelLine = $derived.by(() => {
+    const courseTitle = courseApi.course?.title?.trim();
+
+    if (courseTitle) {
+      return courseTitle;
+    }
+
+    return t.get('course.navItem.lessons.materials.tabs.video.simple_card.course_fallback');
+  });
+
+  const sourceKindLabel = $derived.by(() => {
+    const key = isYoutube
+      ? 'kind_youtube'
+      : isVimeo
+        ? 'kind_vimeo'
+        : mediaType === 'upload'
+          ? 'kind_upload'
+          : mediaType === 'google_drive'
+            ? 'kind_google_drive'
+            : 'kind_generic';
+
+    return t.get(`course.navItem.lessons.materials.tabs.video.simple_card.${key}`);
+  });
+
+  const metaLine = $derived.by(() => {
+    if (createdAtFormatted) {
+      return `${sourceKindLabel} · ${createdAtFormatted}`;
+    }
+
+    return sourceKindLabel;
+  });
+</script>
+
+<!-- YouTube-like: thumbnail on top; avatar + stacked text + overflow menu -->
+<div class="group w-full max-w-full min-w-0 {isEditMode ? 'rounded-lg border' : ''}">
+  <div class="ui:bg-muted relative aspect-video w-full min-w-0 overflow-hidden rounded-md">
+    {#if thumbnailUrl}
+      <Image src={thumbnailUrl} alt={title} className="absolute inset-0 block h-full w-full object-cover" />
+    {:else}
+      <div
+        class="flex h-full min-h-0 w-full flex-col items-center justify-center gap-2 px-3 py-4"
+        role="img"
+        aria-label={title}
+      >
+        <VideoIcon class="ui:text-muted-foreground size-12 shrink-0" />
+        <span class="ui:text-muted-foreground line-clamp-2 max-w-full text-center text-xs font-medium">
+          {title}
+        </span>
+      </div>
+    {/if}
+
+    {#if durationFormatted}
+      <div class="absolute right-2 bottom-2 rounded bg-black/80 px-1.5 py-0.5 text-xs font-medium text-white">
+        {durationFormatted}
+      </div>
+    {/if}
+  </div>
+
+  <div class="mt-3 flex min-w-0 gap-3 px-3 py-3">
+    <div class="min-w-0 flex-1">
+      <div class="flex items-start gap-1">
+        <div class="ui:text-foreground min-w-0 flex-1 text-base leading-snug font-semibold" {title}>
+          {#if isExternalWithLink}
+            <HoverableItem class="block min-w-0">
+              {#snippet children(isHovered)}
+                <a
+                  href={video.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="flex min-w-0 items-start gap-1.5 hover:underline focus:underline focus:outline-none"
+                >
+                  <span class="line-clamp-2 min-w-0 flex-1 break-words">{title}</span>
+                  <ExternalLinkIcon
+                    {isHovered}
+                    size={14}
+                    class="ui:text-muted-foreground mt-0.5 shrink-0"
+                    ariaHidden={true}
+                  />
+                </a>
+              {/snippet}
+            </HoverableItem>
+          {:else}
+            <p class="line-clamp-2 min-w-0 break-words">{title}</p>
+          {/if}
+        </div>
+        {#if isEditMode}
+          <VideoCardDropdown
+            {video}
+            {onRemove}
+            onThumbnailSaved={(url) => lessonApi.updateLessonVideoThumbnail(index, url)}
+            onHlsMetadataUpdated={(metadata) => lessonApi.updateLessonVideoMetadata(index, metadata)}
+            onTranscribingChange={(v) => (isTranscribingForVideo = v)}
+            menuPlacement="inline"
+          />
+        {/if}
+      </div>
+      <p class="ui:text-muted-foreground mt-0.5 line-clamp-1 text-sm leading-snug">
+        {channelLine}
+      </p>
+      {#if isEditMode && isTranscribingForVideo}
+        <p class="mt-0.5 text-sm leading-snug text-orange-500">
+          {$t('course.navItem.lessons.materials.tabs.video.simple_card.transcription_in_progress')}
+        </p>
+      {/if}
+      <p class="ui:text-muted-foreground mt-0.5 line-clamp-1 text-sm leading-snug">{metaLine}</p>
+    </div>
+  </div>
+</div>

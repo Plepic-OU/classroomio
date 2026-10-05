@@ -1,0 +1,69 @@
+import { db, organization } from '@db/drizzle';
+
+export async function seedOrganization({
+  testOrgId,
+  enterpriseOrgId,
+  earlyAdopterOrgId,
+  selectedOrganizationId
+}: {
+  testOrgId: string;
+  enterpriseOrgId: string;
+  earlyAdopterOrgId: string;
+  selectedOrganizationId?: string;
+}) {
+  const existingOrgs = await db.select().from(organization);
+  const existingOrgIds = existingOrgs.map((o) => o.id);
+
+  const organizationsToInsert = [
+    {
+      id: testOrgId,
+      name: 'Udemy Test',
+      siteName: 'udemy-test',
+      settings: {},
+      landingpage: {},
+      theme: '',
+      customization: {
+        apps: { poll: true, comments: true },
+        course: { grading: true, newsfeed: true },
+        dashboard: { exercise: true, community: true, bannerText: '', bannerImage: '' }
+      }
+    },
+    {
+      id: enterpriseOrgId,
+      name: 'Coursera Test',
+      siteName: 'coursera-test',
+      settings: {},
+      landingpage: {},
+      theme: '',
+      customization: {
+        apps: { poll: true, comments: true },
+        course: { grading: true, newsfeed: true },
+        dashboard: { exercise: true, community: true, bannerText: '', bannerImage: '' }
+      }
+    },
+    {
+      id: earlyAdopterOrgId,
+      name: 'Skillshare Test',
+      siteName: 'skillshare-test',
+      settings: {},
+      landingpage: {},
+      theme: '',
+      customization: {
+        apps: { poll: true, comments: true },
+        course: { grading: true, newsfeed: true },
+        dashboard: { exercise: true, community: true, bannerText: '', bannerImage: '' }
+      }
+    }
+  ].filter(
+    (organizationToInsert) =>
+      (!selectedOrganizationId || organizationToInsert.id === selectedOrganizationId) &&
+      !existingOrgIds.includes(organizationToInsert.id)
+  );
+
+  if (organizationsToInsert.length > 0) {
+    await db.insert(organization).values(organizationsToInsert);
+    console.log(`   ✓ Inserted ${organizationsToInsert.length} organization(s)`);
+  } else {
+    console.log('   ✓ Organizations already exist, skipping');
+  }
+}

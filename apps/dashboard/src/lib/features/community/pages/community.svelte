@@ -1,0 +1,131 @@
+<script lang="ts">
+  import * as Page from '@cio/ui/base/page';
+  import * as Select from '@cio/ui/base/select';
+  import { Empty } from '@cio/ui/custom/empty';
+  import * as Item from '@cio/ui/base/item';
+  import { Search } from '@cio/ui/custom/search';
+  import { Button } from '@cio/ui/base/button';
+  import { resolve } from '$app/paths';
+  import MessageSquareMoreIcon from '@lucide/svelte/icons/message-square-more';
+  import MessageCirclePlusIcon from '@lucide/svelte/icons/message-circle-plus';
+
+  import { Vote } from '$features/ui';
+  import { profile } from '$lib/utils/store/user';
+  import { t } from '$lib/utils/functions/translations';
+  import { calDateDiff } from '$lib/utils/functions/date';
+  import { currentOrg } from '$lib/utils/store/org';
+  import { basePath } from '$lib/utils/store/app';
+
+  import { CommunityListLoader, AskCommunityButton } from '../components';
+  import { communityApi } from '../api/community.svelte';
+  import type { CommunityQuestionData } from '../utils/types';
+
+  interface Props {
+    questions?: CommunityQuestionData;
+  }
+
+  let { questions }: Props = $props();
+
+  let searchValue = $state('');
+  let selectedId = $state('');
+
+  // Initialize questions from prop if provided
+  $effect(() => {
+    if (questions) {
+      communityApi.questions = questions;
+    }
+  });
+
+  let isQuestionsFetched = $state(false);
+  $effect(() => {
+    if (questions || !$currentOrg.id || isQuestionsFetched) return;
+
+    communityApi.fetchCommunityQuestions({ orgId: $currentOrg.id });
+    isQuestionsFetched = true;
+  });
+
+  let isCoursesFetched = $state(false);
+  $effect(() => {
+    if (!$profile.id || !$currentOrg.id || isCoursesFetched) return;
+
+    communityApi.fetchCoursesForOrg($profile.id, $currentOrg.id);
+    isCoursesFetched = true;
+  });
+
+  let filteredQuestions = $derived(
+    communityApi.questions.filter(
+      (question: CommunityQuestionData[number]) =>
+        question?.title?.toLowerCase?.()?.includes(searchValue.toLowerCase()) &&
+        (!selectedId || question?.courseId === selectedId)
+    )
+  );
+</script>
+
+<Page.BodyHeader>
+  <Search placeholder={$t('community.find_question')} bind:value={searchValue} />
+
+  <Select.Root type="single" bind:value={selectedId}>
+    <Select.Trigger class="w-full bg-gray-100 dark:bg-neutral-800">
+      <p class="truncate">
+        {selectedId
+          ? communityApi.courses.find((course) => course.id === selectedId)?.title || $t('community.all')
+          : $t('community.all')}
+      </p>
+    </Select.Trigger>
+    <Select.Content>
+      <Select.Item value="">{$t('community.all')}</Select.Item>
+      {#each communityApi.courses as course (course.id)}
+        <Select.Item value={course.id}>{course.title}</Select.Item>
+      {/each}
+    </Select.Content>
+  </Select.Root>
+</Page.BodyHeader>
+
+{#if communityApi.isLoading}
+  <CommunityListLoader />
+  <CommunityListLoader />
+  <CommunityListLoader />
+  <CommunityListLoader />
+{:else}
+  {#each filteredQuestions as question (question.slug)}
+    <Item.Root variant="outline">
+      {#snippet child({ props })}
+        <a href={resolve(`${$basePath}/community/[slug]`, { slug: question.slug })} {...props}>
+          <Vote value={question.votes} />
+          <Item.Content class="gap-y-0.5">
+            <Item.Title class="mt-0">
+              {question.title}
+            </Item.Title>
+            <Item.Description>
+              {question?.authorFullname} asked {calDateDiff(question.createdAt || new Date())}
+            </Item.Description>
+            <Button
+              class="m-0! justify-start! px-0! py-0! underline"
+              href={resolve(`/courses/[id]`, { id: question.courseId })}
+              variant="ghost"
+            >
+              <span class="ui:text-muted-foreground p-0 text-xs">
+                #{question?.courseTitle}
+              </span>
+            </Button>
+          </Item.Content>
+          <Item.Actions>
+            <div class="flex items-center">
+              <MessageCirclePlusIcon size={16} />
+              <span class="ml-1">{question.comments}</span>
+            </div>
+          </Item.Actions>
+        </a>
+      {/snippet}
+    </Item.Root>
+  {:else}
+    <Empty
+      title={$t('community.no_question')}
+      description={$t('community.ask_a_question')}
+      icon={MessageSquareMoreIcon}
+      variant="page"
+    >
+      <AskCommunityButton />
+    </Empty>
+  {/each}
+{/if}

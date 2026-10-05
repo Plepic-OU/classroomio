@@ -1,0 +1,89 @@
+export const PLAN = {
+  BASIC: 'BASIC',
+  EARLY_ADOPTER: 'EARLY_ADOPTER',
+  ENTERPRISE: 'ENTERPRISE'
+};
+
+export const PLAN_NAMES = {
+  [PLAN.BASIC]: 'Free',
+  [PLAN.EARLY_ADOPTER]: 'Early Adopter',
+  [PLAN.ENTERPRISE]: 'Enterprise'
+};
+
+export const FEATURES = {
+  BACIC_STUDENTS_50: 'BACIC_STUDENTS_50',
+  EA_STUDENTS_10000: 'EA_STUDENTS_10000',
+  EA_VIDEO_UPLOAD: 'EA_VIDEO_UPLOAD',
+  EA_CERTIFICATE: 'EA_CERTIFICATE',
+  EA_UPCOMING_FEATURES: 'EA_UPCOMING_FEATURES',
+  ENTERPRISE_STUDENTS_UNLIMITED: 'ENTERPRISE_STUDENTS_UNLIMITED',
+  ENTERPRISE_CUSTOM_DOMAIN: 'ENTERPRISE_CUSTOM_DOMAIN',
+  ENTERPRISE_MULTI_WORKSPACE: 'ENTERPRISE_MULTI_WORKSPACE'
+};
+
+export const BASIC_FEATURES = [FEATURES.BACIC_STUDENTS_50];
+
+export const EARYL_ADOPTER_FEATURES = [
+  ...BASIC_FEATURES,
+  FEATURES.EA_STUDENTS_10000,
+  FEATURES.EA_VIDEO_UPLOAD,
+  FEATURES.EA_CERTIFICATE,
+  FEATURES.EA_UPCOMING_FEATURES
+];
+
+export const ENTERPRISE_FEATURES = [
+  ...EARYL_ADOPTER_FEATURES,
+  FEATURES.ENTERPRISE_STUDENTS_UNLIMITED,
+  FEATURES.ENTERPRISE_CUSTOM_DOMAIN,
+  FEATURES.ENTERPRISE_MULTI_WORKSPACE
+];
+
+export const PLANS_BY_FEATURE = {
+  [PLAN.BASIC]: BASIC_FEATURES,
+  [PLAN.EARLY_ADOPTER]: EARYL_ADOPTER_FEATURES,
+  [PLAN.ENTERPRISE]: ENTERPRISE_FEATURES
+};
+
+/**
+ * Total workspaces (primary + secondaries) allowed per plan.
+ * Multi-workspace is an Enterprise-only feature in v1.
+ */
+export const WORKSPACES_INCLUDED: Record<string, number> = {
+  [PLAN.BASIC]: 1,
+  [PLAN.EARLY_ADOPTER]: 1,
+  [PLAN.ENTERPRISE]: 4
+};
+
+export function getWorkspaceAllowance(planName: string | null | undefined): number {
+  if (!planName) return WORKSPACES_INCLUDED[PLAN.BASIC];
+  return WORKSPACES_INCLUDED[planName] ?? WORKSPACES_INCLUDED[PLAN.BASIC];
+}
+
+export function canCreateWorkspaces(planName: string | null | undefined): boolean {
+  return planName === PLAN.ENTERPRISE;
+}
+
+/**
+ * Max students allowed per plan (org-wide, counts ROLE.STUDENT organizationmember rows).
+ */
+export const STUDENT_LIMITS: Record<string, number> = {
+  [PLAN.BASIC]: 20,
+  [PLAN.EARLY_ADOPTER]: 10000,
+  [PLAN.ENTERPRISE]: Infinity
+};
+
+export function getStudentLimit(planName: string | null | undefined): number {
+  if (!planName) return STUDENT_LIMITS[PLAN.BASIC];
+  return STUDENT_LIMITS[planName] ?? STUDENT_LIMITS[PLAN.BASIC];
+}
+
+export const TEMPLATE_LIMITS: Record<string, number> = {
+  [PLAN.BASIC]: 1,
+  [PLAN.EARLY_ADOPTER]: 25,
+  [PLAN.ENTERPRISE]: Infinity
+};
+
+export function getTemplateLimit(planName: string | null | undefined): number {
+  if (!planName) return TEMPLATE_LIMITS[PLAN.BASIC];
+  return TEMPLATE_LIMITS[planName] ?? TEMPLATE_LIMITS[PLAN.BASIC];
+}

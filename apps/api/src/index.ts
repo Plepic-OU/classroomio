@@ -1,22 +1,42 @@
 import 'dotenv/config';
+import './instrument';
 
-import { app } from '$src/app';
-import { configureOpenAPI } from '$src/utils/openapi';
-import { env } from '$src/config/env';
+import { API_PORT } from '@api/constants';
+import { app } from '@api/app';
+import { configureOpenAPI } from '@api/utils/openapi';
+import { connectRedis } from '@cio/core/utils/redis/redis';
+import { env } from '@cio/core/config/env';
+import { preloadVerifiedCustomDomainOriginsRegistry } from '@api/utils/origins';
+import { registerProcessErrorGuards } from '@api/process-error-guards';
 import { serve } from '@hono/node-server';
 import { showRoutes } from 'hono/dev';
 
+registerProcessErrorGuards();
+
 // Start server
-const port = env.PORT ? parseInt(env.PORT) : 3002;
+async function startServer() {
+  console.log('Starting server on port:', API_PORT);
 
-function startServer() {
-  console.log('Starting server on port:', port);
+  // Connect to Redis (non-blocking: API starts even if Redis fails)
+  await connectRedis();
 
-  serve({ fetch: app.fetch, port });
+  preloadVerifiedCustomDomainOriginsRegistry().then(() => {
+    console.log('Verified custom domain origins preloaded');
+  });
 
-  showRoutes(app, { colorize: true });
+  serve({ fetch: app.fetch, port: API_PORT });
+
+  if (env.NODE_ENV !== 'production') {
+    showRoutes(app, { colorize: true });
+  }
 }
 
 configureOpenAPI(app);
 
-startServer();
+startServer().catch((error) => {
+  console.error('Failed to start server:', error);
+  if (error instanceof Error && error.stack) {
+    console.error(error.stack);
+  }
+  process.exit(1);
+});

@@ -1,0 +1,62 @@
+<script lang="ts">
+  import type { CourseLandingPageProps } from '../types';
+  import VibrantNav from './nav.svelte';
+  import VibrantHero from './hero.svelte';
+  import OrgLandingPageFooter from '../landing-page-footer.svelte';
+  import CourseSocialProof from '../course-social-proof.svelte';
+  import CourseInfoBlocks from '../course-info-blocks.svelte';
+  import CourseCurriculum from '../course-curriculum.svelte';
+  import CourseChips from '../course-chips.svelte';
+  import CourseSectionNav from '../course-section-nav.svelte';
+  import CourseInstructor from '../course-instructor.svelte';
+  import CourseReviews from '../course-reviews.svelte';
+  import CoursePricing from '../course-pricing.svelte';
+  import LandingThemeScope from '../landing-theme-scope.svelte';
+  import { alignHeroCtaWithPricing, buildCourseSectionNavItems } from '../course-landing-page.helpers';
+
+  let {
+    orgName,
+    logoUrl,
+    navItems,
+    authAction,
+    hero,
+    socialProof,
+    info,
+    curriculum,
+    chips,
+    instructor,
+    reviews,
+    pricing,
+    footer,
+    labels,
+    learnerAccount
+  }: CourseLandingPageProps = $props();
+
+  const heroProps = $derived(alignHeroCtaWithPricing(hero, pricing));
+  const sectionNavItems = $derived(
+    buildCourseSectionNavItems({ info, curriculum, chips, instructor, reviews }, labels)
+  );
+</script>
+
+<LandingThemeScope theme="vibrant" class="ui:font-sans">
+  <main>
+    <VibrantHero hero={heroProps}>
+      {#snippet navigation()}
+        <VibrantNav {orgName} {logoUrl} {navItems} {authAction} {learnerAccount} />
+      {/snippet}
+    </VibrantHero>
+
+    <CourseSectionNav variant="vibrant" items={sectionNavItems} {labels} />
+    <CourseSocialProof variant="vibrant" {socialProof} {labels} />
+    <CourseInfoBlocks variant="vibrant" {info} {labels} />
+    <CourseCurriculum variant="vibrant" {curriculum} {labels} />
+    {#if chips}
+      <CourseChips variant="vibrant" {chips} {labels} />
+    {/if}
+    <CourseInstructor variant="vibrant" {instructor} {logoUrl} {labels} />
+    <CourseReviews variant="vibrant" {reviews} {labels} />
+    <CoursePricing variant="vibrant" {pricing} {labels} />
+  </main>
+
+  <OrgLandingPageFooter {orgName} {logoUrl} {footer} variant="vibrant" />
+</LandingThemeScope>

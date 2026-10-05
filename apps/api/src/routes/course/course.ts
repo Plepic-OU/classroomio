@@ -1,52 +1,666 @@
-import { TCourseClone,TCourseDownloadContent, TCertificateDownload, ZCertificateDownload, ZCourseDownloadContent } from '$src/types/course';
+import {
+  ZCertificateDownloadRequest,
+  ZCourseClone,
+  ZCourseCloneParam,
+  ZCourseCreate,
+  ZCourseDeleteParam,
+  ZCourseDownloadContent,
+  ZCourseDownloadParam,
+  ZCourseEnrollBody,
+  ZCourseEnrollParam,
+  ZCourseGetBySlugParam,
+  ZCourseGetParam,
+  ZCourseGetQuery,
+  ZCourseLandingPageUpdateValidated,
+  ZCourseProgressParam,
+  ZCourseProgressQuery,
+  ZCourseUpdate,
+  ZCourseUpdateParam
+} from '@cio/utils/validation/course';
+import { ZCourseTagAssignment, ZCourseTagParam } from '@cio/utils/validation/tag';
+import {
+  createCourse,
+  deleteCourse,
+  getCourse,
+  getCourseAnalytics,
+  getCourseProgress,
+  updateCourse
+} from '@cio/core/services/course/course';
+import { assertCertificateDownloadAllowed, evaluateCourseCertification } from '@api/services/course/completion';
+import { getCourseTags, replaceCourseTags } from '@api/services/tag';
 
-import { Hono } from 'hono';
-import { generateCertificate } from '$src/utils/certificate';
-import { generateCoursePdf } from '$src/utils/course';
-import { katexRouter } from '$src/routes/course/katex';
-import { lessonRouter } from '$src/routes/course/lesson';
-import { presignRouter } from '$src/routes/course/presign';
-import { cloneRouter } from '$src/routes/course/clone';
+import { Hono } from '@api/utils/hono';
+import { attendanceRouter } from '@api/routes/course/attendance';
+import { courseAiTutorRouter } from '@api/routes/course/ai-tutor';
+import { authMiddleware } from '@api/middlewares/auth';
+import { authOrAutomationKeyMiddleware } from '@api/middlewares/auth-or-automation-key';
+import { cloneCourse } from '@api/services/course/clone';
+import {
+  courseTemplateActionsRouter,
+  courseTemplateRouter,
+  courseTemplateUpdatesRouter
+} from '@api/routes/course/course-template';
+import { sanitizeHtml } from '@cio/core/utils/sanitize-html';
+import { complianceRouter } from '@api/routes/course/compliance';
+import { contentRouter } from '@api/routes/course/content';
+import { courseMemberMiddleware } from '@api/middlewares/course-member';
+import { courseTeamMemberOrAutomationKeyMiddleware } from '@api/middlewares/course-team-member-or-automation-key';
+import { courseTeamMemberMiddleware } from '@api/middlewares/course-team-member';
+import { createRateLimiter } from '@api/middlewares/rate-limiter';
+import { enrollInCourse } from '@api/services/course/invite';
+import { exerciseRouter } from '@api/routes/course/exercise';
+import { extractClientIp } from '@api/utils/redis/key-generators';
+import { generateCertificatePdf, generateCertificatePng, slugifyForFilename } from '@api/utils/certificate';
+import { assembleCertificateRender, assembleOwnerPreviewRender } from '@api/services/course/certificate';
+import { isCourseTeamMemberOrOrgAdmin } from '@cio/db/queries/group';
+import { generateCoursePdf } from '@api/utils/course';
+import { getCourseById, getCourseOrganizationId } from '@db/queries';
+import { ROLE } from '@cio/utils/constants';
+import { AppError, ErrorCodes, handleError } from '@api/utils/errors';
+import { invitesRouter } from '@api/routes/course/invite';
+import { katexRouter } from '@api/routes/course/katex';
+import { lessonRouter } from '@api/routes/course/lesson';
+import { markRouter } from '@api/routes/course/mark';
+import { membersRouter } from '@api/routes/course/people';
+import { newsfeedRouter } from '@api/routes/course/newsfeed';
+import { orgAdminMiddleware } from '@api/middlewares/org-admin';
+import { orgMemberMiddleware } from '@api/middlewares/org-member';
+import { paymentRequestRouter } from '@api/routes/course/payment-request';
+import { presignRouter } from '@api/routes/course/presign';
+import { assertMcpAutomationUsageAllowed, recordMcpAutomationUsage } from '@api/services/organization/automation-usage';
+import { sectionRouter } from '@api/routes/course/section';
+import { submissionRouter } from '@api/routes/course/submission';
+import { updateCourseLandingPageService } from '@cio/core/services/course/landing-page';
 import { zValidator } from '@hono/zod-validator';
+import { updateCourseWithTags } from '@api/services/course/update-course';
+import { assertCertificateChangeAllowed } from '@api/services/course/certificate-plan';
+
+async function loadCertificateInput(
+  courseId: string,
+  userId: string,
+  body: import('@cio/utils/validation/course').TCertificateDownloadRequest
+) {
+  if (body.previewMode) {
+    const isTeam = await isCourseTeamMemberOrOrgAdmin(courseId, userId);
+    if (!isTeam) {
+      throw new AppError('Only course team members can preview certificate designs', ErrorCodes.UNAUTHORIZED, 403);
+    }
+
+    return assembleOwnerPreviewRender(courseId, userId, body);
+  }
+
+  await assertCertificateDownloadAllowed(courseId, userId);
+
+  return assembleCertificateRender(courseId, body);
+}
+
+const enrollRateLimit = createRateLimiter({
+  windowMs: 60 * 60 * 1000,
+  maxRequests: 20,
+  message: 'Too many enrollment attempts. Please try again later.',
+  keyGenerator: (c) => {
+    const user = c.get('user');
+    const actor = user?.id ? `user:${user.id}` : `ip:${extractClientIp(c)}`;
+    return `enroll:${actor}:${c.req.param('courseId')}`;
+  }
+});
 
 export const courseRouter = new Hono()
-  .post('/download/certificate', zValidator('json', ZCertificateDownload), async (c) => {
-    const validatedData = (c.req.valid as (key: 'json') => TCertificateDownload)('json');
+  .route('/template', courseTemplateRouter)
+  .route('/:courseId/template', courseTemplateActionsRouter)
+  .route('/:courseId/template-updates', courseTemplateUpdatesRouter)
+  /**
+   * GET /course/slug/:slug
+   * Gets a course by slug (public route, no authentication required)
+   * Used for public course landing pages
+   */
+  .get('/slug/:slug', zValidator('param', ZCourseGetBySlugParam), async (c) => {
+    try {
+      const { slug } = c.req.valid('param');
+      const course = await getCourse(undefined, slug);
 
-    const result = await generateCertificate(validatedData);
+      if (!course.isPublished) {
+        throw new AppError('Course not found', ErrorCodes.COURSE_NOT_FOUND, 404);
+      }
 
-    c.header('Content-Type', 'application/pdf');
-    c.header(
-      'Content-Disposition',
-      `attachment; filename="certificate-${validatedData.courseName}.pdf"`
-    );
-
-    return c.body(
-      new ReadableStream({
-        start(controller) {
-          controller.enqueue(result);
-          controller.close();
-        }
-      })
-    );
+      return c.json(
+        {
+          success: true,
+          data: course
+        },
+        200
+      );
+    } catch (error) {
+      return handleError(c, error, 'Failed to fetch course by slug');
+    }
   })
-  .post('/download/content', zValidator('json', ZCourseDownloadContent), async (c) => {
-    const validatedData = (c.req.valid as (key: 'json') => TCourseDownloadContent)('json');
+  /**
+   * POST /course
+   * Creates a new course with group, group member, and default newsfeed
+   * Requires authentication and organization membership
+   */
+  .post('/', authMiddleware, orgAdminMiddleware, zValidator('json', ZCourseCreate), async (c) => {
+    try {
+      const user = c.get('user')!;
+      const validatedData = c.req.valid('json');
 
-    const pdfBuffer = await generateCoursePdf(validatedData);
+      const result = await createCourse(user.id, validatedData);
 
-    c.header('Content-Type', 'application/pdf');
-
-    return c.body(
-      new ReadableStream({
-        start(controller) {
-          controller.enqueue(pdfBuffer);
-          controller.close();
-        }
-      })
-    );
+      return c.json(
+        {
+          success: true,
+          data: result
+        },
+        201
+      );
+    } catch (error) {
+      return handleError(c, error, 'Failed to create course');
+    }
   })
+  /**
+   * POST /course/:courseId/enroll
+   * Unified enrollment: free courses enroll directly; paid/invited require inviteToken.
+   */
+  .post(
+    '/:courseId/enroll',
+    authMiddleware,
+    enrollRateLimit,
+    zValidator('param', ZCourseEnrollParam),
+    zValidator('json', ZCourseEnrollBody),
+    async (c) => {
+      try {
+        const { courseId } = c.req.valid('param');
+        const body = c.req.valid('json');
+        const user = c.get('user')!;
+
+        const result = await enrollInCourse(
+          courseId,
+          {
+            id: user.id,
+            email: user.email,
+            emailVerified: user.emailVerified
+          },
+          body,
+          {
+            ipAddress: extractClientIp(c),
+            userAgent: c.req.header('user-agent') || null
+          }
+        );
+
+        return c.json(
+          {
+            success: true,
+            data: result
+          },
+          200
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to enroll');
+      }
+    }
+  )
+  /**
+   * GET /course/:courseId/tags
+   * Gets tags assigned to a course (organization admin only)
+   */
+  .get('/:courseId/tags', authMiddleware, orgMemberMiddleware, zValidator('param', ZCourseTagParam), async (c) => {
+    try {
+      const orgId = c.req.header('cio-org-id')!;
+      const { courseId } = c.req.valid('param');
+      const tags = await getCourseTags(orgId, courseId);
+
+      return c.json(
+        {
+          success: true,
+          data: tags
+        },
+        200
+      );
+    } catch (error) {
+      return handleError(c, error, 'Failed to fetch course tags');
+    }
+  })
+  /**
+   * PUT /course/:courseId/tags
+   * Replaces all tags assigned to a course (organization admin only)
+   */
+  .put(
+    '/:courseId/tags',
+    authMiddleware,
+    orgAdminMiddleware,
+    zValidator('param', ZCourseTagParam),
+    zValidator('json', ZCourseTagAssignment),
+    async (c) => {
+      try {
+        const orgId = c.req.header('cio-org-id')!;
+        const { courseId } = c.req.valid('param');
+        const data = c.req.valid('json');
+        const tags = await replaceCourseTags(orgId, courseId, data);
+
+        return c.json(
+          {
+            success: true,
+            data: tags
+          },
+          200
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to assign course tags');
+      }
+    }
+  )
+  /**
+   * GET /course/:courseId
+   * Gets a course by ID or slug with all related data (group, members, lessons, sections, attendance)
+   * Query param: slug (optional) - if provided, courseId is ignored and course is fetched by slug
+   * Requires authentication and course membership
+   */
+  .get(
+    '/:courseId',
+    courseMemberMiddleware,
+    zValidator('param', ZCourseGetParam),
+    zValidator('query', ZCourseGetQuery),
+    async (c) => {
+      try {
+        const { courseId } = c.req.valid('param');
+        const { slug } = c.req.valid('query');
+        const user = c.get('user')!;
+        const course = await getCourse(slug ? undefined : courseId, slug, user.id);
+
+        return c.json(
+          {
+            success: true,
+            data: course
+          },
+          200
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to fetch course');
+      }
+    }
+  )
+  /**
+   * PUT /course/:courseId/landing-page
+   * Updates landing-page-facing course fields such as copy, media, pricing, and reviews.
+   * Requires authentication and course team membership, or an automation key with course write scope.
+   */
+  .put(
+    '/:courseId/landing-page',
+    authOrAutomationKeyMiddleware,
+    courseTeamMemberOrAutomationKeyMiddleware(['course:write']),
+    zValidator('param', ZCourseUpdateParam),
+    zValidator('json', ZCourseLandingPageUpdateValidated),
+    async (c) => {
+      try {
+        const { courseId } = c.req.valid('param');
+        const payload = c.req.valid('json');
+        const automationKey = c.get('automationKey');
+
+        if (automationKey?.type === 'mcp') {
+          await assertMcpAutomationUsageAllowed(automationKey, 'update_course_landing_page');
+        }
+
+        const result = await updateCourseLandingPageService(courseId, payload);
+
+        if (automationKey?.type === 'mcp') {
+          await recordMcpAutomationUsage(automationKey, 'update_course_landing_page', { courseId });
+        }
+
+        return c.json(
+          {
+            success: true,
+            data: result
+          },
+          200
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to update course landing page');
+      }
+    }
+  )
+  /**
+   * PUT /course/:courseId
+   * Updates a course
+   * Requires authentication and course membership (admin/tutor role)
+   */
+  .put(
+    '/:courseId',
+    authMiddleware,
+    courseTeamMemberMiddleware,
+    zValidator('param', ZCourseUpdateParam),
+    zValidator('json', ZCourseUpdate),
+    async (c) => {
+      try {
+        const { courseId } = c.req.valid('param');
+        const validatedData = c.req.valid('json');
+        const { tagIds, ...courseData } = validatedData;
+
+        await assertCertificateChangeAllowed(courseId, courseData.certificate);
+
+        if (courseData.metadata?.welcomeEmailMessage) {
+          courseData.metadata = {
+            ...courseData.metadata,
+            welcomeEmailMessage: sanitizeHtml(courseData.metadata.welcomeEmailMessage)
+          };
+        }
+
+        if (tagIds !== undefined) {
+          const orgId = c.req.header('cio-org-id');
+          if (!orgId) {
+            return c.json(
+              {
+                success: false,
+                error: 'Organization context not available',
+                code: 'ORG_CONTEXT_MISSING'
+              },
+              500
+            );
+          }
+
+          const user = c.get('user')!;
+          const result = await updateCourseWithTags({
+            courseId,
+            courseData,
+            orgId,
+            updatedByUserId: user.id,
+            tagIds
+          });
+
+          return c.json(
+            {
+              success: true,
+              data: {
+                ...result.course,
+                tags: result.tags
+              },
+              conversionBlocked: result.conversionOffenders ?? undefined
+            },
+            200
+          );
+        }
+
+        const { course: result, conversionOffenders } = await updateCourse(courseId, courseData);
+
+        return c.json(
+          {
+            success: true,
+            data: result,
+            conversionBlocked: conversionOffenders ?? undefined
+          },
+          200
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to update course');
+      }
+    }
+  )
+  /**
+   * DELETE /course/:courseId
+   * Soft deletes a course by setting status to 'DELETED'
+   * Requires authentication and course membership (admin/tutor role)
+   */
+  .delete(
+    '/:courseId',
+    authMiddleware,
+    courseTeamMemberMiddleware,
+    zValidator('param', ZCourseDeleteParam),
+    async (c) => {
+      try {
+        const { courseId } = c.req.valid('param');
+        const [existingCourse] = await getCourseById(courseId);
+        if (existingCourse?.isTemplate) {
+          const orgId = c.req.header('cio-org-id');
+          const orgRoles = c.get('orgRoles') as Record<string, number> | undefined;
+          const templateOrgId = await getCourseOrganizationId(courseId);
+          if (!orgId || orgRoles?.[orgId] !== ROLE.ADMIN || templateOrgId !== orgId) {
+            throw new AppError('Only admins can delete templates', ErrorCodes.ORG_TEAM_NOT_AUTHORIZED, 403);
+          }
+        }
+
+        const result = await deleteCourse(courseId);
+
+        return c.json(
+          {
+            success: true,
+            data: result
+          },
+          200
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to delete course');
+      }
+    }
+  )
+  /**
+   * GET /course/:courseId/progress
+   * Gets course progress for a profile
+   * Query param: profileId (required)
+   * Requires authentication and course membership
+   */
+  .get(
+    '/:courseId/progress',
+    authMiddleware,
+    courseMemberMiddleware,
+    zValidator('param', ZCourseProgressParam),
+    zValidator('query', ZCourseProgressQuery),
+    async (c) => {
+      try {
+        const { courseId } = c.req.valid('param');
+        const { profileId } = c.req.valid('query');
+        const progress = await getCourseProgress(courseId, profileId);
+
+        return c.json(
+          {
+            success: true,
+            data: progress
+          },
+          200
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to fetch course progress');
+      }
+    }
+  )
+  /**
+   * GET /course/:courseId/certification-evaluation
+   * Full certification eligibility for the current user (blockers for UI).
+   */
+  .get(
+    '/:courseId/certification-evaluation',
+    authMiddleware,
+    courseMemberMiddleware,
+    zValidator('param', ZCourseProgressParam),
+    async (c) => {
+      try {
+        const { courseId } = c.req.valid('param');
+        const user = c.get('user')!;
+        const data = await evaluateCourseCertification(courseId, user.id);
+
+        return c.json(
+          {
+            success: true,
+            data
+          },
+          200
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to evaluate certification');
+      }
+    }
+  )
+  /**
+   * GET /course/:courseId/analytics
+   * Gets course analytics including student progress, completion rates, and grades
+   * Requires authentication and course membership (admin/tutor role)
+   */
+  .get(
+    '/:courseId/analytics',
+    authMiddleware,
+    courseTeamMemberMiddleware,
+    zValidator('param', ZCourseProgressParam),
+    async (c) => {
+      try {
+        const { courseId } = c.req.valid('param');
+        const analytics = await getCourseAnalytics(courseId);
+
+        return c.json(
+          {
+            success: true,
+            data: analytics
+          },
+          200
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to fetch course analytics');
+      }
+    }
+  )
+  .post(
+    '/:courseId/download/certificate',
+    authMiddleware,
+    courseMemberMiddleware,
+    zValidator('param', ZCourseDownloadParam),
+    zValidator('json', ZCertificateDownloadRequest),
+    async (c) => {
+      try {
+        const { courseId } = c.req.valid('param');
+        const user = c.get('user')!;
+        const body = c.req.valid('json');
+
+        const input = await loadCertificateInput(courseId, user.id, body);
+        const buffer = await generateCertificatePdf(input);
+
+        c.header('Content-Type', 'application/pdf');
+        c.header(
+          'Content-Disposition',
+          `attachment; filename="certificate-${slugifyForFilename(input.data.courseName)}.pdf"`
+        );
+
+        return c.body(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(buffer);
+              controller.close();
+            }
+          })
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to download certificate');
+      }
+    }
+  )
+  .post(
+    '/:courseId/download/certificate/png',
+    authMiddleware,
+    courseMemberMiddleware,
+    zValidator('param', ZCourseDownloadParam),
+    zValidator('json', ZCertificateDownloadRequest),
+    async (c) => {
+      try {
+        const { courseId } = c.req.valid('param');
+        const user = c.get('user')!;
+        const body = c.req.valid('json');
+
+        const input = await loadCertificateInput(courseId, user.id, body);
+        const buffer = await generateCertificatePng(input);
+
+        c.header('Content-Type', 'image/png');
+        c.header(
+          'Content-Disposition',
+          `attachment; filename="certificate-${slugifyForFilename(input.data.courseName)}.png"`
+        );
+
+        return c.body(
+          new ReadableStream({
+            start(controller) {
+              controller.enqueue(buffer);
+              controller.close();
+            }
+          })
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to download certificate image');
+      }
+    }
+  )
+  .post(
+    '/:courseId/download/content',
+    authMiddleware,
+    courseMemberMiddleware,
+    zValidator('param', ZCourseDownloadParam),
+    zValidator('json', ZCourseDownloadContent),
+    async (c) => {
+      const validatedData = c.req.valid('json');
+
+      const pdfBuffer = await generateCoursePdf(validatedData);
+
+      c.header('Content-Type', 'application/pdf');
+
+      return c.body(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(pdfBuffer);
+            controller.close();
+          }
+        })
+      );
+    }
+  )
+  .post(
+    '/:courseId/clone',
+    authMiddleware,
+    orgMemberMiddleware,
+    zValidator('param', ZCourseCloneParam),
+    zValidator('json', ZCourseClone),
+    async (c) => {
+      try {
+        const { courseId } = c.req.valid('param');
+        const validatedData = c.req.valid('json');
+        const { title, description, slug, organizationId } = validatedData;
+        const orgId = c.get('orgId') as string;
+        const user = c.get('user')!;
+        const [sourceCourse] = await getCourseById(courseId);
+        const sourceOrgId = await getCourseOrganizationId(courseId);
+        if (!sourceCourse || !sourceOrgId || sourceOrgId !== orgId || (organizationId && organizationId !== orgId)) {
+          throw new AppError('Course not found', ErrorCodes.COURSE_NOT_FOUND, 404);
+        }
+
+        if (sourceCourse.isTemplate) {
+          throw new AppError('Templates are copied with Use template', ErrorCodes.ORG_TEAM_NOT_AUTHORIZED, 403);
+        }
+
+        const newCourse = await cloneCourse(courseId, {
+          title,
+          userId: user.id,
+          description,
+          slug,
+          organizationId
+        });
+
+        return c.json(
+          {
+            success: true,
+            course: newCourse
+          },
+          200
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to clone course');
+      }
+    }
+  )
   .route('/katex', katexRouter)
-  .route('/lesson', lessonRouter)
-  .route('/presign', presignRouter)
-  .route('/clone', cloneRouter);
+  .route('/:courseId/payment-request', paymentRequestRouter)
+  .route('/:courseId/content', contentRouter)
+  .route('/:courseId/compliance', complianceRouter)
+  .route('/:courseId/section', sectionRouter)
+  .route('/:courseId/lesson', lessonRouter)
+  .route('/:courseId/exercise', exerciseRouter)
+  .route('/:courseId/submission', submissionRouter)
+  .route('/:courseId/attendance', attendanceRouter)
+  .route('/:courseId/mark', markRouter)
+  .route('/:courseId/newsfeed', newsfeedRouter)
+  .route('/:courseId/members', membersRouter)
+  .route('/:courseId/invites', invitesRouter)
+  .route('/:courseId/ai-tutor', courseAiTutorRouter)
+  .route('/presign', presignRouter);

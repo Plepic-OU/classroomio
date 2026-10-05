@@ -7,13 +7,14 @@ node_modules
 
 # testing
 coverage
+e2e/test-results/
+e2e/playwright-report/
+playwright-report/
+test-results/
+.github/demo-runs/pr-*.spec.ts
 
 # Playwright BDD generated tests
 tests/e2e/.features-gen/
-
-# Playwright artifacts
-playwright-report/
-test-results/
 
 # next.js
 .next/
@@ -46,3 +47,40 @@ yarn-error.log*
 vite.config.ts*.mjs
 
 .pnpm-store/*
+
+**/dist/*
+
+#Ignore vscode AI rules
+.github/instructions/codacy.instructions.md
+
+tsconfig.tsbuildinfo*
+
+# Stray TS build artifacts emitted next to sources (e.g. from `tsc <file>` without project)
+apps/api/src/**/*.js
+apps/api/src/**/*.js.map
+apps/api/src/**/*.d.ts
+!apps/api/src/types/css-tree.d.ts
+
+storybook-static
+
+.svelte-kit/
+
+company/
+
+# Claude Code local artifacts
+.claude/skills
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
+
+# Local db-agent playground (not committed)
+apps/db-agent
+
+# Generated htpasswd files (hashes are safe to store in secrets/CI, plaintext never committed)
+.htpasswd
+*.htpasswd
+
+output.css
+
+/reports
+
+.dev.vars

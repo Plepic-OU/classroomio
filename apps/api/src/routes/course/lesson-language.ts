@@ -1,0 +1,151 @@
+import {
+  ZLessonLanguageCreate,
+  ZLessonLanguageGetByLocaleParam,
+  ZLessonLanguageGetParam,
+  ZLessonLanguageUpdate
+} from '@cio/utils/validation/lesson';
+import {
+  getLessonLanguage,
+  listLessonLanguages,
+  updateLessonLanguageService,
+  upsertLessonLanguageService
+} from '@cio/core/services/lesson-language';
+
+import { Hono } from '@api/utils/hono';
+import type { TLocale } from '@db/types';
+import { b64EnvelopeRewrite } from '@api/middlewares/b64-envelope';
+import { authMiddleware } from '@api/middlewares/auth';
+import { courseMemberMiddleware } from '@api/middlewares/course-member';
+import { handleError } from '@api/utils/errors';
+import { zValidator } from '@hono/zod-validator';
+
+export const lessonLanguageRouter = new Hono()
+  .use('*', b64EnvelopeRewrite)
+  /**
+   * GET /course/:courseId/lesson/:lessonId/language
+   * Gets all language translations for a lesson
+   * Requires authentication and course membership
+   */
+  .get('/', authMiddleware, courseMemberMiddleware, zValidator('param', ZLessonLanguageGetParam), async (c) => {
+    try {
+      const { lessonId } = c.req.valid('param');
+      const languages = await listLessonLanguages(lessonId);
+
+      return c.json(
+        {
+          success: true,
+          data: languages
+        },
+        200
+      );
+    } catch (error) {
+      return handleError(c, error, 'Failed to fetch lesson languages');
+    }
+  })
+  /**
+   * GET /course/:courseId/lesson/:lessonId/language/:locale
+   * Gets a single lesson language by locale
+   * Requires authentication and course membership
+   */
+  .get(
+    '/:locale',
+    authMiddleware,
+    courseMemberMiddleware,
+    zValidator('param', ZLessonLanguageGetByLocaleParam),
+    async (c) => {
+      try {
+        const { lessonId, locale } = c.req.valid('param');
+        const language = await getLessonLanguage(lessonId, locale as TLocale);
+
+        if (!language) {
+          return c.json(
+            {
+              success: false,
+              error: 'Lesson language not found'
+            },
+            404
+          );
+        }
+
+        return c.json(
+          {
+            success: true,
+            data: language
+          },
+          200
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to fetch lesson language');
+      }
+    }
+  )
+  /**
+   * POST /course/:courseId/lesson/:lessonId/language
+   * Creates or updates a lesson language translation (upsert)
+   * Requires authentication and course membership
+   */
+  .post(
+    '/',
+    authMiddleware,
+    courseMemberMiddleware,
+    zValidator('param', ZLessonLanguageGetParam),
+    zValidator('json', ZLessonLanguageCreate),
+    async (c) => {
+      try {
+        const user = c.get('user')!;
+        const { lessonId } = c.req.valid('param');
+        const { versionIntent, versionLabel, ...data } = c.req.valid('json');
+
+        const language = await upsertLessonLanguageService(lessonId, data, {
+          authorId: user.id,
+          versionIntent,
+          versionLabel
+        });
+
+        return c.json(
+          {
+            success: true,
+            data: language
+          },
+          201
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to create or update lesson language');
+      }
+    }
+  )
+  /**
+   * PUT /course/:courseId/lesson/:lessonId/language/:locale
+   * Updates a lesson language translation
+   * Requires authentication and course membership
+   */
+  .put(
+    '/:locale',
+    authMiddleware,
+    courseMemberMiddleware,
+    zValidator('param', ZLessonLanguageGetByLocaleParam),
+    zValidator('json', ZLessonLanguageUpdate),
+    async (c) => {
+      try {
+        const user = c.get('user')!;
+        const { lessonId, locale } = c.req.valid('param');
+        const { versionIntent, versionLabel, ...data } = c.req.valid('json');
+
+        const language = await updateLessonLanguageService(lessonId, locale as TLocale, data, {
+          authorId: user.id,
+          versionIntent,
+          versionLabel
+        });
+
+        return c.json(
+          {
+            success: true,
+            data: language
+          },
+          200
+        );
+      } catch (error) {
+        return handleError(c, error, 'Failed to update lesson language');
+      }
+    }
+  );

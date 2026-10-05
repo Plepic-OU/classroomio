@@ -1,0 +1,899 @@
+import type { AccountOrg, PublicOrg } from '$features/app/types';
+import type {
+  FooterColumn,
+  FooterColumnLink,
+  FooterSocial,
+  OrgLandingPageCallout,
+  OrgLandingPageFooterConfig,
+  OrgLandingPageHero,
+  OrgLandingPageJson,
+  OrgLandingPageLinks,
+  OrgLandingPageNavItem,
+  OrgLandingPageTheme
+} from '$lib/utils/types/org';
+import type { OrgPublicCourses } from './types';
+import type { OrgLandingPageProps, LandingPageThemeBundle } from '@cio/ui/custom/org-landing-page/types';
+import { resolveLandingPageLinkIcon } from '@cio/ui/custom/org-landing-page/landing-page-link-icons';
+import {
+  labelMatchesSocialPlatform,
+  resolveFooterSocialPlatform
+} from '@cio/ui/custom/org-landing-page/footer-social-platform';
+import { isAllowedHref } from '@cio/utils/validation/shared';
+import { t } from '$lib/utils/functions/translations';
+import { resolveCourseBannerImage } from '@cio/utils/functions';
+
+export const landingPageThemes = [
+  'minimal',
+  'bold',
+  'classic',
+  'saas',
+  'tech',
+  'studio',
+  'corporate',
+  'terminal',
+  'editorial',
+  'vibrant',
+  'quartz'
+] as const satisfies OrgLandingPageTheme[];
+
+export const defaultLandingPageHero: OrgLandingPageHero = {
+  heading: 'Become a Certified AI Engineer',
+  subheading: 'Master the skills, earn your certification, and prove your expertise with hands-on training programs.',
+  primaryAction: {
+    label: 'Start Learning',
+    href: '/lms'
+  },
+  secondaryAction: {
+    label: 'Browse',
+    href: '/courses'
+  },
+  image: '/images/learn-on-cio.jpg'
+};
+
+function newFooterColumnId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `footer-col_${Math.random().toString(36).slice(2, 11)}`;
+}
+
+export function newFooterLinkId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `footer-link_${Math.random().toString(36).slice(2, 11)}`;
+}
+
+export function createDefaultFooterConfig(): OrgLandingPageFooterConfig {
+  return {
+    brand: {
+      socials: []
+    },
+    columns: [],
+    bottom: {
+      text: '',
+      links: [
+        { id: newFooterLinkId(), label: 'Terms', href: '#' },
+        { id: newFooterLinkId(), label: 'Privacy', href: '#' },
+        { id: newFooterLinkId(), label: 'Contact', href: '#' }
+      ]
+    }
+  };
+}
+
+export const defaultLandingPageSettings: OrgLandingPageJson = {
+  theme: 'quartz',
+  hero: defaultLandingPageHero,
+  navItems: [
+    { label: 'Courses', href: '/courses' }
+    // { label: 'Contact', href: '#contact' }
+  ],
+  footer: createDefaultFooterConfig()
+};
+
+export function createDefaultLandingPageSettings(): OrgLandingPageJson {
+  return structuredClone(defaultLandingPageSettings);
+}
+
+type LegacyLandingPageJson = {
+  header?: {
+    title?: string;
+    titleHighlight?: string;
+    subtitle?: string;
+    action?: {
+      label?: string;
+      link?: string;
+    };
+  };
+  customLinks?: {
+    links?: Array<{
+      label?: string;
+      url?: string;
+      openInNewTab?: boolean;
+    }>;
+  };
+  footer?: {
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+    linkedin?: string;
+  };
+  hero?: OrgLandingPageHero;
+  navItems?: OrgLandingPageNavItem[];
+  /** @deprecated migrated to `footer` */
+  footerLinks?: Array<{ label?: string; href?: string }>;
+  /** @deprecated migrated to `footer.bottom.text` */
+  footerText?: string;
+  theme?: OrgLandingPageTheme;
+  embed?: {
+    enabled?: boolean;
+    title?: string;
+    description?: string;
+    code?: string;
+    secondaryAction?: {
+      label?: string;
+      href?: string;
+    };
+    src?: string;
+    height?: number;
+    allowFullscreen?: boolean;
+    sandbox?: string;
+  };
+  callout?: {
+    enabled?: boolean;
+    heading?: string;
+    description?: string;
+    action?: {
+      label?: string;
+      href?: string;
+    };
+  };
+  links?: unknown;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function normalizeText(value: unknown, fallback = '') {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : fallback;
+}
+
+function stripAccidentalFragmentPrefix(href: string): string {
+  const withoutHash = href.replace(/^#+/, '');
+  const isAbsolute = /^(https?:\/\/|mailto:|tel:|\/\/)/i.test(withoutHash);
+
+  return isAbsolute ? withoutHash : href;
+}
+
+function normalizeHref(value: unknown, fallback = '#') {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return fallback;
+  }
+
+  const repaired = stripAccidentalFragmentPrefix(trimmed);
+  if (!isAllowedHref(repaired)) {
+    return fallback;
+  }
+
+  return repaired;
+}
+
+function isLegacyFooterSocialBlock(value: Record<string, unknown>): boolean {
+  return (
+    typeof value.facebook === 'string' ||
+    typeof value.instagram === 'string' ||
+    typeof value.twitter === 'string' ||
+    typeof value.linkedin === 'string'
+  );
+}
+
+function isModernFooterConfig(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (!('brand' in value) || !('columns' in value)) {
+    return false;
+  }
+
+  const brand = value.brand;
+  if (!isRecord(brand)) {
+    return false;
+  }
+
+  return Array.isArray(brand.socials) && Array.isArray(value.columns);
+}
+
+function normalizeFooterShape(raw: Record<string, unknown>): OrgLandingPageFooterConfig {
+  const defaultFooter = createDefaultFooterConfig();
+  const brandRaw = isRecord(raw.brand) ? raw.brand : {};
+  const socialsRaw = Array.isArray(brandRaw.socials) ? brandRaw.socials : [];
+
+  const socials: FooterSocial[] = socialsRaw
+    .map((entry) => {
+      if (!isRecord(entry)) {
+        return null;
+      }
+
+      const href = normalizeHref(entry.href, '');
+      if (!href || href === '#') {
+        return null;
+      }
+
+      return {
+        platform: resolveFooterSocialPlatform(entry.platform),
+        href
+      };
+    })
+    .filter((item): item is FooterSocial => item !== null);
+
+  const tagline = normalizeText(brandRaw.tagline, '');
+  const copyright = normalizeText(brandRaw.copyright, '');
+
+  const columnsRaw = Array.isArray(raw.columns) ? raw.columns : [];
+  const columns: FooterColumn[] = columnsRaw.slice(0, 6).flatMap((columnRaw) => {
+    if (!isRecord(columnRaw)) {
+      return [];
+    }
+
+    const id =
+      typeof columnRaw.id === 'string' && columnRaw.id.trim().length > 0 ? columnRaw.id.trim() : newFooterColumnId();
+    const heading = normalizeText(columnRaw.heading, '');
+    const linksRaw = Array.isArray(columnRaw.links) ? columnRaw.links : [];
+    const links: FooterColumnLink[] = linksRaw.slice(0, 10).flatMap((linkRaw) => {
+      if (!isRecord(linkRaw)) {
+        return [];
+      }
+
+      const label = normalizeText(linkRaw.label, '');
+      const href = normalizeHref(linkRaw.href, '#');
+      if (!label) {
+        return [];
+      }
+
+      const linkId =
+        typeof linkRaw.id === 'string' && linkRaw.id.trim().length > 0 ? linkRaw.id.trim() : newFooterLinkId();
+      return [{ id: linkId, label, href }];
+    });
+
+    let cta: FooterColumn['cta'];
+    const ctaRaw = columnRaw.cta;
+    if (isRecord(ctaRaw)) {
+      const ctaLabel = normalizeText(ctaRaw.label, '');
+      const ctaHref = normalizeHref(ctaRaw.href, '');
+      if (ctaLabel && ctaHref && ctaHref !== '#') {
+        cta = { label: ctaLabel, href: ctaHref };
+      }
+    }
+
+    if (links.length === 0 && !heading && !cta) {
+      return [];
+    }
+
+    return [{ id, heading, links, cta }];
+  });
+
+  let bottom: OrgLandingPageFooterConfig['bottom'];
+  const bottomRaw = raw.bottom;
+  if (isRecord(bottomRaw)) {
+    const text = normalizeText(bottomRaw.text, '');
+    const linksRaw = Array.isArray(bottomRaw.links) ? bottomRaw.links : [];
+    const bottomLinks: FooterColumnLink[] = linksRaw.flatMap((linkRaw) => {
+      if (!isRecord(linkRaw)) {
+        return [];
+      }
+
+      const label = normalizeText(linkRaw.label, '');
+      const href = normalizeHref(linkRaw.href, '#');
+      if (!label) {
+        return [];
+      }
+
+      const linkId =
+        typeof linkRaw.id === 'string' && linkRaw.id.trim().length > 0 ? linkRaw.id.trim() : newFooterLinkId();
+      return [{ id: linkId, label, href }];
+    });
+
+    if (text || bottomLinks.length > 0) {
+      bottom = {
+        text: text || undefined,
+        links: bottomLinks
+      };
+    }
+  }
+
+  return {
+    brand: {
+      socials,
+      tagline: tagline || undefined,
+      copyright: copyright || undefined
+    },
+    columns,
+    bottom: bottom ?? defaultFooter.bottom
+  };
+}
+
+function legacySocialsFromFooterBlock(footer: LegacyLandingPageJson['footer']): FooterSocial[] {
+  if (!footer || !isRecord(footer as Record<string, unknown>)) {
+    return [];
+  }
+
+  const block = footer as Record<string, unknown>;
+  if (!isLegacyFooterSocialBlock(block)) {
+    return [];
+  }
+
+  const out: FooterSocial[] = [];
+  const fb = normalizeHref(block.facebook, '');
+  const ig = normalizeHref(block.instagram, '');
+  const tw = normalizeHref(block.twitter, '');
+  const li = normalizeHref(block.linkedin, '');
+
+  if (fb && fb !== '#') {
+    out.push({ platform: 'facebook', href: fb });
+  }
+
+  if (ig && ig !== '#') {
+    out.push({ platform: 'instagram', href: ig });
+  }
+
+  if (tw && tw !== '#') {
+    out.push({ platform: 'x', href: tw });
+  }
+
+  if (li && li !== '#') {
+    out.push({ platform: 'linkedin', href: li });
+  }
+
+  return out;
+}
+
+function migrateFooterFromLegacy(landingPage: LegacyLandingPageJson): OrgLandingPageFooterConfig {
+  const defaults = createDefaultFooterConfig();
+  const socials: FooterSocial[] = [...legacySocialsFromFooterBlock(landingPage.footer)];
+  const bottomLinks: FooterColumnLink[] = [];
+
+  if (Array.isArray(landingPage.footerLinks) && landingPage.footerLinks.length > 0) {
+    for (const link of landingPage.footerLinks) {
+      const label = normalizeText(link?.label, '');
+      const href = normalizeHref(link?.href, '#');
+      if (!label) {
+        continue;
+      }
+
+      const platform = labelMatchesSocialPlatform(label);
+      if (platform) {
+        socials.push({ platform, href });
+      } else {
+        bottomLinks.push({ id: newFooterLinkId(), label, href });
+      }
+    }
+  }
+
+  const bottomText = normalizeText(landingPage.footerText, '');
+  const resolvedBottomLinks = bottomLinks.length > 0 ? bottomLinks : (defaults.bottom?.links ?? []);
+
+  return {
+    brand: {
+      socials
+    },
+    columns: [],
+    bottom: {
+      text: bottomText || undefined,
+      links: resolvedBottomLinks
+    }
+  };
+}
+
+function resolveFooterConfig(landingPage: LegacyLandingPageJson & Record<string, unknown>): OrgLandingPageFooterConfig {
+  const footerRaw = landingPage.footer;
+
+  if (footerRaw && isModernFooterConfig(footerRaw)) {
+    return normalizeFooterShape(footerRaw as Record<string, unknown>);
+  }
+
+  return migrateFooterFromLegacy(landingPage);
+}
+
+function normalizeEmbedCode(embed: {
+  title?: unknown;
+  description?: unknown;
+  code?: unknown;
+  src?: unknown;
+  height?: unknown;
+  allowFullscreen?: unknown;
+  sandbox?: unknown;
+}) {
+  if (typeof embed.code === 'string' && embed.code.trim().length > 0) {
+    return embed.code.trim();
+  }
+
+  const src = normalizeHref(embed.src, '');
+  if (!src) {
+    return '';
+  }
+
+  const height = typeof embed.height === 'number' && Number.isFinite(embed.height) ? embed.height : 560;
+  const allowFullscreen = embed.allowFullscreen !== false;
+  const title = normalizeText(embed.title, 'Section title');
+  const sandbox =
+    typeof embed.sandbox === 'string' && embed.sandbox.trim().length > 0 ? ` sandbox="${embed.sandbox.trim()}"` : '';
+
+  return `<iframe title="${title}" src="${src}" width="100%" height="${height}" loading="lazy" referrerpolicy="no-referrer"${sandbox}${
+    allowFullscreen ? ' allowfullscreen' : ''
+  }></iframe>`;
+}
+
+function normalizeCallout(callout: NonNullable<LegacyLandingPageJson['callout']>): OrgLandingPageCallout | undefined {
+  const heading = normalizeText(callout.heading, '');
+  if (!heading) {
+    return undefined;
+  }
+
+  return {
+    enabled: callout.enabled !== false,
+    heading,
+    description: normalizeText(callout.description, ''),
+    action: {
+      label: normalizeText(callout.action?.label, 'Get Started'),
+      href: normalizeHref(callout.action?.href, '#')
+    }
+  };
+}
+
+function normalizeLinks(raw: unknown): OrgLandingPageLinks | undefined {
+  if (!isRecord(raw)) {
+    return undefined;
+  }
+
+  const heading = normalizeText(raw.heading, '');
+  if (!heading) {
+    return undefined;
+  }
+
+  const cardsRaw = raw.cards;
+  if (!Array.isArray(cardsRaw)) {
+    return undefined;
+  }
+
+  const cards: OrgLandingPageLinks['cards'] = cardsRaw
+    .slice(0, 3)
+    .map((item) => {
+      if (!isRecord(item)) {
+        return null;
+      }
+
+      const title = normalizeText(item.title, '');
+      const href = normalizeHref(item.href, '');
+      if (!title || !href) {
+        return null;
+      }
+
+      return {
+        icon: resolveLandingPageLinkIcon(item.icon),
+        title,
+        description: normalizeText(item.description, ''),
+        href
+      };
+    })
+    .filter((card): card is NonNullable<typeof card> => card !== null);
+
+  if (cards.length === 0) {
+    return undefined;
+  }
+
+  const description = normalizeText(raw.description, '');
+  const boldVisitLabel = normalizeText(raw.boldVisitLabel, '');
+  const classicLearnMoreLabel = normalizeText(raw.classicLearnMoreLabel, '');
+
+  return {
+    enabled: raw.enabled !== false,
+    heading,
+    description: description || undefined,
+    boldVisitLabel: boldVisitLabel || undefined,
+    classicLearnMoreLabel: classicLearnMoreLabel || undefined,
+    cards
+  };
+}
+
+const MAX_HERO_STATS = 4;
+
+function normalizeHeroStats(raw: unknown): OrgLandingPageHero['stats'] {
+  if (!Array.isArray(raw)) {
+    return undefined;
+  }
+
+  const stats = raw.slice(0, MAX_HERO_STATS).flatMap((entry) => {
+    if (!isRecord(entry)) {
+      return [];
+    }
+
+    const label = normalizeText(entry.label, '');
+    const value = normalizeText(entry.value, '');
+    if (!label || !value) {
+      return [];
+    }
+
+    return [{ label, value }];
+  });
+
+  return stats.length > 0 ? stats : undefined;
+}
+
+function normalizeHero(hero: NonNullable<LegacyLandingPageJson['hero']>): OrgLandingPageHero {
+  return {
+    heading: normalizeText(hero.heading, defaultLandingPageHero.heading),
+    subheading: normalizeText(hero.subheading, defaultLandingPageHero.subheading),
+    primaryAction: {
+      label: normalizeText(hero.primaryAction?.label, defaultLandingPageHero.primaryAction.label),
+      href: normalizeHref(hero.primaryAction?.href, defaultLandingPageHero.primaryAction.href)
+    },
+    secondaryAction: hero.secondaryAction
+      ? {
+          label: normalizeText(hero.secondaryAction.label, defaultLandingPageHero.secondaryAction?.label ?? ''),
+          href: normalizeHref(hero.secondaryAction.href, defaultLandingPageHero.secondaryAction?.href ?? '#')
+        }
+      : undefined,
+    image: normalizeText(hero.image, ''),
+    stats: normalizeHeroStats((hero as { stats?: unknown }).stats),
+    eyebrow: normalizeHeroEyebrow(hero.eyebrow)
+  };
+}
+
+function normalizeHeroEyebrow(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  return value.trim();
+}
+
+export function normalizeLandingPageSettings(value: unknown): OrgLandingPageJson {
+  const defaultSettings = createDefaultLandingPageSettings();
+
+  if (!isRecord(value)) {
+    return defaultSettings;
+  }
+
+  const landingPage = value as LegacyLandingPageJson & Record<string, unknown>;
+
+  if (landingPage.hero && landingPage.navItems && landingPage.theme) {
+    return {
+      theme: landingPage.theme,
+      hero: normalizeHero(landingPage.hero),
+      navItems: landingPage.navItems
+        .map((navItem) => ({
+          label: normalizeText(navItem.label, ''),
+          href: normalizeHref(navItem.href, '#')
+        }))
+        .filter((navItem) => navItem.label.length > 0),
+      footer: resolveFooterConfig(landingPage),
+      embed: landingPage.embed
+        ? {
+            enabled: landingPage.embed.enabled !== false,
+            title: normalizeText(landingPage.embed.title, 'Section title'),
+            description: normalizeText(landingPage.embed.description, ''),
+            code: normalizeEmbedCode(landingPage.embed),
+            secondaryAction: landingPage.embed.secondaryAction
+              ? {
+                  label: normalizeText(landingPage.embed.secondaryAction.label, ''),
+                  href: normalizeHref(landingPage.embed.secondaryAction.href, '#')
+                }
+              : undefined
+          }
+        : undefined,
+      callout: landingPage.callout ? normalizeCallout(landingPage.callout) : undefined,
+      links: normalizeLinks(landingPage.links)
+    };
+  }
+
+  if (landingPage.hero) {
+    return {
+      theme: landingPage.theme ?? 'quartz',
+      hero: {
+        ...normalizeHero(landingPage.hero),
+        secondaryAction: landingPage.hero.secondaryAction
+          ? {
+              label: normalizeText(
+                landingPage.hero.secondaryAction.label,
+                defaultLandingPageHero.secondaryAction?.label ?? ''
+              ),
+              href: normalizeHref(
+                landingPage.hero.secondaryAction.href,
+                defaultLandingPageHero.secondaryAction?.href ?? '#'
+              )
+            }
+          : defaultLandingPageHero.secondaryAction,
+        image: normalizeText(landingPage.hero.image, defaultLandingPageHero.image ?? '')
+      },
+      navItems: landingPage.navItems?.length
+        ? landingPage.navItems
+            .map((navItem) => ({
+              label: normalizeText(navItem.label, ''),
+              href: normalizeHref(navItem.href, '#')
+            }))
+            .filter((navItem) => navItem.label.length > 0)
+        : [...defaultSettings.navItems],
+      footer: resolveFooterConfig(landingPage),
+      embed: landingPage.embed
+        ? {
+            enabled: landingPage.embed.enabled !== false,
+            title: normalizeText(landingPage.embed.title, 'Section title'),
+            description: normalizeText(landingPage.embed.description, ''),
+            code: normalizeEmbedCode(landingPage.embed)
+          }
+        : undefined,
+      callout: landingPage.callout ? normalizeCallout(landingPage.callout) : undefined,
+      links: normalizeLinks(landingPage.links)
+    };
+  }
+
+  const fallbackHeading = normalizeText(landingPage.header?.title, defaultLandingPageHero.heading);
+  const fallbackHighlight = normalizeText(landingPage.header?.titleHighlight, '');
+  const fallbackSubheading = normalizeText(landingPage.header?.subtitle, defaultLandingPageHero.subheading);
+
+  return {
+    ...defaultSettings,
+    hero: {
+      heading: fallbackHighlight ? `${fallbackHeading} ${fallbackHighlight}` : fallbackHeading,
+      subheading: fallbackSubheading,
+      primaryAction: {
+        label: normalizeText(landingPage.header?.action?.label, defaultLandingPageHero.primaryAction.label),
+        href: normalizeHref(landingPage.header?.action?.link, defaultLandingPageHero.primaryAction.href)
+      },
+      secondaryAction: defaultLandingPageHero.secondaryAction,
+      image: defaultLandingPageHero.image
+    },
+    navItems: landingPage.customLinks?.links?.length
+      ? landingPage.customLinks.links
+          .map((link) => ({
+            label: normalizeText(link.label, ''),
+            href: normalizeHref(link.url, '#')
+          }))
+          .filter((navItem) => navItem.label.length > 0)
+      : [...defaultSettings.navItems],
+    footer: resolveFooterConfig(landingPage),
+    embed: landingPage.embed
+      ? {
+          enabled: landingPage.embed.enabled !== false,
+          title: normalizeText(landingPage.embed.title, 'Section title'),
+          description: normalizeText(landingPage.embed.description, ''),
+          code: normalizeEmbedCode(landingPage.embed),
+          secondaryAction: landingPage.embed.secondaryAction
+            ? {
+                label: normalizeText(landingPage.embed.secondaryAction.label, ''),
+                href: normalizeHref(landingPage.embed.secondaryAction.href, '#')
+              }
+            : undefined
+        }
+      : undefined,
+    links: normalizeLinks(landingPage.links)
+  };
+}
+
+export function mapPublicCoursesToLandingPageCourses(courses: OrgPublicCourses): OrgLandingPageProps['courses'] {
+  return courses.map((course) => {
+    const courseRecord = course as Record<string, unknown>;
+    const metadataRecord = isRecord(courseRecord.metadata) ? courseRecord.metadata : undefined;
+    const tags = Array.isArray(courseRecord.tags)
+      ? (courseRecord.tags as OrgLandingPageProps['courses'][number]['tags'])
+      : undefined;
+    const courseSlug = typeof courseRecord.slug === 'string' && courseRecord.slug.length > 0 ? courseRecord.slug : '';
+    const courseCost = typeof courseRecord.cost === 'number' ? courseRecord.cost : undefined;
+    const courseIsPaid =
+      typeof metadataRecord?.paymentEnabled === 'boolean'
+        ? metadataRecord.paymentEnabled
+        : typeof courseCost === 'number' && courseCost > 0;
+    const courseCurrency = typeof courseRecord.currency === 'string' ? courseRecord.currency : undefined;
+    const lessonCount = typeof courseRecord.lessonCount === 'number' ? courseRecord.lessonCount : undefined;
+    const exerciseCount = typeof courseRecord.exerciseCount === 'number' ? courseRecord.exerciseCount : undefined;
+    const totalStudents = typeof courseRecord.totalStudents === 'number' ? courseRecord.totalStudents : undefined;
+    const image = typeof courseRecord.image === 'string' ? courseRecord.image : undefined;
+    const bannerImage = resolveCourseBannerImage({
+      bannerImage: typeof courseRecord.bannerImage === 'string' ? courseRecord.bannerImage : null,
+      logo: typeof courseRecord.logo === 'string' ? courseRecord.logo : null
+    });
+    const price = typeof courseRecord.price === 'string' ? courseRecord.price : undefined;
+    const duration = typeof courseRecord.duration === 'string' ? courseRecord.duration : undefined;
+    const level = typeof courseRecord.level === 'string' ? courseRecord.level : undefined;
+    const description = typeof courseRecord.description === 'string' ? courseRecord.description : '';
+    const type = typeof courseRecord.type === 'string' ? courseRecord.type : undefined;
+    const typeLabel =
+      type && ['SELF_PACED', 'LIVE_CLASS', 'COMPLIANCE', 'PUBLIC'].includes(type)
+        ? t.get(`analytics.popularTypes.types.${type}`)
+        : undefined;
+    const isPublished = typeof courseRecord.isPublished === 'boolean' ? courseRecord.isPublished : true;
+
+    return {
+      id: course.id,
+      slug: typeof courseRecord.slug === 'string' ? courseRecord.slug : undefined,
+      bannerImage,
+      title: typeof courseRecord.title === 'string' ? courseRecord.title : '',
+      description,
+      type,
+      typeLabel,
+      isPublished,
+      cost: courseIsPaid ? courseCost : 0,
+      currency: courseCurrency,
+      lessonCount,
+      exerciseCount,
+      totalStudents,
+      metadata: metadataRecord
+        ? {
+            discount: typeof metadataRecord.discount === 'number' ? metadataRecord.discount : undefined,
+            showDiscount: typeof metadataRecord.showDiscount === 'boolean' ? metadataRecord.showDiscount : undefined
+          }
+        : undefined,
+      tags,
+      image,
+      link: courseSlug ? `/course/${courseSlug}` : undefined,
+      price: courseIsPaid ? price : undefined,
+      duration,
+      level
+    };
+  });
+}
+
+export function buildOrgLandingPageLabels(): OrgLandingPageProps['labels'] {
+  return {
+    catalogEyebrow: t.get('public_courses.heading'),
+    catalogHeading: t.get('public_courses.heading'),
+    catalogDescription: t.get('public_courses.subtitle'),
+    browseCoursesLabel: t.get('dashboard.view_more'),
+    enrollLabel: t.get('courses.course_card.learn_more'),
+    freeLabel: t.get('course.navItem.landing_page.pricing_section.free'),
+    featuredLabel: t.get('public_courses.heading'),
+    filterAllLabel: t.get('audience.import.all_courses'),
+    startCourseLabel: t.get('course.navItem.landing_page.start_course'),
+    lessonsLabel: (count) => t.get('courses.course_card.lessons_count', { count }),
+    exercisesLabel: (count) => t.get('courses.course_card.exercises_count', { count }),
+    enrolledLabel: (count) => t.get('audience.learner_count', { count }),
+    resourcesEyebrow: t.get('settings.landing_page.editor.sections.links'),
+    embedEyebrow: t.get('settings.landing_page.editor.sections.embed'),
+    calloutEyebrow: t.get('settings.landing_page.editor.sections.callout'),
+    learnMoreLabel: t.get('courses.course_card.learn_more'),
+    catalogEmptyTitle: t.get('public_courses.catalog_empty.title'),
+    catalogEmptyDescription: t.get('public_courses.catalog_empty.description'),
+    learningPathsHeading: t.get('common.restricted_page.learning_paths_heading'),
+    browseLearningPathsLabel: t.get('dashboard.view_more'),
+    learningPathLabel: t.get('common.restricted_page.learning_path_label'),
+    learningPathCourseCountLabel: (count) => t.get('analytics.popularTypes.course_count', { count }),
+    learningPathsEmptyTitle: t.get('public_courses.catalog_empty.title'),
+    learningPathsEmptyDescription: t.get('public_courses.catalog_empty.description'),
+    learningPathHoursLabel: (hours) => `${hours}h`,
+    learningPathCertificateLabel: t.get('course.navItem.landing_page.certificate'),
+    courseOutlineHeading: t.get('course.navItem.landing_page.course_content'),
+    courseOutlineDescription: t.get('public_courses.subtitle'),
+    courseCountLabel: (count) => t.get('analytics.popularTypes.course_count', { count }),
+    learnersLabel: (count) => t.get('audience.learner_count', { count }),
+    tracksLabel: (count) => t.get('common.restricted_page.tracks_label', { count }),
+    terminalEnrollLabel: t.get('course.navItem.landing_page.pricing_section.enroll')
+  };
+}
+
+export function buildOrgLandingPageProps(
+  org: AccountOrg | PublicOrg,
+  landingpage: unknown,
+  courses: OrgPublicCourses,
+  hasMoreCourses = false,
+  authAction?: OrgLandingPageProps['authAction'],
+  options?: { coursesLoaded?: boolean; learnerAccount?: OrgLandingPageProps['learnerAccount'] }
+): OrgLandingPageProps {
+  const normalizedLandingPage = normalizeLandingPageSettings(landingpage);
+  const configuredPrimaryAction = normalizedLandingPage.hero.primaryAction;
+  const primaryAction =
+    configuredPrimaryAction.href === '/login' && authAction && !authAction.loading
+      ? { ...configuredPrimaryAction, href: authAction.href }
+      : configuredPrimaryAction;
+
+  return {
+    orgName: org.name,
+    logoUrl: org.avatarUrl || undefined,
+    authAction,
+    learnerAccount: options?.learnerAccount,
+    ...normalizedLandingPage,
+    hero: {
+      ...normalizedLandingPage.hero,
+      primaryAction
+    },
+    courses: mapPublicCoursesToLandingPageCourses(courses),
+    hasMoreCourses,
+    coursesLoaded: options?.coursesLoaded ?? true,
+    labels: buildOrgLandingPageLabels()
+  };
+}
+
+export type LandingPageThemeKey = (typeof landingPageThemes)[number];
+
+export const DEFAULT_LANDING_PAGE_THEME: LandingPageThemeKey = 'quartz';
+
+const THEME_BUNDLE_LOADERS: Record<LandingPageThemeKey, () => Promise<LandingPageThemeBundle>> = {
+  minimal: () => import('@cio/ui/custom/org-landing-page/minimal'),
+  bold: () => import('@cio/ui/custom/org-landing-page/bold'),
+  classic: () => import('@cio/ui/custom/org-landing-page/classic'),
+  saas: () => import('@cio/ui/custom/org-landing-page/saas'),
+  tech: () => import('@cio/ui/custom/org-landing-page/tech'),
+  studio: () => import('@cio/ui/custom/org-landing-page/studio'),
+  corporate: () => import('@cio/ui/custom/org-landing-page/corporate'),
+  terminal: () => import('@cio/ui/custom/org-landing-page/terminal'),
+  editorial: () => import('@cio/ui/custom/org-landing-page/editorial'),
+  vibrant: () => import('@cio/ui/custom/org-landing-page/vibrant'),
+  quartz: () => import('@cio/ui/custom/org-landing-page/quartz')
+};
+
+export function importThemeBundle(theme: LandingPageThemeKey): Promise<LandingPageThemeBundle> {
+  const load = THEME_BUNDLE_LOADERS[theme] ?? THEME_BUNDLE_LOADERS[DEFAULT_LANDING_PAGE_THEME];
+  return load();
+}
+
+export async function importThemeComponent(theme: LandingPageThemeKey) {
+  const mod = await importThemeBundle(theme);
+  return { default: mod.org };
+}
+
+export async function importCourseLandingPageTheme(theme: LandingPageThemeKey) {
+  const mod = await importThemeBundle(theme);
+  return { default: mod.course };
+}
+
+const NAV_SNIPPET_THEMES: ReadonlySet<LandingPageThemeKey> = new Set([
+  'minimal',
+  'saas',
+  'tech',
+  'studio',
+  'corporate',
+  'terminal',
+  'editorial',
+  'vibrant'
+]);
+
+/**
+ * Checks whether a landing page theme renders its navigation inside the hero component.
+ *
+ * @param theme - The landing page theme key.
+ * @returns `true` if navigation is rendered inside the hero section.
+ */
+export function themeRendersNavInsideHero(theme: LandingPageThemeKey): boolean {
+  return NAV_SNIPPET_THEMES.has(theme);
+}
+
+/**
+ * Resolves the CSS class string for the landing page header shell container.
+ *
+ * @param _theme - The landing page theme key.
+ * @returns Tailwind CSS utility class string for header background, foreground, and font.
+ */
+export function themeHeaderShellClass(_theme: LandingPageThemeKey): string {
+  return 'bg-[var(--landing-bg)] text-[var(--landing-fg)] font-sans';
+}
+
+export { themeStyle } from '@cio/ui/custom/org-landing-page/theme-style';
+
+/**
+ * Dynamically imports the course card component for a given landing page theme.
+ *
+ * @param theme - The landing page theme key.
+ * @returns A promise resolving to the theme's course card component.
+ */
+export async function importThemeCourseCard(theme: LandingPageThemeKey) {
+  return (await importThemeBundle(theme)).courseCard;
+}
+
+/**
+ * Dynamically imports the navigation and hero components for a given landing page theme.
+ *
+ * @param theme - The landing page theme key.
+ * @returns A promise resolving to an object containing NavComponent and HeroComponent.
+ */
+export async function importThemeNavHero(theme: LandingPageThemeKey) {
+  const mod = await importThemeBundle(theme);
+  return { NavComponent: mod.nav, HeroComponent: mod.hero };
+}

@@ -1,10 +1,118 @@
 import { type ApiClientConfig, ApiError, type RequestConfig } from './types';
 
+import { dev } from '$app/environment';
 import { DEFAULT_CONFIG } from './constants';
 import { delay } from './utils';
-import { env } from '$env/dynamic/public';
-import { getAccessToken } from '$lib/utils/functions/supabase';
 import { hcWithType } from '@cio/api/rpc-types';
+import { get } from 'svelte/store';
+import { currentOrg } from '$lib/utils/store/org';
+import type { Cookies } from '@sveltejs/kit';
+import { env } from '$env/dynamic/public';
+import { getCioCookieString } from '$lib/utils/functions/cookies';
+import { CIO_ENVELOPE_CONTENT_TYPE } from '@cio/utils/constants';
+
+function isLocalhost(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]' || hostname === '::1';
+}
+
+export const getRequestBaseUrl = () => {
+  if (typeof window === 'undefined') {
+    // When on the server, we want to hit the private url which is the docker container of `api` or the private network url of `api`.
+    // if that isn't set then it will fallback to the public url of the `api`
+    // this doesn't need proxy because on the server we are using our api key to make queries.
+    return process.env.PRIVATE_SERVER_URL || env.PUBLIC_SERVER_URL;
+  }
+
+  // Local dev keeps the direct API path on localhost so existing Vite/API workflows
+  // do not depend on the SvelteKit proxy.
+  // When accessed from mobile or a LAN network host (e.g. 192.168.x.x),
+  // localhost:3002 is unreachable from the remote browser and cookies would be isolated.
+  // Route through the same-origin `/proxy` endpoint instead.
+  if (dev) {
+    if (!isLocalhost(window.location.hostname)) {
+      return `${window.location.origin}/proxy`;
+    }
+    return env.PUBLIC_SERVER_URL ?? '';
+  }
+
+  // Browser calls are same-origin in production. For self-hosted Node builds,
+  // hooks.server.ts proxies `/proxy/*` to PRIVATE_SERVER_URL.
+  // For cloud multi-tenant builds, the Cloudflare Worker handles the same
+  // prefix. In both cases auth cookies stay first-party on the dashboard host.
+  return `${window.location.origin}/proxy`;
+};
+
+function requiresB64Envelope(input: RequestInfo | URL): boolean {
+  try {
+    const raw = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    const pathname = new URL(raw, 'http://placeholder').pathname;
+    return pathname.includes('/agent/') || /\/lesson\/[^/]+\/language/.test(pathname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Base64-encode a UTF-8 string for the `/agent/*` body envelope. Works on
+ * both the SvelteKit server (Node `Buffer`) and the browser (TextEncoder +
+ * `btoa`). `btoa` alone fails on non-Latin-1 characters; encoding through
+ * bytes first preserves arbitrary Unicode.
+ */
+function toBase64Utf8(input: string): string {
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(input, 'utf-8').toString('base64');
+  }
+
+  const bytes = new TextEncoder().encode(input);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]!);
+  }
+
+  return btoa(binary);
+}
+
+/** Path only -- a full URL can carry tokens in its query string. */
+function toLogPath(rawUrl: string): string {
+  try {
+    return new URL(rawUrl).pathname;
+  } catch {
+    return rawUrl;
+  }
+}
+
+function mergeAbortSignals(...signals: Array<AbortSignal | null | undefined>) {
+  const activeSignals = signals.filter((signal): signal is AbortSignal => Boolean(signal));
+
+  if (activeSignals.length === 0) {
+    return undefined;
+  }
+
+  if (activeSignals.length === 1) {
+    return activeSignals[0];
+  }
+
+  const controller = new AbortController();
+
+  const abortWithSignal = (signal: AbortSignal) => {
+    if (controller.signal.aborted) {
+      return;
+    }
+
+    controller.abort(signal.reason);
+  };
+
+  for (const signal of activeSignals) {
+    if (signal.aborted) {
+      abortWithSignal(signal);
+      break;
+    }
+
+    signal.addEventListener('abort', () => abortWithSignal(signal), { once: true });
+  }
+
+  return controller.signal;
+}
 
 class ApiClient {
   private config: Required<ApiClientConfig>;
@@ -13,20 +121,13 @@ class ApiClient {
     this.config = { ...DEFAULT_CONFIG, ...config };
   }
 
-  private async makeRequest(
-    input: RequestInfo | URL,
-    requestConfig: RequestConfig = {}
-  ): Promise<Response> {
-    console.log('makeRequest', input, requestConfig);
-    const {
-      timeout = this.config.timeout,
-      retries = this.config.retries,
-      skipAuth = false,
-      ...fetchConfig
-    } = requestConfig;
+  private async makeRequest(input: RequestInfo | URL, requestConfig: RequestConfig = {}): Promise<Response> {
+    const { timeout = this.config.timeout, retries = this.config.retries, ...fetchConfig } = requestConfig;
 
-    const url = typeof input === 'string' ? input : input.toString();
-    const fullUrl = url.startsWith('http') ? url : `${this.config.baseURL}${url}`;
+    // The Hono RPC client already builds a full URL using the base it was
+    // constructed with (PRIVATE_SERVER_URL on the server, `${origin}/proxy`
+    // in the browser — see `getRequestBaseUrl()` above). Forward it as-is.
+    const fullUrl = typeof input === 'string' ? input : input.toString();
 
     // Prepare headers
     const headers = new Headers(fetchConfig.headers);
@@ -36,13 +137,17 @@ class ApiClient {
       headers.set('Accept', 'application/json');
     }
 
+    // Add organization ID header if available
+    const org = get(currentOrg);
+    if (org?.id) {
+      headers.set('cio-org-id', org.id);
+    }
+
     // Handle body serialization and content-type
     let requestBody = fetchConfig.body;
-    if (
-      fetchConfig.body &&
-      typeof fetchConfig.body === 'object' &&
-      !(fetchConfig.body instanceof FormData)
-    ) {
+    const isFormData = fetchConfig.body instanceof FormData;
+
+    if (fetchConfig.body && typeof fetchConfig.body === 'object' && !isFormData) {
       // Auto-stringify objects (except FormData)
       requestBody = JSON.stringify(fetchConfig.body);
       if (!headers.has('Content-Type')) {
@@ -55,36 +160,51 @@ class ApiClient {
       }
     }
 
-    // Add authentication if not skipped
-    if (!skipAuth) {
-      try {
-        const token = await getAccessToken();
-        if (token) {
-          headers.set('Authorization', `Bearer ${token}`);
-        }
-      } catch (error) {
-        console.warn('Failed to get access token:', error);
-        // Continue without auth if token retrieval fails
-      }
+    if (isFormData) {
+      // Let the browser set the multipart boundary, but keep auth/org headers.
+      headers.delete('Content-Type');
+    }
+
+    if (requestBody && !isFormData && requiresB64Envelope(input)) {
+      // Wrap the inner JSON in a base64 envelope so Render's Cloudflare WAF
+      // can't body-inspect the content (AI-generated HTML, code blocks, curl
+      // examples, etc. trip OWASP rules). The API's `b64EnvelopeRewrite`
+      // middleware decodes the envelope before any route handler sees it.
+      const inner = typeof requestBody === 'string' ? requestBody : JSON.stringify(requestBody);
+      requestBody = JSON.stringify({ b64: toBase64Utf8(inner) });
+      headers.set('Content-Type', CIO_ENVELOPE_CONTENT_TYPE);
     }
 
     // Create abort controller for timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    const timeoutController = new AbortController();
+    const timeoutId = setTimeout(() => timeoutController.abort(), timeout);
 
     const requestInit: RequestInit = {
       ...fetchConfig,
       headers,
       body: requestBody,
-      signal: controller.signal
+      signal: mergeAbortSignals(fetchConfig.signal, timeoutController.signal)
     };
 
     let lastError: Error | null = null;
 
+    // Server-side only. An SSR load blocked on an API call that never returns
+    // produces no error and no response -- the page just hangs with nothing in
+    // the log. A `->` line with no matching `<-` line names that call.
+    const shouldTrace = typeof window === 'undefined';
+    const method = (requestInit.method || 'GET').toUpperCase();
+
     // Retry logic with exponential backoff
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
+        if (shouldTrace) console.log(`[api] -> ${method} ${toLogPath(fullUrl)}`);
+
+        const startedAt = Date.now();
         const response = await this.config.customFetch(fullUrl, requestInit);
+
+        if (shouldTrace) {
+          console.log(`[api] <- ${method} ${toLogPath(fullUrl)} ${response.status} in ${Date.now() - startedAt}ms`);
+        }
 
         clearTimeout(timeoutId);
 
@@ -96,31 +216,16 @@ class ApiClient {
 
         if (response.status === 401) {
           await this.config.onAuthError();
-          throw new ApiError(
-            'Authentication failed',
-            response.status,
-            response.statusText,
-            response
-          );
+          throw new ApiError('Authentication failed', response.status, response.statusText, response);
         }
 
         if (response.status >= 400 && response.status < 500) {
           const errorText = await response.text().catch(() => 'Unknown error');
-          throw new ApiError(
-            `Client error: ${errorText}`,
-            response.status,
-            response.statusText,
-            response
-          );
+          throw new ApiError(errorText, response.status, response.statusText, response);
         }
 
         if (response.status >= 500) {
-          const error = new ApiError(
-            `Server error: ${response.statusText}`,
-            response.status,
-            response.statusText,
-            response
-          );
+          const error = new ApiError(response.statusText, response.status, response.statusText, response);
 
           if (attempt === retries) {
             throw error;
@@ -132,17 +237,16 @@ class ApiClient {
         }
 
         // Other status codes
-        throw new ApiError(
-          `Unexpected status: ${response.statusText}`,
-          response.status,
-          response.statusText,
-          response
-        );
+        throw new ApiError(`Unexpected status: ${response.statusText}`, response.status, response.statusText, response);
       } catch (error) {
         clearTimeout(timeoutId);
 
         // Handle abort (timeout)
         if (error instanceof Error && error.name === 'AbortError') {
+          if (!timeoutController.signal.aborted) {
+            throw error;
+          }
+
           throw new ApiError('Request timeout', 408, 'Request Timeout');
         }
 
@@ -184,9 +288,12 @@ class ApiClient {
 export const apiClient = new ApiClient();
 
 // RPC client using the new fetch wrapper
-export const classroomio = hcWithType(env.PUBLIC_SERVER_URL, {
+export const classroomio = hcWithType(getRequestBaseUrl(), {
   fetch: async (input: RequestInfo | URL, requestInit?: RequestInit) => {
     return apiClient.request(input, requestInit);
+  },
+  init: {
+    credentials: 'include' // Required for sending cookies cross-origin
   }
 });
 
@@ -210,3 +317,43 @@ export {
 } from './utils';
 
 export type { InferResponseType, InferRequestType } from '@cio/api/rpc-types';
+
+// Export base API classes
+export { BaseApi, BaseApiWithErrors } from './base.svelte';
+
+/**
+ * Gets headers with cookies and organization ID for API calls
+ * Use this in load functions (+page.server.ts, +layout.server.ts) to pass user session cookies
+ * and organization ID to API calls. This ensures authentication and organization context work correctly.
+ *
+ * @param cookies Cookies object from SvelteKit load function
+ * @param orgId Organization ID to include in headers
+ * @returns Headers object with cookie string and cio-org-id header
+ *
+ * @example
+ * ```typescript
+ * export const load = async ({ cookies, parent }) => {
+ *   const { org } = await parent();
+ *   const response = await classroomio.organization.$get(
+ *     { query: { siteName } },
+ *     getApiHeaders(cookies, org?.id)
+ *   );
+ * };
+ * ```
+ */
+export function getApiHeaders(
+  cookies: Cookies,
+  orgId?: string
+): { headers: { cookie: string; 'cio-org-id'?: string } } {
+  const cioCookies = getCioCookieString(cookies);
+
+  const headers: { cookie: string; 'cio-org-id'?: string } = {
+    cookie: cioCookies || ''
+  };
+
+  if (orgId) {
+    headers['cio-org-id'] = orgId;
+  }
+
+  return { headers };
+}

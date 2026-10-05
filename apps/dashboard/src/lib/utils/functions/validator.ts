@@ -1,8 +1,8 @@
-import z from 'zod';
-import { get } from 'svelte/store';
 import isNumber from 'lodash/isNumber';
+import { t } from '$lib/utils/functions/translations';
 import { validateEmail } from './validateEmail';
-import { t, initialized } from '$lib/utils/functions/translations';
+import { PASSWORD_MIN_LENGTH, ZPassword, ZPasswordFields } from '@cio/utils/validation/auth/password';
+import z from 'zod';
 
 function getOrgNameValidation() {
   return z
@@ -21,25 +21,21 @@ function getSiteNameValidation() {
       message: `${t.get('validations.site_name.hyphen_rule')}`
     });
 }
-function getNewsfeedValidation() {
-  return z.string().min(5, { message: `${t.get('validations.news_feed.min_char')}` });
-}
 
-export const saveCertificateValidation = (fields = {}) => {
-  const schema = z.object({
-    description: z.string().max(200, 'course.navItem.certificates.description_error'),
-    is_certificate_downloadable: z.boolean(),
-    certificate_theme: z.string()
-  });
+export const getConfirmPasswordError = ({
+  password = '',
+  confirmPassword = ''
+}: {
+  password?: string;
+  confirmPassword?: string;
+}) => {
+  if (!password || password.length < PASSWORD_MIN_LENGTH || !confirmPassword) {
+    return undefined;
+  }
 
-  const { error } = schema.safeParse(fields);
-  return processErrors(error);
-};
+  const result = ZPasswordFields.safeParse({ password, confirmPassword });
 
-export const getConfirmPasswordError = ({ password, confirmPassword }) => {
-  return password > 6 && confirmPassword > 6 && password !== confirmPassword
-    ? `${t.get('validations.confirm_password.not_match')}`
-    : undefined;
+  return result.success ? undefined : t.get('validations.confirm_password.not_match');
 };
 
 export const processErrors = (error, mapToId?: boolean) => {
@@ -55,7 +51,7 @@ export const processErrors = (error, mapToId?: boolean) => {
 
       if (mapToId) {
         let value = '';
-        path.forEach((p, i) => {
+        path.forEach((p) => {
           const formatP = isNumber(p) ? `[${p}]` : p;
 
           value += !value ? formatP : `.${formatP}`;
@@ -71,14 +67,12 @@ export const processErrors = (error, mapToId?: boolean) => {
   return errors;
 };
 
-export const authValidation = (fields = {}) => {
+export const authValidation = (fields = {}, { skipPassword = false }: { skipPassword?: boolean } = {}) => {
   const schema = z.object({
     email: z.string().email({
       message: 'validations.auth.email.invalid_email'
     }),
-    password: z.string().min(6, {
-      message: 'validations.auth.password.min_char'
-    })
+    ...(skipPassword ? {} : { password: ZPassword })
   });
 
   const { error } = schema.safeParse(fields);
@@ -113,28 +107,6 @@ export const coursePaymentValidation = (fields = {}) => {
   return processErrors(error);
 };
 
-export const resetValidation = (fields = {}) => {
-  const schema = z.object({
-    password: z.string().min(6, {
-      message: `${t.get('validations.reset.password.min_char')}`
-    })
-  });
-  const { error } = schema.safeParse(fields);
-
-  return processErrors(error);
-};
-
-export const forgotValidation = (fields = {}) => {
-  const schema = z.object({
-    email: z.string().email({
-      message: `${t.get('validations.forgot.invalid_email')}`
-    })
-  });
-  const { error } = schema.safeParse(fields);
-
-  return processErrors(error);
-};
-
 export const orgLandingpageValidation = (fields = {}) => {
   const schema = z.object({
     name: z.string().min(6, {
@@ -151,79 +123,6 @@ export const orgLandingpageValidation = (fields = {}) => {
     })
   });
   const { error } = schema.safeParse(fields);
-
-  return processErrors(error);
-};
-
-export const onboardingValidation = (fields = {}, step) => {
-  const onboardingValidationSchema = {
-    stepOne: z.object({
-      fullname: z
-        .string()
-        .min(5, { message: `${t.get('validations.onboarding.step_one.full_name.min_char')}` }),
-      orgName: getOrgNameValidation(),
-      siteName: getSiteNameValidation()
-    }),
-    stepTwo: z.object({
-      goal: z
-        .string({
-          required_error: `${t.get('validations.onboarding.step_two.goal.required')}`
-        })
-        .min(1),
-      source: z
-        .string({
-          required_error: `${t.get('validations.onboarding.step_two.source.required')}`
-        })
-        .min(1)
-    })
-  };
-
-  const schema =
-    step === 1 ? onboardingValidationSchema.stepOne : onboardingValidationSchema.stepTwo;
-  const { error } = schema.safeParse(fields);
-
-  return processErrors(error);
-};
-
-export const updateProfileValidation = (fields = {}) => {
-  const schema = z.object({
-    email: z.string().email({ message: 'validations.user_profile.email' }),
-    username: z.string().nonempty({ message: 'validations.user_profile.username' }),
-    fullname: z.string().min(5, { message: 'validations.user_profile.fullname' })
-  });
-  const { error } = schema.safeParse(fields);
-
-  return processErrors(error);
-};
-
-// export const createTemplateExerciseValidation = (fields = {}) => {
-//   const schema = z.object({
-//     orgName: z.string().min(5, {
-//       message: 'Must be 5 or more characters long',
-//     }),
-//     siteName: z.string().min(5, {
-//       message: 'Must be 5 or more characters long',
-//     })
-//   });
-//   const { error } = schema.safeParse(fields);
-
-//   return processErrors(error);
-// };
-
-export const createNewsfeedValidation = (newPost) => {
-  const schema = z.object({
-    newPost: getNewsfeedValidation()
-  });
-  const { error } = schema.safeParse({ newPost });
-
-  return processErrors(error);
-};
-
-export const addNewsfeedCommentValidation = (newComment) => {
-  const schema = z.object({
-    newComment: getNewsfeedValidation()
-  });
-  const { error } = schema.safeParse({ newComment });
 
   return processErrors(error);
 };
@@ -304,8 +203,14 @@ export const commentInCommunityValidation = (fields = {}) => {
   return processErrors(error);
 };
 
-export const getDisableSubmit = ({ password, confirmPassword }) => {
-  return !!(password && confirmPassword && password !== confirmPassword);
+export const getDisableSubmit = ({
+  password = '',
+  confirmPassword = ''
+}: {
+  password?: string;
+  confirmPassword?: string;
+}) => {
+  return !ZPasswordFields.safeParse({ password, confirmPassword }).success;
 };
 
 export const validateEmailInString = (emailsStr) => {

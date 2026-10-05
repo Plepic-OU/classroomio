@@ -1,4 +1,4 @@
-import { LOCALE } from '$lib/utils/types';
+import type { TLocale } from '@cio/db/types';
 import i18n from '@sveltekit-i18n/base';
 import parser from '@sveltekit-i18n/parser-icu';
 import { writable } from 'svelte/store';
@@ -55,25 +55,68 @@ export const config = {
       locale: 'da',
       key: '',
       loader: async () => (await import('../translations/da.json')).default
+    },
+    {
+      locale: 'tr',
+      key: '',
+      loader: async () => (await import('../translations/tr.json')).default
     }
   ]
 };
 
-export const { t, loading, locales, locale, initialized, translations, loadTranslations } =
-  new i18n(config);
+export const { t, loading, locales, locale, initialized, translations, loadTranslations } = new i18n(config);
 
 export const selectedLocale = writable<string>('en');
+export const LOCALE_STORAGE_KEY = 'classroomio_locale';
+export const LOCALE_COOKIE_KEY = 'classroomio_locale';
 
-// Translations logs
-loading.subscribe(async ($loading) => {
-  if ($loading) {
-    console.log('Loading translations...');
+/*
+  `@sveltekit-i18n/base` keeps its loading state in a process-global singleton: a
+  single `currentRoute` writable that every request overwrites, and a shared
+  `promises` Set that any request can `.clear()`. `loadTranslations` resolves by
+  filtering that Set for its own `{ locale, route }` entry, so two concurrent SSR
+  renders can leave one of them awaiting a promise the other already purged --
+  the request then never settles and the browser gets no HTML at all.
 
-    await loading.toPromise();
-  }
-});
+  Dedupe by locale so concurrent renders await one shared promise instead of
+  racing. Note the loaders below declare no `routes`, so every loader already
+  runs for every route: there is nothing to load per-pathname, and passing one
+  only widens the race to every first-time URL.
+*/
+const localeLoads = new Map<string, Promise<unknown>>();
 
-export function handleLocaleChange(newLocale: string) {
+/** Load a locale once per process, reusing the in-flight promise for callers that race. */
+function primeLocale(targetLocale: string): Promise<unknown> {
+  const inFlight = localeLoads.get(targetLocale);
+  if (inFlight) return inFlight;
+
+  const load = Promise.resolve(loadTranslations(targetLocale)).catch((error) => {
+    // Drop the cached rejection so the next render can retry.
+    localeLoads.delete(targetLocale);
+    throw error;
+  });
+
+  localeLoads.set(targetLocale, load);
+
+  return load;
+}
+
+/**
+ * Load a locale's translations once per process, then activate it for this
+ * render. Use this instead of calling `loadTranslations` directly.
+ */
+export async function ensureTranslations(
+  targetLocale: string,
+  shouldActivate: () => boolean = () => true
+): Promise<void> {
+  await primeLocale(targetLocale);
+
+  // `locale.set` re-enters the library's loader trigger; `forceSet` just marks
+  // the active locale for the strings we already hold.
+  if (shouldActivate()) locale.forceSet(targetLocale);
+}
+
+export function handleLocaleChange(newLocale: TLocale) {
   if (!newLocale) {
     return;
   }
@@ -81,23 +124,45 @@ export function handleLocaleChange(newLocale: string) {
   locale.set(newLocale);
 
   selectedLocale.set(newLocale);
+
+  persistLocale(newLocale);
 }
 
-export function lessonFallbackNote(
-  note: string,
-  translation: Record<LOCALE, string>,
-  locale: LOCALE
-) {
-  if (!translation) {
-    return note;
+export function activateLocale(newLocale: TLocale) {
+  if (!newLocale) return;
+
+  locale.set(newLocale);
+  selectedLocale.set(newLocale);
+}
+
+export function getPersistedLocale(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
   }
 
-  const content = translation[locale];
-
-  // if locale is english and no translated content for english but note exists
-  if (locale === LOCALE.EN && !content && note?.length) {
-    return note;
+  try {
+    const savedLocale = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+    if (savedLocale) {
+      return savedLocale;
+    }
+  } catch (error) {
+    console.warn('Failed to read saved locale from localStorage', error);
   }
 
-  return content;
+  const cookieMatch = document.cookie.match(new RegExp(`(?:^|; )${LOCALE_COOKIE_KEY}=([^;]*)`));
+  return cookieMatch?.[1] ? decodeURIComponent(cookieMatch[1]) : null;
+}
+
+function persistLocale(newLocale: TLocale) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
+  } catch (error) {
+    console.warn('Failed to save locale to localStorage', error);
+  }
+
+  document.cookie = `${LOCALE_COOKIE_KEY}=${encodeURIComponent(newLocale)}; path=/; max-age=31536000; SameSite=Lax`;
 }

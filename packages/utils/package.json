@@ -1,0 +1,102 @@
+{
+  "name": "@cio/utils",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./constants": {
+      "types": "./dist/constants/index.d.ts",
+      "default": "./dist/constants/index.js"
+    },
+    "./constants/*": {
+      "types": "./dist/constants/*.d.ts",
+      "default": "./dist/constants/*.js"
+    },
+    "./plans": {
+      "types": "./dist/plans/index.d.ts",
+      "default": "./dist/plans/index.js"
+    },
+    "./export": {
+      "types": "./dist/export/index.d.ts",
+      "default": "./dist/export/index.js"
+    },
+    "./export/xlsx": {
+      "types": "./dist/export/xlsx.d.ts",
+      "default": "./dist/export/xlsx.js"
+    },
+    "./senja": {
+      "types": "./dist/senja/index.d.ts",
+      "default": "./dist/senja/index.js"
+    },
+    "./agent-models": {
+      "types": "./dist/agent-models/index.d.ts",
+      "default": "./dist/agent-models/index.js"
+    },
+    "./validation": {
+      "types": "./dist/validation/index.d.ts",
+      "default": "./dist/validation/index.js"
+    },
+    "./validation/constants": {
+      "types": "./dist/validation/constants.d.ts",
+      "default": "./dist/validation/constants.js"
+    },
+    "./validation/*": {
+      "types": "./dist/validation/*/index.d.ts",
+      "default": "./dist/validation/*/index.js"
+    },
+    "./functions": {
+      "types": "./dist/functions/index.d.ts",
+      "default": "./dist/functions/index.js"
+    },
+    "./functions/*": {
+      "types": "./dist/functions/*.d.ts",
+      "default": "./dist/functions/*.js"
+    },
+    "./errors": {
+      "types": "./dist/errors/index.d.ts",
+      "default": "./dist/errors/index.js"
+    },
+    "./config/upload-limits": {
+      "types": "./dist/config/upload-limits.d.ts",
+      "default": "./dist/config/upload-limits.js"
+    },
+    "./openapi/public-api": {
+      "types": "./dist/openapi/public-api.d.ts",
+      "default": "./dist/openapi/public-api.js"
+    },
+    "./org-site/og-public-url": {
+      "types": "./dist/org-site/og-public-url.d.ts",
+      "default": "./dist/org-site/og-public-url.js"
+    },
+    "./notifications": {
+      "types": "./dist/notifications/index.d.ts",
+      "default": "./dist/notifications/index.js"
+    }
+  },
+  "scripts": {
+    "build": "rimraf dist tsconfig.tsbuildinfo && tsc && tsc-alias",
+    "dev": "tsc --watch",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "zod": "^4.1.8"
+  },
+  "dependencies": {
+    "@cio/question-types": "workspace:*",
+    "@cio/tsconfig": "workspace:*"
+  },
+  "devDependencies": {
+    "tsc-alias": "^1.8.16",
+    "tsx": "^4.7.1",
+    "typescript": "^5.5.2",
+    "vitest": "^1.2.2",
+    "zod": "^4.1.8"
+  }
+}

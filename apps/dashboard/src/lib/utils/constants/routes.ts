@@ -8,36 +8,44 @@ export const ROUTE = {
   COURSE: '/course',
   LOGIN: '/login',
   SIGN_UP: '/signup',
-  INVITE_TEACHER: '/invite/t',
-  INVITE_STUDENT: '/invite/s',
+  INVITE: '/invite',
   PROFILE: '/profile',
   PEOPLE: '/people',
   DISCUSSIONS: '/discussions',
   ASK: '/ask',
   FORGOT: '/forgot',
   RESET: '/reset',
+  LOGOUT: '/logout',
+  AUTH_FAILED: '/auth-failed',
   VERIFY_EMAIL_ERROR: '/verify-email-error'
 };
 
 export const PUBLIC_ROUTES = [
   `^${ROUTE.HOME}$`,
   ROUTE.LOGIN,
+  ROUTE.LOGOUT,
   ROUTE.SIGN_UP,
-  `^${ROUTE.INVITE_TEACHER}/.*`,
+  `^${ROUTE.INVITE}/.*`,
   ROUTE.FORGOT,
   ROUTE.RESET,
   `^${ROUTE.PAGES}/.*`,
-  `^${ROUTE.COURSE}/.*`,
+  `^${ROUTE.COURSE}/[^/]+(/enroll)?/?$`,
+  `^${ROUTE.COURSE}/[^/]+/lesson/.*`,
+  `^${ROUTE.COURSES}/?$`,
+  '/404',
   `^${ROUTE.VERIFY_EMAIL_ERROR}$`,
-  '/404'
+  ROUTE.AUTH_FAILED,
+  '^/csp-report$'
 ];
+
+export const PUBLIC_API_ROUTES = ['/api/polar/webhook', '/api/lmz', '/api/verify'];
 
 export const ROUTES_TO_HIDE_NAV = [
   `^${ROUTE.LOGIN}$`,
   `^${ROUTE.SIGN_UP}$`,
   ROUTE.LMS_HOME,
-  `^${ROUTE.INVITE_TEACHER}/.*`,
-  `^${ROUTE.INVITE_STUDENT}/.*`,
+  `^${ROUTE.INVITE}/.*`,
+  `^/course/.*/enroll$`,
   `^${ROUTE.FORGOT}$`,
   `^${ROUTE.RESET}$`,
   `^${ROUTE.ONBOARDING}$`,

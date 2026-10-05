@@ -1,18 +1,15 @@
-import { type Writable, get } from 'svelte/store';
-import {
-  lessonDocUpload,
-  lessonVideoUpload
-} from '$lib/components/Course/components/Lesson/store/lessons';
+import { presignApi } from '$features/course/api';
+import { lessonDocUpload, lessonVideoUpload } from '$features/course/components/lesson/store';
 
 import axios from 'axios';
-import { classroomio } from '$lib/utils/services/api';
+import { get } from 'svelte/store';
 
 export type UploadType = 'document' | 'video' | 'generic';
 
 export class GenericUploader {
   public abortController: AbortController | null = null;
   private uploadType: UploadType;
-  private uploadStore: Writable<any>;
+  private uploadStore: typeof lessonDocUpload | typeof lessonVideoUpload;
 
   constructor(uploadType: UploadType) {
     this.uploadType = uploadType;
@@ -21,18 +18,12 @@ export class GenericUploader {
   }
 
   async getDownloadPresignedUrl(keys: string[], type = this.uploadType) {
-    const endpoint =
+    const urls =
       type === 'document'
-        ? classroomio.course.presign.document.download
-        : classroomio.course.presign.video.download;
+        ? await presignApi.getDocumentDownloadUrls(keys)
+        : await presignApi.getVideoDownloadUrls(keys);
 
-    const response = await endpoint.$post({
-      json: {
-        keys
-      }
-    });
-
-    return response.json();
+    return { success: true, urls };
   }
 
   async getAllDownloadPresignedUrl(videoKeys: string[], docKeys: string[]) {
@@ -59,19 +50,25 @@ export class GenericUploader {
   }
 
   async getPresignedUrl(file: File) {
-    const endpoint =
+    const result =
       this.uploadType === 'document'
-        ? classroomio.course.presign.document.upload
-        : classroomio.course.presign.video.upload;
+        ? await presignApi.getDocumentUploadUrl(
+            file?.name ?? '',
+            file?.type ?? '',
+            file.size > 0 ? file.size : undefined
+          )
+        : await presignApi.getVideoUploadUrl(file?.name ?? '', file?.type ?? '', file.size > 0 ? file.size : undefined);
 
-    const response = await endpoint.$post({
-      json: {
-        fileName: file?.name,
-        fileType: file?.type
-      }
-    });
+    if (!result) {
+      throw new Error('Failed to get presigned upload URL');
+    }
 
-    return response.json();
+    return {
+      success: true,
+      url: result.url,
+      fileKey: result.fileKey,
+      message: 'Pre-signed URL generated successfully'
+    };
   }
 
   async uploadFile(params: { url: string; file: File }) {

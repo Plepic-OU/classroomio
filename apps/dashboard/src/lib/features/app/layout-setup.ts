@@ -1,0 +1,116 @@
+import { getFirstOrg, getOrgBySiteName, getOrgsByCustomDomain } from '$features/org/api/org.server';
+
+import type { AccountOrg, PublicOrg } from '$features/app/types';
+import { toPublicOrg } from '$features/app/public-org';
+import type { Cookies } from '@sveltejs/kit';
+import { PUBLIC_IS_SELFHOSTED } from '$env/static/public';
+import { blockedSubdomain } from '$lib/utils/constants/app';
+import { env } from '$env/dynamic/private';
+import { getApiKeyHeaders } from '$lib/utils/services/api/server';
+import { isCustomDomainHost } from '$lib/utils/functions/custom-domain';
+import { isLocalOrPrivateHost } from '@cio/utils/functions';
+
+export interface OrgSiteInfo {
+  isOrgSite: boolean;
+  org: PublicOrg | null;
+  subdomain: string;
+  orgSiteName: string;
+}
+
+export async function getOrgSiteInfo(url: URL, cookies: Cookies): Promise<OrgSiteInfo> {
+  const response: OrgSiteInfo = {
+    orgSiteName: '',
+    subdomain: '',
+    isOrgSite: false,
+    org: null
+  };
+
+  // Self-hosted: single org, single domain
+  if (PUBLIC_IS_SELFHOSTED === 'true') {
+    const apiKeyHeaders = getApiKeyHeaders();
+    const firstOrg = await getFirstOrg(apiKeyHeaders);
+    if (firstOrg) {
+      response.org = toPublicOrg(firstOrg as AccountOrg);
+      response.isOrgSite = true;
+      response.orgSiteName = firstOrg.siteName || '';
+      response.subdomain = '';
+    }
+
+    return response;
+  }
+
+  const isLocalHost = url.host.includes('localhost') || isLocalOrPrivateHost(url.hostname);
+  const tempSiteName = url.searchParams.get('org');
+
+  if (isLocalHost && tempSiteName) {
+    cookies.set('_orgSiteName', tempSiteName, {
+      path: '/'
+    });
+  }
+
+  const _orgSiteName = cookies.get('_orgSiteName');
+  const debugMode = _orgSiteName && _orgSiteName !== 'false';
+
+  const subdomain = getSubdomain(url) || '';
+
+  // Custom domain
+  if (isCustomDomainHost(url)) {
+    console.log('it is custom domain');
+    const apiKeyHeaders = getApiKeyHeaders();
+    const orgs = await getOrgsByCustomDomain(url.hostname, true, apiKeyHeaders);
+
+    if (!orgs || orgs.length === 0) {
+      return response;
+    }
+
+    const org = orgs[0];
+    response.org = toPublicOrg(org as AccountOrg);
+    response.isOrgSite = true;
+    response.orgSiteName = response.org?.siteName || '';
+    response.subdomain = subdomain;
+
+    return response;
+  }
+
+  // Subdomain except blocked ones.
+  if (!blockedSubdomain.includes(subdomain)) {
+    const APP_SUBDOMAINS = env.PRIVATE_APP_SUBDOMAINS?.split(',') || [];
+
+    if (APP_SUBDOMAINS.includes(subdomain)) {
+      return response;
+    }
+
+    response.isOrgSite = debugMode || !!subdomain;
+    response.orgSiteName = debugMode ? _orgSiteName : subdomain;
+
+    if (response.orgSiteName) {
+      const apiKeyHeaders = getApiKeyHeaders();
+      const org = await getOrgBySiteName(response.orgSiteName, apiKeyHeaders);
+      response.org = org ? toPublicOrg(org as AccountOrg) : null;
+    }
+
+    const shouldDeleteCookie = !response.org && _orgSiteName;
+    if (shouldDeleteCookie) {
+      cookies.delete('_orgSiteName', { path: '/' });
+    }
+  }
+
+  return response;
+}
+
+export function getSubdomain(url: URL) {
+  const appHost = env.PRIVATE_APP_HOST;
+  if (!appHost) return null;
+
+  const host = url.hostname.replace('www.', '');
+  const parts = host.split('.');
+  const appHostParts = appHost.split('.');
+  const isAppHost = parts.slice(-appHostParts.length).join('.') === appHost;
+
+  if (isAppHost) {
+    // Subdomain exists only if extra part(s) before main domain
+    return parts.length > appHostParts.length ? parts[0] : null;
+  }
+
+  return null;
+}

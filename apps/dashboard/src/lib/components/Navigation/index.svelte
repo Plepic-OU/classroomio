@@ -1,28 +1,46 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
+  import { resolve } from '$app/paths';
   import { user } from '$lib/utils/store/user';
+  import { basePath } from '$lib/utils/store/app';
   import { isCoursePage } from '$lib/utils/functions/app';
   import { t } from '$lib/utils/functions/translations';
   import type { TCustomLinks } from './types';
-
+  import { Button } from '@cio/ui/base/button';
   import Logo from './Logo.svelte';
   import CustomLinks from './CustomLinks.svelte';
   import AuthButtons from './AuthButtons.svelte';
   import MobileMenu from './MobileMenu.svelte';
 
-  export let disableSignup = false;
-  export let logo: string | undefined = undefined;
-  export let orgName: string | undefined = undefined;
-  export let isOrgSite = false;
-  export let backgroundColor = 'bg-white dark:bg-black';
-  export let customLinks: TCustomLinks | undefined = undefined;
+  interface Props {
+    disableSignup?: boolean;
+    logo?: string | undefined;
+    orgName?: string | undefined;
+    isOrgSite?: boolean;
+    backgroundColor?: string;
+    customLinks?: TCustomLinks | undefined;
+  }
+
+  let {
+    disableSignup = false,
+    logo = undefined,
+    orgName = undefined,
+    isOrgSite = false,
+    backgroundColor = 'bg-white dark:bg-black',
+    customLinks = undefined
+  }: Props = $props();
 
   let navClass = '';
-  let mobileMenuOpen = false;
+  let mobileMenuOpen = $state(false);
+  let is404Page = $derived(page.url.pathname?.includes('/404'));
 
-  $: redirect = isCoursePage($page.url.pathname) ? `?redirect=${$page.url.pathname}` : '';
-  $: showLinks =
-    customLinks && customLinks.show && customLinks.links && customLinks.links.length > 0;
+  let redirect = $derived(isCoursePage(page.url.pathname) ? `?redirect=${page.url.pathname}` : '');
+  let showLinks = $derived(customLinks && customLinks.show && customLinks.links && customLinks.links.length > 0);
+
+  let gotoHref = $derived(resolve($basePath !== '#' ? $basePath : '/lms', {}));
+  let gotoLabel = $derived(
+    $basePath === '/lms' || $basePath === '#' ? 'navigation.goto_lms' : 'navigation.goto_dashboard'
+  );
 
   function toggleMobileMenu() {
     mobileMenuOpen = !mobileMenuOpen;
@@ -30,52 +48,46 @@
 </script>
 
 <nav
-  class="{navClass} {backgroundColor} sticky top-0 z-50 flex w-full border-b border-l-0 border-r-0 border-t-0 border-gray-300 px-2 py-1"
+  class="{navClass} {backgroundColor} sticky top-0 z-50 flex w-full border-t-0 border-r-0 border-b border-l-0 border-gray-300 px-2 py-1"
 >
   <ul class="flex w-full items-center">
     <Logo {logo} {orgName} />
 
-    <span class="flex-grow" />
+    <span class="grow"></span>
 
     <!-- Mobile Menu Button - Only show when custom links exist -->
     {#if isOrgSite && showLinks}
       <button
-        class="mobile-menu-btn hover:text-primary-600 rounded-md p-2 text-gray-700 transition-colors duration-200 hover:bg-gray-100 lg:hidden"
-        on:click={toggleMobileMenu}
+        class="mobile-menu-btn ui:hover:text-primary rounded-md p-2 text-gray-700 transition-colors duration-200 hover:bg-gray-100 lg:hidden"
+        onclick={toggleMobileMenu}
         aria-label="Toggle mobile menu"
       >
         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M4 6h16M4 12h16M4 18h16"
-          ></path>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
         </svg>
       </button>
     {/if}
 
     {#if customLinks && showLinks}
       <CustomLinks {customLinks} />
+      <MobileMenu bind:mobileMenuOpen {customLinks} {disableSignup} {redirect} />
     {/if}
 
     {#if $user.isLoggedIn}
       {#if isOrgSite}
-        <li><a class="block" href="/lms"> {$t('navigation.goto_lms')} </a></li>
+        <li>
+          <Button variant="secondary" size="sm" href={gotoHref}>{$t(gotoLabel)}</Button>
+        </li>
       {/if}
-    {:else if isOrgSite && !$page.url.pathname?.includes('/404')}
+    {:else if isOrgSite && !is404Page}
       <!-- Hide login/signup buttons on mobile when custom links exist -->
       <div class="hidden lg:block">
         <AuthButtons {disableSignup} {redirect} />
       </div>
-    {:else if !isOrgSite && !$page.url.pathname?.includes('/404')}
+    {:else if !isOrgSite && !is404Page}
       <AuthButtons {disableSignup} {redirect} />
     {/if}
   </ul>
-
-  {#if showLinks}
-    <MobileMenu bind:mobileMenuOpen {customLinks} {disableSignup} {redirect} />
-  {/if}
 </nav>
 
 <style>
@@ -90,17 +102,6 @@
     clear: both;
   }
 
-  a {
-    text-decoration: none;
-    color: var(--main-primary-color);
-    padding: 0 1.5em;
-    font-weight: 700;
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    flex-direction: column;
-  }
-
   /* Mobile menu button styles */
   .mobile-menu-btn {
     display: none;
@@ -112,10 +113,6 @@
     }
     ul {
       align-items: center;
-    }
-
-    a {
-      padding: 0 0.5em;
     }
 
     .mobile-menu-btn {

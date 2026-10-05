@@ -1,0 +1,301 @@
+import { AppError, ErrorCodes } from '@api/utils/errors';
+import {
+  generateTranscriptVttPresignedUrl,
+  generateVideoDownloadPresignedUrls,
+  TRANSCRIPT_VTT_PRESIGN_SECONDS
+} from '@cio/core/utils/s3';
+import { fetchQuestionsAndOptions, transformQuestions } from '@api/services/exercise/utils';
+import { getMediaTranscriptByAsset } from '@cio/db/queries';
+import { getAssetsByIds } from '@cio/db/queries/assets';
+import { mintHlsToken } from '@cio/core/services/assets/assets';
+import {
+  getCourseRowBySlug,
+  getPublicCourseItem as getPublicCourseItemQuery,
+  getPublicLessonMarkdownSource,
+  getPublicCourseTreeBySlug,
+  type PublicCourseItemContent,
+  type PublicCourseTree
+} from '@cio/db/queries/course';
+import { formatLessonMarkdownDocument } from '@api/utils/html-to-markdown';
+import { getExerciseWithRelationsOptimized } from '@cio/db/queries/exercise';
+import { getExerciseSectionsByExerciseId } from '@cio/db/queries/exercise/exercise-section';
+
+/**
+ * Anonymous-safe: fetch the full tree for a published public course by slug.
+ * Callers should return 404 when this resolves to `null`.
+ */
+export async function getPublicCourseTreeService(courseSlug: string): Promise<PublicCourseTree | null> {
+  try {
+    return await getPublicCourseTreeBySlug(courseSlug);
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to load public course', ErrorCodes.COURSE_FETCH_FAILED, 500);
+  }
+}
+
+export type PublicItemResponse =
+  | (Omit<Extract<PublicCourseItemContent, { kind: 'lesson' }>, 'courseOrganizationId'> & { kind: 'lesson' })
+  | (Extract<PublicCourseItemContent, { kind: 'exercise' }> & {
+      kind: 'exercise';
+      questions: PublicExercisePayload;
+    });
+
+export interface PublicExercisePayload {
+  unsectioned: PublicExerciseQuestion[];
+  sections: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    order: number;
+    colorTheme: string;
+    afterBehavior: unknown;
+    questions: PublicExerciseQuestion[];
+  }>;
+}
+
+export interface PublicExerciseQuestion {
+  id: number | string;
+  title: string;
+  questionTypeId: number;
+  questionTypeKey: string;
+  points: number;
+  order: number | null;
+  settings: Record<string, unknown>;
+  options: Array<{
+    id: number | string;
+    label: string;
+    /** Answer keys are intentionally shipped to the client for PUBLIC courses. */
+    isCorrect: boolean;
+    settings: Record<string, unknown>;
+  }>;
+}
+
+/**
+ * Anonymous-safe: fetch a single lesson or exercise by its per-course slug.
+ * For exercises, questions + options are returned with answer keys included
+ * because PUBLIC courses grade entirely on the client.
+ */
+/**
+ * Mint a `cio_hls` cookie for an anonymous learner viewing a public
+ * lesson. The asset id is **derived from the public course tree**, not
+ * accepted from the caller — so a learner who only knows a random asset
+ * UUID cannot mint a cookie. They have to know a public course slug +
+ * lesson slug whose video actually exposes the asset.
+ */
+export async function issuePublicHlsCookieService(courseSlug: string, itemSlug: string) {
+  try {
+    const item = await getPublicCourseItemQuery(courseSlug, itemSlug);
+    if (!item || item.kind !== 'lesson') {
+      throw new AppError('Public lesson not found', ErrorCodes.NOT_FOUND, 404);
+    }
+
+    const video = item.video;
+    if (video?.type !== 'upload' || !video.assetId) {
+      throw new AppError('Lesson has no playable HLS asset', ErrorCodes.VALIDATION_ERROR, 400);
+    }
+
+    const assetId = video.assetId;
+    const assets = await getAssetsByIds([assetId], item.courseOrganizationId ?? undefined);
+    const asset = assets[0];
+    if (!asset?.hlsManifestKey) {
+      throw new AppError('Lesson has no playable HLS asset', ErrorCodes.VALIDATION_ERROR, 400);
+    }
+
+    return await mintHlsToken(assetId);
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError(
+      error instanceof Error ? error.message : 'Failed to issue HLS cookie',
+      ErrorCodes.INTERNAL_ERROR,
+      500
+    );
+  }
+}
+
+export async function getPublicCourseItemService(
+  courseSlug: string,
+  itemSlug: string
+): Promise<PublicItemResponse | null> {
+  try {
+    const baseItem = await getPublicCourseItemQuery(courseSlug, itemSlug);
+    if (!baseItem) return null;
+
+    if (baseItem.kind === 'lesson') {
+      const { courseOrganizationId, ...lesson } = baseItem;
+
+      let video = lesson.video;
+
+      if (video?.type === 'upload') {
+        let storageKey: string | undefined;
+        let hlsManifestKey: string | null = null;
+
+        if (video.assetId) {
+          const assets = await getAssetsByIds([video.assetId], courseOrganizationId ?? undefined);
+          storageKey = assets[0]?.storageKey ?? undefined;
+          hlsManifestKey = assets[0]?.hlsManifestKey ?? null;
+        }
+
+        if (!storageKey && video.key) {
+          storageKey = video.key;
+        }
+
+        // HLS assets: serve the manifest URL via the api route (auth'd by
+        // the cio_hls cookie that the public-cookie endpoint mints when the
+        // learner loads the lesson). Don't presign storageKey — for HLS
+        // it's null anyway.
+        if (hlsManifestKey) {
+          const { key: _omitKey, ...rest } = video;
+          video = {
+            ...rest,
+            link: `/hls/${hlsManifestKey}`.replace(/\/{2,}/g, '/'),
+            hls: true
+          };
+        } else if (storageKey) {
+          const urls = await generateVideoDownloadPresignedUrls([storageKey]);
+          const signedLink = urls[storageKey];
+
+          if (signedLink) {
+            const { key: _omitKey, ...rest } = video;
+            video = { ...rest, link: signedLink };
+          }
+        }
+      }
+
+      if (video?.assetId && courseOrganizationId) {
+        const transcriptRow = await getMediaTranscriptByAsset(video.assetId, courseOrganizationId);
+        let transcript: {
+          vttUrl: string;
+          vttUrlExpiresAt: string;
+          language: string;
+        } | null = null;
+
+        if (transcriptRow) {
+          const vttUrl = await generateTranscriptVttPresignedUrl(transcriptRow.vttStorageKey, transcriptRow.vttBucket);
+          transcript = {
+            vttUrl,
+            vttUrlExpiresAt: new Date(Date.now() + TRANSCRIPT_VTT_PRESIGN_SECONDS * 1000).toISOString(),
+            language: transcriptRow.language
+          };
+        }
+
+        video = { ...video, transcript };
+      }
+
+      if (video?.key !== undefined) {
+        const { key: _omitS3Key, ...withoutKey } = video;
+        video = withoutKey;
+      }
+
+      return { ...lesson, video };
+    }
+
+    if (!baseItem.isUnlocked) {
+      return {
+        ...baseItem,
+        questions: {
+          unsectioned: [],
+          sections: []
+        }
+      };
+    }
+
+    const { exercise, questions } = await getExerciseWithRelationsOptimized(baseItem.id);
+    const questionTypeMap = new Map(questions.map((question) => [question.questionType.id, question.questionType]));
+    const allOptions = questions.flatMap((question) => question.options ?? []);
+    const strippedQuestions = questions.map(({ questionType: _type, options: _options, ...rest }) => rest);
+    const transformed = transformQuestions(strippedQuestions, allOptions, questionTypeMap);
+    const sectionRows = await getExerciseSectionsByExerciseId(exercise.id);
+
+    const sectionMap = new Map(sectionRows.map((section) => [section.id, section]));
+    const unsectioned: PublicExerciseQuestion[] = [];
+    const sectionBuckets = new Map<string, PublicExerciseQuestion[]>();
+
+    for (const question of transformed) {
+      // `transformQuestions` only keeps `{ id, label }` on `question.questionType`, so the DB
+      // `typename` (e.g. RADIO) must come from the map built before stripping relations.
+      const questionTypeRow = questionTypeMap.get(question.questionTypeId);
+      const payloadQuestion: PublicExerciseQuestion = {
+        id: question.id,
+        title: question.title ?? '',
+        questionTypeId: question.questionTypeId,
+        questionTypeKey: questionTypeRow?.typename ?? '',
+        points: question.points ?? 0,
+        order: typeof question.order === 'number' ? question.order : null,
+        settings: (question.settings ?? {}) as Record<string, unknown>,
+        options: (question.options ?? []).map((option) => ({
+          id: option.id,
+          label: option.label ?? '',
+          isCorrect: option.isCorrect ?? false,
+          settings: (option.settings ?? {}) as Record<string, unknown>
+        }))
+      };
+
+      const sectionId = question.exerciseSectionId ?? null;
+      if (sectionId && sectionMap.has(sectionId)) {
+        const bucket = sectionBuckets.get(sectionId) ?? [];
+        bucket.push(payloadQuestion);
+        sectionBuckets.set(sectionId, bucket);
+      } else {
+        unsectioned.push(payloadQuestion);
+      }
+    }
+
+    const sections = sectionRows.map((section) => ({
+      id: section.id,
+      title: section.title,
+      description: section.description,
+      order: Number(section.order),
+      colorTheme: section.colorTheme,
+      afterBehavior: section.afterBehavior,
+      questions: sectionBuckets.get(section.id) ?? []
+    }));
+
+    return {
+      ...baseItem,
+      questions: {
+        unsectioned,
+        sections
+      }
+    };
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    console.error('getPublicCourseItemService error:', error);
+    throw new AppError('Failed to load public course item', ErrorCodes.COURSE_FETCH_FAILED, 500);
+  }
+}
+
+/**
+ * Resolve a course slug to the backing course row with minimal fields. Used by
+ * rate limiting / logging that need the course id without the full tree.
+ */
+export async function resolvePublicCourseBySlug(courseSlug: string) {
+  return getCourseRowBySlug(courseSlug);
+}
+
+/**
+ * Anonymous-safe: convert a public lesson to Markdown when the teacher has
+ * opted the course in. Returns `null` when the lesson is missing, locked,
+ * not a lesson, or `metadata.allowMarkdownExport` is not true — callers 404.
+ */
+export async function getPublicLessonMarkdownService(courseSlug: string, itemSlug: string): Promise<string | null> {
+  try {
+    const source = await getPublicLessonMarkdownSource(courseSlug, itemSlug);
+
+    if (!source) return null;
+    if (!source.allowMarkdownExport) return null;
+    if (!source.isUnlocked) return null;
+
+    const courseTitle = source.courseTitle;
+    const lessonTitle = source.lessonTitle;
+    const bodyHtml = source.body;
+
+    return formatLessonMarkdownDocument({
+      courseTitle,
+      lessonTitle,
+      bodyHtml
+    });
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to export lesson markdown', ErrorCodes.COURSE_FETCH_FAILED, 500);
+  }
+}

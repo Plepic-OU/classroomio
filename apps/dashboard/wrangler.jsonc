@@ -1,0 +1,19 @@
+{
+  "name": "selfhosted-ui",
+  "main": ".svelte-kit/cloudflare/_worker.js",
+  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_date": "2026-03-13",
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".svelte-kit/cloudflare"
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
+  "secrets": {
+    "required": ["PRIVATE_SERVER_KEY", "PRIVATE_SERVER_URL", "PUBLIC_IS_SELFHOSTED", "ORIGIN"]
+  }
+}

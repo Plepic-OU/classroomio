@@ -5,3 +5,26 @@ build
 _template
 supabase
 static
+skills
+dist
+docker
+packages/storybook/storybook-static
+
+**/course-app
+apps/docs
+apps/api/static
+
+pnpm-lock.yaml
+**/*.md
+**/*.html
+
+
+packages/ui/src/output.css
+
+*.sql
+*.env*
+
+# No parser for these
+.prettierignore
+.dockerignore
+**/Dockerfile

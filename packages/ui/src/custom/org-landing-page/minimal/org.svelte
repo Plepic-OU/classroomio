@@ -1,0 +1,108 @@
+<script lang="ts">
+  import type { OrgLandingPageProps } from '../types';
+  import OrgLandingPageEmbed from '../embed.svelte';
+  import OrgLandingPageLinks from '../links.svelte';
+  import OrgLandingPageCallout from '../callout.svelte';
+  import OrgLandingPageFooter from '../landing-page-footer.svelte';
+  import MinimalNav from './nav.svelte';
+  import MinimalHero from './hero.svelte';
+  import MinimalCourseCard from './course-card.svelte';
+  import OrgLandingPageCoursesEmpty from '../courses-empty.svelte';
+  import LearningPathCard from '../learning-path-card.svelte';
+  import { Button } from '../../../base/button';
+  import LandingThemeScope from '../landing-theme-scope.svelte';
+  import EditableLandingSection from '../editable-section.svelte';
+
+  let {
+    orgName,
+    logoUrl,
+    navItems,
+    authAction,
+    hero,
+    courses,
+    hasMoreCourses = false,
+    coursesLoaded = true,
+    disableCourseLinks = false,
+    learningPaths,
+    hasMoreLearningPaths = false,
+    embed,
+    callout,
+    links,
+    footer,
+    labels,
+    learnerAccount
+  }: OrgLandingPageProps = $props();
+</script>
+
+<LandingThemeScope theme="minimal" class="ui:font-sans">
+  <main>
+    <MinimalHero {hero}>
+      {#snippet navigation()}
+        <MinimalNav {orgName} {logoUrl} {navItems} {authAction} {learnerAccount} />
+      {/snippet}
+    </MinimalHero>
+
+    {#if learningPaths && learningPaths.length > 0}
+      <section class="ui:py-20 ui:px-4">
+        <div class="ui:max-w-[1200px] ui:mx-auto">
+          <h2 class="ui:text-2xl ui:font-semibold ui:mb-8">{labels?.learningPathsHeading ?? 'Learning Paths'}</h2>
+          <div class="ui:grid ui:grid-cols-1 ui:md:grid-cols-2 ui:gap-6">
+            {#each learningPaths as path (path.id)}
+              <LearningPathCard {path} {disableCourseLinks} {labels} />
+            {/each}
+          </div>
+          {#if hasMoreLearningPaths}
+            <div class="ui:mt-10 ui:flex ui:justify-center">
+              <Button
+                href={disableCourseLinks ? undefined : '/learning-paths'}
+                variant="outline"
+                size="lg"
+                disabled={disableCourseLinks}
+              >
+                {labels?.browseLearningPathsLabel ?? 'View more learning paths'}
+              </Button>
+            </div>
+          {/if}
+        </div>
+      </section>
+    {/if}
+
+    <EditableLandingSection sectionKey="courses">
+      <section class="ui:py-20 ui:px-4">
+        <div class="ui:max-w-[1200px] ui:mx-auto">
+          <h2 class="ui:text-2xl ui:font-semibold ui:mb-8">{labels?.catalogHeading ?? 'Our Courses'}</h2>
+          {#if coursesLoaded && courses.length === 0}
+            <OrgLandingPageCoursesEmpty {labels} />
+          {:else}
+            <div class="ui:grid ui:grid-cols-1 ui:md:grid-cols-2 ui:gap-6">
+              {#each courses as course, index (course.id)}
+                <MinimalCourseCard {course} {disableCourseLinks} {labels} />
+              {/each}
+            </div>
+
+            {#if hasMoreCourses}
+              <div class="ui:mt-10 ui:flex ui:justify-center">
+                <Button
+                  href={disableCourseLinks ? undefined : '/courses'}
+                  variant="outline"
+                  size="lg"
+                  disabled={disableCourseLinks}
+                >
+                  {labels?.browseCoursesLabel ?? 'View more courses'}
+                </Button>
+              </div>
+            {/if}
+          {/if}
+        </div>
+      </section>
+    </EditableLandingSection>
+  </main>
+
+  <OrgLandingPageLinks {links} {labels} variant="minimal" />
+
+  <OrgLandingPageEmbed {embed} {labels} variant="minimal" />
+
+  <OrgLandingPageCallout {callout} {labels} variant="minimal" />
+
+  <OrgLandingPageFooter {orgName} {logoUrl} {footer} variant="minimal" />
+</LandingThemeScope>

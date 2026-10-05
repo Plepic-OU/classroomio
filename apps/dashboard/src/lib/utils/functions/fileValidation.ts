@@ -2,14 +2,7 @@
  * Server-side file type validation utilities for preventing malicious uploads
  * Specifically designed to prevent SVG XSS attacks and other security issues
  */
-
-export const ALLOWED_IMAGE_TYPES = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/gif',
-  'image/webp'
-] as const;
+export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'] as const;
 
 export const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'] as const;
 
@@ -19,7 +12,7 @@ export const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'] as 
  * @returns boolean indicating if file type is allowed
  */
 export function validateImageType(file: File): boolean {
-  return ALLOWED_IMAGE_TYPES.includes(file.type as any);
+  return ALLOWED_IMAGE_TYPES.includes(file.type as (typeof ALLOWED_IMAGE_TYPES)[number]);
 }
 
 /**
@@ -29,7 +22,7 @@ export function validateImageType(file: File): boolean {
  */
 export function validateImageExtension(filename: string): boolean {
   const extension = filename.toLowerCase().substring(filename.lastIndexOf('.'));
-  return ALLOWED_EXTENSIONS.includes(extension as any);
+  return ALLOWED_EXTENSIONS.includes(extension as (typeof ALLOWED_EXTENSIONS)[number]);
 }
 
 /**
@@ -72,7 +65,7 @@ export function validateImageUpload(file: File): { isValid: boolean; error?: str
  */
 export function sanitizeFilename(filename: string): string {
   // Remove path traversal attempts
-  let sanitized = filename.replace(/[\/\\]/g, '');
+  let sanitized = filename.replace(/[/\\]/g, '');
 
   // Remove special characters that could cause issues
   sanitized = sanitized.replace(/[<>:"|?*]/g, '');

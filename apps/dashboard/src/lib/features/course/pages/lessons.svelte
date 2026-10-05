@@ -1,0 +1,121 @@
+<script lang="ts">
+  import { goto } from '$app/navigation';
+  import { page } from '$app/state';
+  import { Empty } from '@cio/ui/custom/empty';
+  import { Spinner } from '@cio/ui/base/spinner';
+  import BookOpenIcon from '@lucide/svelte/icons/book-open';
+  import TemplateUpdateAlert from '$features/course/components/template-update-alert.svelte';
+  import ContentList from '$features/course/components/lesson/content-list.svelte';
+  import ContentSectionList from '$features/course/components/lesson/content-section-list.svelte';
+  import CourseContentIcon from '$features/course/components/course-content-icon.svelte';
+  import { courseApi } from '$features/course/api';
+  import { t } from '$lib/utils/functions/translations';
+  import { isOrgStudent } from '$lib/utils/store/app';
+  import { getCourseContent } from '$features/course/utils/content';
+  import { getFirstIncompleteNavigableContent } from '$features/course/utils/content-navigation';
+  import { ContentType } from '@cio/utils/constants/content';
+
+  interface Props {
+    courseId: string;
+    reorder?: boolean;
+  }
+
+  let { courseId, reorder = $bindable(false) }: Props = $props();
+
+  const contentData = $derived(getCourseContent(courseApi.course));
+  const contentLength = $derived(contentData.grouped ? contentData.sections.length : contentData.items.length);
+  const contentItems = $derived(
+    contentData.grouped ? contentData.sections.flatMap((section) => section.items) : contentData.items
+  );
+  const navigableContentItems = $derived(
+    contentItems.filter((item) => item.type === ContentType.Lesson || item.type === ContentType.Exercise)
+  );
+
+  const sectionsTotal = $derived(
+    contentData.grouped ? contentData.sections.filter((section) => section.id !== 'ungrouped').length : 0
+  );
+  const lessonsTotal = $derived(contentItems.filter((item) => item.type === ContentType.Lesson).length);
+  const exercisesTotal = $derived(contentItems.filter((item) => item.type === ContentType.Exercise).length);
+
+  let isFetching: boolean = $state(false);
+  let hasHandledNext = $state(false);
+
+  const isCourseLoadedForThisPage = $derived(courseApi.course?.id === courseId);
+  const canResolveNext = $derived(isCourseLoadedForThisPage && navigableContentItems.length > 0 && !hasHandledNext);
+  const isNextRequested = $derived(page.url.searchParams.get('next') === 'true');
+  const hasNoNavigableContent = $derived(isCourseLoadedForThisPage && navigableContentItems.length === 0);
+  const isResolvingNext = $derived(isNextRequested && !hasNoNavigableContent);
+
+  $effect(() => {
+    if (!canResolveNext || isFetching || !isNextRequested) return;
+
+    hasHandledNext = true;
+    const incompleteContent = getFirstIncompleteNavigableContent(courseApi.course);
+    if (incompleteContent) {
+      if (incompleteContent.type === ContentType.Lesson) {
+        goto(`/courses/${courseId}/lessons/${incompleteContent.id}`);
+      } else {
+        goto(`/courses/${courseId}/exercises/${incompleteContent.id}`);
+      }
+    } else {
+      goto(`/courses/${courseId}/lessons`, { replaceState: true });
+    }
+  });
+</script>
+
+<TemplateUpdateAlert />
+
+{#if isResolvingNext}
+  <div class="flex justify-center py-16">
+    <Spinner />
+  </div>
+{:else if contentLength > 0}
+  <div
+    class="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3"
+    role="region"
+    aria-label={t.get('course.navItem.lessons.heading_v2')}
+  >
+    <div class="ui:border-border flex flex-col gap-1 rounded-lg border px-4 py-3">
+      <div class="ui:text-muted-foreground flex items-center gap-2 text-xs font-medium">
+        <CourseContentIcon type={ContentType.Section} size={14} />
+        <span>{$t('course.navItem.lessons.stats.sections')}</span>
+      </div>
+      <p class="text-2xl font-semibold tabular-nums">{sectionsTotal}</p>
+    </div>
+    <div class="ui:border-border flex flex-col gap-1 rounded-lg border px-4 py-3">
+      <div class="ui:text-muted-foreground flex items-center gap-2 text-xs font-medium">
+        <CourseContentIcon type={ContentType.Lesson} size={14} />
+        <span>{$t('course.navItem.lessons.stats.lessons')}</span>
+      </div>
+      <p class="text-2xl font-semibold tabular-nums">{lessonsTotal}</p>
+    </div>
+    <div class="ui:border-border flex flex-col gap-1 rounded-lg border px-4 py-3">
+      <div class="ui:text-muted-foreground flex items-center gap-2 text-xs font-medium">
+        <CourseContentIcon type={ContentType.Exercise} size={14} />
+        <span>{$t('course.navItem.lessons.stats.exercises')}</span>
+      </div>
+      <p class="text-2xl font-semibold tabular-nums">{exercisesTotal}</p>
+    </div>
+  </div>
+
+  {#if reorder}
+    <p class="text-center text-xs text-gray-400 italic dark:text-white">
+      {$t('course.navItem.lessons.drag')}
+    </p>
+  {/if}
+
+  {#if contentData.grouped}
+    <ContentSectionList {reorder} />
+  {:else}
+    <ContentList {reorder} />
+  {/if}
+{:else}
+  <Empty
+    title={$t('course.navItem.lessons.body_header')}
+    description={$isOrgStudent
+      ? $t('course.navItem.lessons.student_body_content')
+      : $t('course.navItem.lessons.body_content')}
+    icon={BookOpenIcon}
+    variant="page"
+  />
+{/if}

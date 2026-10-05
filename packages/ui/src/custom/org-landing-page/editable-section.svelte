@@ -1,0 +1,73 @@
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+  import { getLandingPageEditContext, type LandingSectionKey } from './edit-context';
+  import { cn } from '../../tools';
+
+  interface Props {
+    sectionKey: LandingSectionKey;
+    /** Extra classes applied to the wrapper (only used when edit context is active). */
+    class?: string;
+    /**
+     * Where the section cap sits. `above` hangs it over the section's top-left edge (the default),
+     * `inside` tucks it into the section's top-right corner — use it for sections flush against the
+     * top of the page (navigation), where a cap above would sit outside the visible preview.
+     */
+    capPlacement?: 'above' | 'inside';
+    children: Snippet;
+  }
+
+  let { sectionKey, class: className, capPlacement = 'above', children }: Props = $props();
+
+  const ctx = getLandingPageEditContext();
+  const selected = $derived(ctx?.selectedKey() === sectionKey);
+  const Icon = $derived(ctx?.iconFor(sectionKey));
+
+  function handleClick(event: MouseEvent) {
+    if (!ctx) return;
+    event.stopPropagation();
+    ctx.selectKey(sectionKey);
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (!ctx) return;
+    // Only the wrapper itself selects on Enter/Space; descendants such as a details/summary
+    // disclosure, button or link must keep their own keyboard behaviour.
+    if (event.target !== event.currentTarget) return;
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    event.stopPropagation();
+    ctx.selectKey(sectionKey);
+  }
+</script>
+
+{#if !ctx}
+  {@render children()}
+{:else}
+  <div
+    data-landing-section={sectionKey}
+    role="button"
+    tabindex="0"
+    aria-pressed={selected}
+    onclick={handleClick}
+    onkeydown={handleKeydown}
+    class={cn(
+      'ui:group ui:relative ui:outline-none ui:cursor-pointer ui:border-y-2 ui:border-dashed ui:transition-colors',
+      selected ? 'ui:border-primary' : 'ui:border-transparent ui:hover:border-primary/40',
+      className
+    )}
+  >
+    <div
+      class={cn(
+        'ui:absolute ui:top-0 ui:z-30 ui:flex ui:items-center ui:gap-1.5 ui:bg-primary ui:px-2 ui:py-1 ui:text-xs ui:font-medium ui:text-primary-foreground ui:shadow-sm ui:pointer-events-none ui:transition-opacity',
+        capPlacement === 'inside' ? 'ui:right-0 ui:rounded-bl-md' : 'ui:left-0 ui:-translate-y-full ui:rounded-t-md',
+        selected ? 'ui:opacity-100' : 'ui:opacity-0 ui:group-hover:opacity-100'
+      )}
+    >
+      {#if Icon}
+        <Icon size={14} class="ui:size-3.5" />
+      {/if}
+      <span>{ctx.labelFor(sectionKey)}</span>
+    </div>
+    {@render children()}
+  </div>
+{/if}

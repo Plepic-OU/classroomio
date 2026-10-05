@@ -1,0 +1,102 @@
+import { dev } from '$app/environment';
+import { PUBLIC_IS_SELFHOSTED } from '$env/static/public';
+import { get } from 'svelte/store';
+import { globalStore } from '$lib/utils/store/app';
+
+const USERJOT_PROJECT_ID = 'cm4a6vcmp00jpmdb5n66rmkzz';
+
+let isInitialized = false;
+
+function isWidgetAllowed(): boolean {
+  if (dev) return false;
+  if (PUBLIC_IS_SELFHOSTED === 'true') return false;
+  if (get(globalStore).isOrgSite) return false;
+  if (window.location.pathname === '/widget-preview') return false;
+
+  return true;
+}
+
+function ensureSdkLoaded(): void {
+  if (window.uj) return;
+
+  window.$ujq = window.$ujq || [];
+  window.uj =
+    window.uj ||
+    (new Proxy({} as Window['uj'], {
+      get: (_, prop) =>
+        prop === 'then'
+          ? undefined
+          : (...args: unknown[]) => {
+              window.$ujq.push([prop, ...args]);
+            }
+    }) as Window['uj']);
+
+  const script = document.createElement('script');
+  script.type = 'module';
+  script.async = true;
+  script.src = 'https://cdn.userjot.com/sdk/v3/uj.js';
+  // Browsers hide the nonce attribute in the DOM; read via the IDL property.
+  const nonceSource = document.querySelector('script[nonce]') as HTMLScriptElement | null;
+  const nonce = nonceSource?.nonce || nonceSource?.getAttribute('nonce');
+  if (nonce) script.setAttribute('nonce', nonce);
+  document.head.appendChild(script);
+}
+
+export function initUserJot(isOrgSite: boolean): void {
+  if (isInitialized) return;
+  if (isOrgSite) return;
+  if (!isWidgetAllowed()) return;
+
+  ensureSdkLoaded();
+
+  window.uj.init(USERJOT_PROJECT_ID, {
+    widget: {
+      launcher: true,
+      position: 'right',
+      theme: 'auto'
+    }
+  });
+
+  isInitialized = true;
+}
+
+type UserJotIdentity = {
+  id: string;
+  email?: string;
+  fullname?: string | null;
+  avatarUrl?: string | null;
+};
+
+export function identifyUserJotUser({ id, email, fullname, avatarUrl }: UserJotIdentity): void {
+  if (!isInitialized) return;
+  if (!isWidgetAllowed()) return;
+
+  const [firstName, ...rest] = (fullname ?? '').trim().split(/\s+/);
+  const lastName = rest.join(' ');
+
+  window.uj.identify({
+    user: {
+      id,
+      email,
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+      avatar: avatarUrl ?? undefined
+    }
+  });
+}
+
+export function clearUserJotUser(): void {
+  if (!isInitialized) return;
+  if (!isWidgetAllowed()) return;
+
+  window.uj.logout();
+}
+
+export type UserJotWidgetSection = 'feedback' | 'roadmap' | 'updates';
+
+export function showUserJotWidget(section: UserJotWidgetSection): void {
+  if (!isInitialized) return;
+  if (!isWidgetAllowed()) return;
+
+  window.uj.open({ to: section });
+}

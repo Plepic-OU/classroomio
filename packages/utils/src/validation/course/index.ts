@@ -1,0 +1,17 @@
+/**
+ * Course Validation Module
+ *
+ * Exports all course-related validation schemas and types.
+ * Use these schemas for validating course operations across API and frontend.
+ */
+
+export * from './course';
+export * from './course-template';
+export * from './template-sync';
+export * from './course-type';
+export * from './callout';
+export * from './compliance';
+export * from './public-course';
+export * from './section';
+export * from './invite';
+export * from './people';

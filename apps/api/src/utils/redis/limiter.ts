@@ -3,63 +3,72 @@ import {
   DEFAULT_WINDOW_MS,
   ERROR_MESSAGES,
   RATE_LIMIT_KEY_PREFIX
-} from '$src/constants/rate-limiter';
+} from '@api/constants/rate-limiter';
 
-import { Redis } from 'ioredis';
-import { redis } from './redis';
+import { redis, type RedisClient } from '@cio/core/utils/redis/redis';
+
+export interface RateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  reservationId: string;
+  resetTime: number;
+}
 
 export class RedisRateLimiter {
-  private redis: Redis;
+  private redis: RedisClient;
   private windowMs: number;
   private maxRequests: number;
 
-  constructor(
-    redis: Redis,
-    windowMs: number = DEFAULT_WINDOW_MS,
-    maxRequests: number = DEFAULT_MAX_REQUESTS
-  ) {
+  constructor(redis: RedisClient, windowMs: number = DEFAULT_WINDOW_MS, maxRequests: number = DEFAULT_MAX_REQUESTS) {
     this.redis = redis;
     this.windowMs = windowMs;
     this.maxRequests = maxRequests;
   }
 
-  async isAllowed(
-    key: string
-  ): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
+  async isAllowed(key: string): Promise<RateLimitResult> {
     const now = Date.now();
     const windowStart = now - this.windowMs;
     const keyWithPrefix = `${RATE_LIMIT_KEY_PREFIX}${key}`;
+    const reservationId = `${now}-${Math.random()}`;
 
-    // Use Redis pipeline for atomic operations
-    const pipeline = this.redis.pipeline();
+    // Use Redis multi (transaction) for atomic operations
+    const multi = this.redis.multi();
 
     // Remove expired entries
-    pipeline.zremrangebyscore(keyWithPrefix, '-inf', windowStart);
+    multi.zRemRangeByScore(keyWithPrefix, '-inf', windowStart);
 
     // Count current requests in window
-    pipeline.zcard(keyWithPrefix);
+    multi.zCard(keyWithPrefix);
 
     // Add current request
-    pipeline.zadd(keyWithPrefix, now, `${now}-${Math.random()}`);
+    multi.zAdd(keyWithPrefix, { score: now, value: reservationId });
 
     // Set expiration for the key
-    pipeline.expire(keyWithPrefix, Math.ceil(this.windowMs / 1000));
+    multi.expire(keyWithPrefix, Math.ceil(this.windowMs / 1000));
 
-    const results = await pipeline.exec();
+    const results = await multi.exec();
 
-    if (!results || results.some((result) => result[0] !== null)) {
+    if (!results || results.some((result) => result === null)) {
       throw new Error(ERROR_MESSAGES.REDIS_PIPELINE_FAILED);
     }
 
-    const currentCount = results[1][1] as number;
+    // results[0] is zRemRangeByScore result (number of removed elements)
+    // results[1] is zCard result (current count before adding new request)
+    const currentCount = results[1] as number;
     const remaining = Math.max(0, this.maxRequests - currentCount - 1);
     const resetTime = now + this.windowMs;
 
     return {
       allowed: currentCount < this.maxRequests,
       remaining,
+      reservationId,
       resetTime
     };
+  }
+
+  async release(key: string, reservationId: string): Promise<void> {
+    const keyWithPrefix = `${RATE_LIMIT_KEY_PREFIX}${key}`;
+    await this.redis.zRem(keyWithPrefix, reservationId);
   }
 
   async reset(key: string): Promise<void> {
