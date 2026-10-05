@@ -93,6 +93,11 @@ async function warmUpBrowserRoutes() {
     await page.getByTestId('org-nav-courses').click();
     await page.waitForURL(/\/courses/);
     await page.waitForLoadState('networkidle');
+    // The course-creation scenario ends on a /courses/<id> page, which is also compiled on first
+    // visit. Open a seeded course once so that compile does not land inside the scenario.
+    await page.locator('a[href^="/courses/"]').first().click();
+    await page.waitForURL(/\/courses\/[0-9a-f-]{36}/);
+    await page.waitForLoadState('networkidle');
   } finally {
     await browser.close();
   }

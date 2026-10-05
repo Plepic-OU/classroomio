@@ -6,7 +6,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "==> Fixing volume permissions..."
+# Named volumes are created root-owned; both must be writable by the node user.
 sudo chown -R node:node /home/node/.claude
+sudo chown -R node:node /home/node/.local/share/pnpm/store
 
 # Fix claude code permissions for auto updater
 sudo chmod -R g+w /usr/local/share/npm-global/lib/node_modules/@anthropic-ai/
