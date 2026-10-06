@@ -98,7 +98,7 @@ else
   pnpm --filter @cio/db db:setup:seed
 fi
 
-echo "==> Installing Playwright browsers..."
-pnpm exec playwright install --with-deps chromium
+echo "==> Installing Playwright browsers (OS libraries are already in the image)..."
+pnpm exec playwright install chromium
 
 echo "==> Setup complete!"
