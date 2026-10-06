@@ -21,9 +21,24 @@ fi
 # docker-compose.yaml marks BETTER_AUTH_SECRET and PRIVATE_SERVER_KEY as required (`:?`) for its
 # api/dashboard services, and compose validates them even when only postgres/redis are started.
 # Neither service uses them, so any non-empty value satisfies the check.
-BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET:-unused-by-postgres-redis}" \
-PRIVATE_SERVER_KEY="${PRIVATE_SERVER_KEY:-unused-by-postgres-redis}" \
-  docker compose -f docker-compose.yaml up -d --wait --quiet-pull postgres redis
+export BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET:-unused-by-postgres-redis}"
+export PRIVATE_SERVER_KEY="${PRIVATE_SERVER_KEY:-unused-by-postgres-redis}"
+
+# Pull before `up`: compose has no retry, and a single TLS handshake timeout against Docker Hub
+# (seen on a cold docker-in-docker volume) would otherwise fail the whole devcontainer create.
+max_pull_attempts=5
+for attempt in $(seq 1 "$max_pull_attempts"); do
+  docker compose -f docker-compose.yaml pull --quiet postgres redis && break
+
+  if [ "$attempt" -eq "$max_pull_attempts" ]; then
+    echo "ERROR: could not pull the postgres/redis images after $max_pull_attempts attempts." >&2
+    exit 1
+  fi
+  echo "Image pull failed (attempt $attempt/$max_pull_attempts), retrying in 10s..."
+  sleep 10
+done
+
+docker compose -f docker-compose.yaml up -d --wait postgres redis
 
 # Also let the daemon itself bring them back if they crash or dockerd restarts. Applied with
 # `docker update` so the compose config (and its recreate-on-change hash) stays upstream's.
