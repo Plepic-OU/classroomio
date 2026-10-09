@@ -68,7 +68,6 @@ storybook-static
 company/
 
 # Claude Code local artifacts
-.claude/skills
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
 
