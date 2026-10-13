@@ -126,6 +126,12 @@ Works with VS Code, IntelliJ, GitHub Codespaces, or any [devcontainer](https://c
 
    Then open [http://localhost:5173/login](http://localhost:5173/login) and log in as `admin@test.com` / `123456`.
 
+   `dev:container` runs a lean stack: it skips the background job workers (media, transcription, emails,
+   notifications, audience, agent course generation), which have no storage, SMTP or AI keys in the
+   devcontainer anyway. This saves about 1.5 GB of RAM. Jobs the API enqueues (uploads, emails, AI course
+   generation) are not processed in this mode. To run the workers too, use `pnpm api:dev` in place of
+   `pnpm api:dev:lean`, or start them separately with `pnpm jobs:dev`.
+
    The setup script runs automatically on first launch — it installs dependencies, creates the `.env` files (with generated secrets) as described in [`DEV_SETUP_NOTES.md`](DEV_SETUP_NOTES.md), builds the shared packages, starts Postgres + Redis, creates the schema and seeds demo data, and installs the Playwright browser. Postgres and Redis are started again every time the container starts; `bash .devcontainer/start-infra.sh` does the same by hand. Nothing restarts them if they crash, so if the API cannot reach Postgres or Redis, run that command.
 
    The setup script is safe to re-run. If it fails part-way (for example a network error during `pnpm install`), rerun it inside the container instead of recreating it:
