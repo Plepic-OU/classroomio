@@ -18,6 +18,7 @@ readonly DB_NAME=classroomio
 readonly DB_USER=postgres
 readonly DB_PASSWORD=postgres
 readonly READY_TIMEOUT_SECONDS=60
+readonly LOCK_TIMEOUT_SECONDS=$((READY_TIMEOUT_SECONDS * 3))
 
 export PGPASSWORD="$DB_PASSWORD"
 
@@ -61,17 +62,15 @@ wait_until() {
 }
 
 init_postgres() {
-  local staging="$PG_DATA.init" password_file
+  local staging="$PG_DATA.init"
   [ -s "$PG_DATA/PG_VERSION" ] && return 0
   [ -e "$PG_DATA" ] && fail "$PG_DATA exists but is not a Postgres data directory; move it away and re-run."
 
   echo "==> Initializing Postgres data directory..."
   rm -rf "$staging"
-  password_file="$(mktemp)"
-  printf '%s\n' "$DB_PASSWORD" >"$password_file"
-  "$PG_BIN/initdb" -D "$staging" -U "$DB_USER" --pwfile="$password_file" \
-    --auth=scram-sha-256 --encoding=UTF8 --locale=C.UTF-8 >/dev/null
-  rm -f "$password_file"
+  "$PG_BIN/initdb" -D "$staging" -U "$DB_USER" --pwfile=<(printf '%s\n' "$DB_PASSWORD") \
+    --auth=scram-sha-256 --encoding=UTF8 --locale=C.UTF-8 \
+    -c "listen_addresses=$HOST" -c "port=$PG_PORT" -c "unix_socket_directories=" >/dev/null
   mv "$staging" "$PG_DATA"
 }
 
@@ -80,8 +79,7 @@ start_postgres() {
 
   if ! postmaster_alive; then
     rm -f "$PG_DATA/postmaster.pid"
-    "$PG_BIN/pg_ctl" -D "$PG_DATA" -l "$PG_LOG" -w -t "$READY_TIMEOUT_SECONDS" \
-      -o "-c listen_addresses=$HOST -c port=$PG_PORT -c unix_socket_directories=''" start >/dev/null 9>&- ||
+    "$PG_BIN/pg_ctl" -D "$PG_DATA" -l "$PG_LOG" -w -t "$READY_TIMEOUT_SECONDS" start >/dev/null 9>&- ||
       fail "Postgres did not start." "$PG_LOG"
   fi
   wait_until Postgres postgres_ready "$PG_LOG"
@@ -105,12 +103,14 @@ start_redis() {
   wait_until Redis redis_ready "$REDIS_LOG"
 }
 
+[ -x "$PG_BIN/initdb" ] ||
+  fail "start-infra.sh only runs inside the devcontainer. On a host, run: docker compose -f docker-compose.yaml up -d postgres redis"
 [ "$(id -u)" -ne 0 ] || fail "run this as the node user, not root: the data directories belong to node."
 
 # The daemons are started with fd 9 closed: a server that inherited it would hold the lock for
 # as long as it runs.
 exec 9>/tmp/start-infra.lock
-flock -w "$READY_TIMEOUT_SECONDS" 9 || fail "another start-infra.sh run still holds /tmp/start-infra.lock."
+flock -w "$LOCK_TIMEOUT_SECONDS" 9 || fail "another start-infra.sh run still holds /tmp/start-infra.lock."
 
 init_postgres
 start_postgres

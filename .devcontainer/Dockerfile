@@ -21,8 +21,10 @@ RUN npx -y playwright@1.57.0 install-deps chromium
 
 # Postgres 16 from the PGDG repo (https://www.postgresql.org/download/linux/debian/) and Redis from
 # Debian. start-infra.sh runs both as the node user; the package's default cluster is not needed.
-RUN install -d /usr/share/postgresql-common/pgdg /etc/postgresql-common \
+RUN install -d /usr/share/postgresql-common/pgdg /etc/postgresql-common/createcluster.d \
  && curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+ && gpg --show-keys --with-colons /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+      | grep -qx 'fpr:::::::::B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8:' \
  && printf '%s\n' \
       'Types: deb' \
       'URIs: https://apt.postgresql.org/pub/repos/apt' \
@@ -30,7 +32,7 @@ RUN install -d /usr/share/postgresql-common/pgdg /etc/postgresql-common \
       'Components: main' \
       'Signed-By: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc' \
       > /etc/apt/sources.list.d/pgdg.sources \
- && echo 'create_main_cluster = false' > /etc/postgresql-common/createcluster.conf \
+ && echo 'create_main_cluster = false' > /etc/postgresql-common/createcluster.d/no-main-cluster.conf \
  && apt-get update \
  && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends postgresql-16 redis-server \
  && rm -rf /var/lib/apt/lists/*

@@ -126,7 +126,7 @@ Works with VS Code, IntelliJ, GitHub Codespaces, or any [devcontainer](https://c
 
    Then open [http://localhost:5173/login](http://localhost:5173/login) and log in as `admin@test.com` / `123456`.
 
-   The setup script runs automatically on first launch — it installs dependencies, creates the `.env` files (with generated secrets) as described in [`DEV_SETUP_NOTES.md`](DEV_SETUP_NOTES.md), builds the shared packages, starts Postgres + Redis, creates the schema and seeds demo data, and installs the Playwright browser. Postgres and Redis are started again every time the container starts; `bash .devcontainer/start-infra.sh` does the same by hand.
+   The setup script runs automatically on first launch — it installs dependencies, creates the `.env` files (with generated secrets) as described in [`DEV_SETUP_NOTES.md`](DEV_SETUP_NOTES.md), builds the shared packages, starts Postgres + Redis, creates the schema and seeds demo data, and installs the Playwright browser. Postgres and Redis are started again every time the container starts; `bash .devcontainer/start-infra.sh` does the same by hand. Nothing restarts them if they crash, so if the API cannot reach Postgres or Redis, run that command.
 
    The setup script is safe to re-run. If it fails part-way (for example a network error during `pnpm install`), rerun it inside the container instead of recreating it:
 
