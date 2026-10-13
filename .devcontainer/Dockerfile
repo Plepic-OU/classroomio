@@ -25,6 +25,7 @@ RUN install -d /usr/share/postgresql-common/pgdg /etc/postgresql-common/createcl
  && curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc \
  && gpg --show-keys --with-colons /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
       | grep -qx 'fpr:::::::::B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8:' \
+ && [ "$(gpg --show-keys --with-colons /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc | grep -c '^pub:')" = 1 ] \
  && printf '%s\n' \
       'Types: deb' \
       'URIs: https://apt.postgresql.org/pub/repos/apt' \

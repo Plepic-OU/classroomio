@@ -18,7 +18,7 @@ readonly DB_NAME=classroomio
 readonly DB_USER=postgres
 readonly DB_PASSWORD=postgres
 readonly READY_TIMEOUT_SECONDS=60
-readonly LOCK_TIMEOUT_SECONDS=$((READY_TIMEOUT_SECONDS * 3))
+readonly LOCK_TIMEOUT_SECONDS=$((READY_TIMEOUT_SECONDS * 4))
 
 export PGPASSWORD="$DB_PASSWORD"
 
@@ -80,7 +80,7 @@ start_postgres() {
   if ! postmaster_alive; then
     rm -f "$PG_DATA/postmaster.pid"
     "$PG_BIN/pg_ctl" -D "$PG_DATA" -l "$PG_LOG" -w -t "$READY_TIMEOUT_SECONDS" start >/dev/null 9>&- ||
-      fail "Postgres did not start." "$PG_LOG"
+      postmaster_alive || fail "Postgres did not start." "$PG_LOG"
   fi
   wait_until Postgres postgres_ready "$PG_LOG"
 }
@@ -104,7 +104,7 @@ start_redis() {
 }
 
 [ -x "$PG_BIN/initdb" ] ||
-  fail "start-infra.sh only runs inside the devcontainer. On a host, run: docker compose -f docker-compose.yaml up -d postgres redis"
+  fail "start-infra.sh only runs inside the devcontainer. On a host, start Postgres and Redis with docker compose (DEV_SETUP_NOTES.md, Step 3)."
 [ "$(id -u)" -ne 0 ] || fail "run this as the node user, not root: the data directories belong to node."
 
 # The daemons are started with fd 9 closed: a server that inherited it would hold the lock for

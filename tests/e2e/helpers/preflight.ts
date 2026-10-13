@@ -117,7 +117,7 @@ export default async function globalSetup() {
       `E2E pre-flight failed. No services are reachable:\n${names}\n\n` +
         `Start them before running tests:\n` +
         `  bash .devcontainer/start-infra.sh   # Postgres + Redis, inside the devcontainer\n` +
-        `  docker compose up -d postgres redis # Postgres + Redis, on a host\n` +
+        `  docker compose -f docker-compose.yaml up -d postgres redis   # on a host (DEV_SETUP_NOTES.md, Step 3)\n` +
         `  pnpm dev:container                  # API + dashboard`
     );
   }
