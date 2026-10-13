@@ -152,6 +152,8 @@ enough — developing costs nothing.
 | MinIO       | 9000 / console 9001   | only if started (optional)       |
 | jobs-worker | (none)                | background worker, no HTTP port  |
 
+Inside the devcontainer, Postgres and Redis run as processes in the container instead (started by `.devcontainer/start-infra.sh`), on the same ports.
+
 ## 4. Demo accounts
 
 Seeded accounts use password **`123456`** (verified against the seed's bcrypt hashes):
