@@ -5,15 +5,6 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-echo "==> Fixing volume permissions..."
-# Named volumes are created root-owned; both must be writable by the node user.
-sudo chown -R node:node /home/node/.claude
-sudo chown -R node:node /home/node/.local/share/pnpm/store
-
-# Fix claude code permissions for auto updater
-sudo chmod -R g+w /usr/local/share/npm-global/lib/node_modules/@anthropic-ai/
-sudo chmod -R g+w /usr/local/share/npm-global/bin/
-
 echo "==> Installing dependencies..."
 pnpm install
 
@@ -89,7 +80,7 @@ pnpm turbo run build --filter=@cio/api^... --filter=@cio/jobs-worker^... --filte
 echo "==> Starting Postgres + Redis..."
 bash .devcontainer/start-infra.sh
 
-user_count="$(docker exec cio-postgres psql -U postgres -d classroomio -tAc 'SELECT count(*) FROM "user"' 2>/dev/null || echo 0)"
+user_count="$(PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d classroomio -tAc 'SELECT count(*) FROM "user"' 2>/dev/null || echo 0)"
 if [ "${user_count:-0}" -gt 0 ]; then
   echo "==> Database already seeded; applying migrations and essential reference data only..."
   pnpm --filter @cio/db db:setup

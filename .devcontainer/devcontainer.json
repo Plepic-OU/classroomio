@@ -3,19 +3,16 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:4.1.2": {
-      "moby": false,
-      "version": "29.4.3"
-    }
-  },
+  "runArgs": ["--security-opt=no-new-privileges"],
   "containerEnv": {
     "CLAUDE_CONFIG_DIR": "/home/node/.claude",
     "npm_config_store_dir": "/home/node/.local/share/pnpm/store"
   },
   "mounts": [
     "source=classroomio-pnpm-store,target=/home/node/.local/share/pnpm/store,type=volume",
-    "source=classroomio-claude-config,target=/home/node/.claude,type=volume"
+    "source=classroomio-claude-config,target=/home/node/.claude,type=volume",
+    "source=classroomio-postgres-${devcontainerId},target=/home/node/.local/share/classroomio/postgres,type=volume",
+    "source=classroomio-redis-${devcontainerId},target=/home/node/.local/share/classroomio/redis,type=volume"
   ],
   "appPort": [5173, 3002, 9323, 9324],
   "forwardPorts": [5173, 3002, 9323, 9324],

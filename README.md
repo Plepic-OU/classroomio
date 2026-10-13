@@ -94,7 +94,7 @@ The repository also contains shared packages under `packages/` (for example `pac
 
 ### Dev Container Setup
 
-Works with VS Code, IntelliJ, GitHub Codespaces, or any [devcontainer](https://containers.dev/)-compatible tool. Postgres and Redis run inside the container (Docker-in-Docker), so they don't need installing on the host. The host needs Docker plus one of those tools; the steps below use the devcontainer CLI, which is installed with npm (Node.js).
+Works with VS Code, IntelliJ, GitHub Codespaces, or any [devcontainer](https://containers.dev/)-compatible tool. Postgres and Redis are installed in the container image and run as processes inside it, so nothing extra is needed on the host. The host needs Docker plus one of those tools; the steps below use the devcontainer CLI, which is installed with npm (Node.js).
 
 1. Install the [devcontainer CLI](https://github.com/devcontainers/cli):
 
@@ -128,7 +128,7 @@ Works with VS Code, IntelliJ, GitHub Codespaces, or any [devcontainer](https://c
 
    The setup script runs automatically on first launch — it installs dependencies, creates the `.env` files (with generated secrets) as described in [`DEV_SETUP_NOTES.md`](DEV_SETUP_NOTES.md), builds the shared packages, starts Postgres + Redis, creates the schema and seeds demo data, and installs the Playwright browser. Postgres and Redis are started again every time the container starts; `bash .devcontainer/start-infra.sh` does the same by hand.
 
-   The setup script is safe to re-run. If it fails part-way (for example a network error while pulling the Postgres or Redis images), rerun it inside the container instead of recreating it:
+   The setup script is safe to re-run. If it fails part-way (for example a network error during `pnpm install`), rerun it inside the container instead of recreating it:
 
    ```bash
    devcontainer exec --workspace-folder . bash .devcontainer/setup.sh

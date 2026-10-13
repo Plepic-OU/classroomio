@@ -9,8 +9,6 @@
  */
 import { execSync } from 'node:child_process';
 
-/** Postgres container from the root docker-compose.yaml (see .devcontainer/start-infra.sh). */
-const CONTAINER = 'cio-postgres';
 const DATABASE = 'classroomio';
 
 /**
@@ -56,8 +54,14 @@ BEGIN
 END $$;
 `;
 
+/**
+ * Runs the reset through `psql` (must be on PATH) against Postgres on 127.0.0.1:5432. In the
+ * devcontainer `.devcontainer/start-infra.sh` runs it; on a host setup the root docker-compose.yaml
+ * publishes the same port with the same credentials.
+ */
 export function resetTestData() {
-  execSync(`docker exec -i ${CONTAINER} psql -U postgres -d ${DATABASE} -v ON_ERROR_STOP=1 -q`, {
+  execSync(`psql -h 127.0.0.1 -U postgres -d ${DATABASE} -v ON_ERROR_STOP=1 -q`, {
+    env: { ...process.env, PGPASSWORD: process.env.PGPASSWORD ?? 'postgres' },
     input: RESET_SQL,
     stdio: ['pipe', 'pipe', 'pipe']
   });

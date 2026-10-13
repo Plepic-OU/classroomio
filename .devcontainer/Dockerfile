@@ -19,6 +19,46 @@ RUN npm install -g @anthropic-ai/claude-code
 # Version matches the @playwright/test locked in pnpm-lock.yaml.
 RUN npx -y playwright@1.57.0 install-deps chromium
 
-# Add alias for all bash sessions
-# Inside isolated environment, remove all permissions. In non-isolated environment the mode "auto" is good substitute
-RUN echo "alias cskip='claude --permission-mode bypassPermissions'" >> /etc/bash.bashrc
+# Postgres 16 from the PGDG repo (https://www.postgresql.org/download/linux/debian/) and Redis from
+# Debian. start-infra.sh runs both as the node user; the package's default cluster is not needed.
+RUN install -d /usr/share/postgresql-common/pgdg /etc/postgresql-common \
+ && curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+ && printf '%s\n' \
+      'Types: deb' \
+      'URIs: https://apt.postgresql.org/pub/repos/apt' \
+      'Suites: bookworm-pgdg' \
+      'Components: main' \
+      'Signed-By: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc' \
+      > /etc/apt/sources.list.d/pgdg.sources \
+ && echo 'create_main_cluster = false' > /etc/postgresql-common/createcluster.conf \
+ && apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends postgresql-16 redis-server \
+ && rm -rf /var/lib/apt/lists/*
+
+# No sudo for node: the base image grants passwordless root through this file.
+RUN rm /etc/sudoers.d/node
+
+# Docker gives a new named volume the owner of the directory it is mounted over, so these mount
+# targets must exist and belong to node before the volumes are first created.
+RUN install -d -o node -g node \
+      /home/node/.claude \
+      /home/node/.local \
+      /home/node/.local/share \
+      /home/node/.local/share/pnpm \
+      /home/node/.local/share/pnpm/store \
+      /home/node/.local/share/classroomio \
+ && install -d -o node -g node -m 700 \
+      /home/node/.local/share/classroomio/postgres \
+      /home/node/.local/share/classroomio/redis \
+ && chown -R node:npm /usr/local/share/npm-global \
+ && chmod -R g+w /usr/local/share/npm-global
+
+# The container is a boundary against mistakes and most prompt injection, which is what makes
+# cskip (bypassPermissions) acceptable here. It is NOT a boundary against:
+#   - the repo bind mount: the agent can write host files, including .git/hooks that run on the host
+#   - the Claude login stored in the classroomio-claude-config volume (~/.claude)
+#   - SSH-agent and git credentials that VS Code forwards into the container
+#   - open network egress
+# A privileged container is no boundary at all, so cskip refuses to run in one.
+COPY cskip.bash /tmp/cskip.bash
+RUN cat /tmp/cskip.bash >> /etc/bash.bashrc && rm /tmp/cskip.bash
