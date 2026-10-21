@@ -54,14 +54,16 @@
     "turbo": "^1.10.16"
   },
   "devDependencies": {
-    "@playwright/test": "^1.57.0",
     "@babel/plugin-syntax-jsx": "^7.28.6",
     "@babel/preset-typescript": "^7.28.5",
     "@cio/tsconfig": "workspace:*",
     "@evilmartians/lefthook": "^1.13.6",
+    "@playwright/test": "^1.57.0",
+    "chrome-launcher": "1.2.2",
     "concurrently": "^8.2.2",
     "cross-env": "^10.1.0",
     "eslint": "^9.36.0",
+    "lighthouse": "12.8.2",
     "playwright-bdd": "^9.2.1",
     "prettier": "^3.6.2",
     "prettier-plugin-svelte": "^3.4.1",
