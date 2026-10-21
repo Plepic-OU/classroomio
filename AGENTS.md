@@ -55,6 +55,12 @@ export PATH="$HOME/.nvm/versions/node/v20.19.3/bin:$PATH"
   pnpm --filter @cio/certificates build
   ```
 
+- **Test-only changes** need no build. Run the tests that cover them instead (for example `pnpm test:e2e --grep "<scenario>"`). This covers:
+  - files no build includes: `tests/e2e/**`, `e2e/**`, `*.test.ts`, `*.spec.ts`, Storybook stories;
+  - test-id edits in `apps/**` or `packages/**`: adding, renaming or removing `data-testid` / `testId` attributes, and props that only pass a test id through. A passing e2e run that uses those ids already proves the touched components compile.
+
+  Any other edit in the same change (logic, markup, styles, new components) needs the build for its area as usual. Still run `pnpm format:check`, and `pnpm --filter @cio/ui prefix:check` when `packages/ui` changed.
+
 Also run `pnpm format:check` (see Translation, Formatting, and Git Workflow above). Do not commit if any verification step fails.
 
 ## Database migrations
