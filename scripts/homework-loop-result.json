@@ -1,0 +1,26 @@
+{
+  "scenario": "Search the course list by title",
+  "feature_file": "tests/e2e/features/courses/course-search.feature",
+  "rounds": [
+    {
+      "round": 1,
+      "test_exit": 1,
+      "claude_called": true,
+      "duration_ms": 215898,
+      "cost_usd": 3.1473595,
+      "num_turns": 50,
+      "summary": "The scenario passes (verified twice, 2.3s).  I added `tests/e2e/steps/courses/course-search.steps.ts` with the three missing steps, reusing the existing `I am logged in as {string}` and `I am on the courses page` definitions from `course-creation.steps.ts`. The two `Then` steps locate course rows by role \u2014 `getByRole('link', { name: title })`, which matches both the default list view (`course-list-row.svelte`) and the grid view since each course renders as an `<a>` wrapping its title \u2014 asserting"
+    },
+    {
+      "round": 2,
+      "test_exit": 0,
+      "claude_called": false,
+      "duration_ms": null,
+      "cost_usd": null,
+      "num_turns": null,
+      "summary": null
+    }
+  ],
+  "final": "PASS",
+  "rounds_used": 2
+}

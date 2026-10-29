@@ -123,7 +123,7 @@
     <h2 class="text-sm font-medium">{sectionTitle}</h2>
   {/if}
   <Page.BodyHeader align="right" class="p-0!">
-    <Search placeholder={$t('courses.search_placeholder')} bind:value={searchValue} />
+    <Search testId="course-list-search" placeholder={$t('courses.search_placeholder')} bind:value={searchValue} />
     {#if showSortSelect}
       <SortSelect options={filterOptions} bind:value={sortKey} />
     {/if}

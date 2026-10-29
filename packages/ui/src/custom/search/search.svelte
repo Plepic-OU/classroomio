@@ -9,6 +9,7 @@
     placeholder?: string;
     value?: string;
     class?: string;
+    testId?: string;
     onValueChange?: (value: string) => void;
   }
 
@@ -16,6 +17,7 @@
     placeholder = '',
     value = $bindable(''),
     class: className = '',
+    testId,
     onValueChange,
     ...restProps
   }: Props & Omit<ComponentProps<typeof InputGroup.Root>, 'class' | 'children'> = $props();
@@ -37,7 +39,7 @@
 </script>
 
 <InputGroup.Root {...mergedProps}>
-  <InputGroup.Input {placeholder} bind:value oninput={handleInput} />
+  <InputGroup.Input {placeholder} bind:value oninput={handleInput} data-testid={testId} />
   {#if value}
     <InputGroup.Addon align="inline-end">
       <InputGroup.Button aria-label="Clear search" onclick={clearValue}>

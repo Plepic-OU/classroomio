@@ -44,6 +44,7 @@ Naming: kebab-case, feature-scoped — `{area}-{element}` or `{area}-{element}-{
 | Test id | Surface |
 |---|---|
 | `course-settings-people-link` | Self-enrollment description link to the course People page |
+| `course-list-search` | Course list search input (org courses, LMS, explore) |
 
 ## Helpers
 

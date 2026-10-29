@@ -1,0 +1,9 @@
+homework-loop start 2026-10-29T13:52:18Z scenario="Search the course list by title"
+round 1: 2026-10-29T13:52:18Z running tests
+round 1: test_exit=1
+round 1: 2026-10-29T13:52:19Z calling claude -p
+round 1: claude_called=true claude_exit=0 duration_ms=215898 total_cost_usd=3.1473595 num_turns=50 is_error=False
+round 2: 2026-10-29T13:55:57Z running tests
+round 2: test_exit=0
+round 2: claude_called=false
+PASS after 2 round(s)
